@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     const from = fromDate.toISOString().split('T')[0];
 
     const queries = [
-      { q: '(Vorstand OR Geschaeftsfuehrer OR Aufsichtsrat OR CEO OR CFO) AND (Wien OR Oesterreich OR Austria)', language: 'de', label: 'AT' },
+      { q: '(Vorstand OR CEO OR CFO OR Aufsichtsrat) AND (Wien OR Austria)', language: 'de', label: 'AT' },
       { q: '(Vorstandswechsel OR "neuer Vorstandsvorsitzender" OR "neuer Geschaeftsfuehrer") AND (DAX OR MDAX OR Deutschland)', language: 'de', label: 'DE' },
       { q: '(CEO OR CFO OR "managing director" OR merger OR acquisition) AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia)', language: 'en', label: 'CEE' },
     ];
