@@ -11,8 +11,8 @@ export default async function handler(req, res) {
     const from = fromDate.toISOString().split('T')[0];
 
     const queries = [
-      { q: '(Vorstand OR Geschäftsführer OR Aufsichtsrat OR CEO OR CFO) AND (Wien OR Österreich OR Austria)', language: 'de', label: 'AT' },
-      { q: '(Vorstandswechsel OR "neuer Vorstandsvorsitzender" OR "neuer Geschäftsführer") AND (DAX OR MDAX OR Deutschland)', language: 'de', label: 'DE' },
+      { q: '(Vorstand OR Geschaeftsfuehrer OR Aufsichtsrat OR CEO OR CFO) AND (Wien OR Oesterreich OR Austria)', language: 'de', label: 'AT' },
+      { q: '(Vorstandswechsel OR "neuer Vorstandsvorsitzender" OR "neuer Geschaeftsfuehrer") AND (DAX OR MDAX OR Deutschland)', language: 'de', label: 'DE' },
       { q: '(CEO OR CFO OR "managing director" OR merger OR acquisition) AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia)', language: 'en', label: 'CEE' },
     ];
 
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 2000,
-        messages: [{ role: 'user', content: `Extrahiere Business-Ereignisse aus diesen Nachrichten fuer Executive Search. Relevante Ereignisse: Vorstandswechsel, CEO/CFO/CHRO-Wechsel, Geschaeftsfuehrer-Wechsel, Aufsichtsrat-Bestellung/-Ruecktritt, M&A/Fusion/Uebernahme, Funding, Restrukturierung, Expansion. Prioritaet: Oesterreich, Deutschland, CEE. trigger_type EXAKT: "CEO-Wechsel", "CFO-Wechsel", "CHRO-Wechsel", "Geschaeftsfuehrer-Wechsel", "Neuer Vorstand", "Aufsichtsrat-Bestellung", "Aufsichtsrat-Ruecktritt", "M&A / Fusion", "Funding", "Restrukturierung", "DACH-Expansion", "Sonstige". NUR JSON-Array: [{"article_index": 0, "company":"Name","trigger_type":"CEO-Wechsel","description":"Beschreibung"}]. Nachrichten: ${summaries}` }]
+        messages: [{ role: 'user', content: 'Extract business events from these news articles for Executive Search. Relevant events: management changes, CEO/CFO/CHRO appointments, board appointments/resignations, M&A/mergers/acquisitions, funding rounds, restructuring, expansion. Focus on Austria, Germany, CEE (Poland, Romania, Hungary, Czech Republic, Slovakia). Return ONLY a JSON array, no other text: [{"article_index": 0, "company":"Company Name","trigger_type":"CEO-Wechsel","description":"What happened"}]. Use these exact trigger_type values: "CEO-Wechsel", "CFO-Wechsel", "CHRO-Wechsel", "Geschaeftsfuehrer-Wechsel", "Neuer Vorstand", "Aufsichtsrat-Bestellung", "Aufsichtsrat-Ruecktritt", "M&A / Fusion", "Funding", "Restrukturierung", "DACH-Expansion", "Sonstige". Include ALL relevant events equally. News:\n' + summaries }]
       })
     });
 
