@@ -1,12 +1,10 @@
 {
   "rewrites": [
     { "source": "/paul", "destination": "/paul.html" },
-    { "source": "/docs", "destination": "/docs.html" }
+    { "source": "/docs", "destination": "/docs.html" },
+    { "source": "/angebot", "destination": "/angebot.html" }
   ],
   "crons": [
-    {
-      "path": "/api/scan",
-      "schedule": "0 7 * * *"
-    }
+    { "path": "/api/scan", "schedule": "0 7 * * *" }
   ]
 }
