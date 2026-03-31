@@ -63,6 +63,8 @@ export default async function handler(req, res) {
 
     const claudeData = await claudeRes.json();
     const raw = claudeData.content?.find(b => b.type === 'text')?.text || '[]';
+    console.log('ARTICLE COUNT:', unique.length);
+console.log('CLAUDE RAW:', raw);
     const s = raw.indexOf('['), e = raw.lastIndexOf(']');
     let items = [];
     try { if (s >= 0 && e > s) items = JSON.parse(raw.substring(s, e + 1)); } catch(err) {}
