@@ -8,37 +8,32 @@ function xe(str) {
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// Remove highlights and replace ALL text in paragraph with new text
 function replacePara(paraXml, newText) {
-  // Remove yellow and green highlights
   let result = paraXml
     .replace(/<w:highlight w:val="yellow"\/>/g, '')
     .replace(/<w:highlight w:val="green"\/>/g, '');
-  
-  // Replace all <w:t>...</w:t> — first gets new text, rest get empty
   let first = true;
-  result = result.replace(/<w:t([^>]*)>([^<]*)<\/w:t>/g, (match, attrs, text) => {
-    if (first) {
-      first = false;
-      return `<w:t xml:space="preserve">${xe(newText)}</w:t>`;
-    }
+  result = result.replace(/<w:t([^>]*)>[^<]*<\/w:t>/g, (match) => {
+    if (first) { first = false; return `<w:t xml:space="preserve">${xe(newText)}</w:t>`; }
     return '<w:t></w:t>';
   });
   return result;
 }
 
-// Remove green highlight from a paragraph but keep its text
-function removeGreenHighlight(paraXml) {
-  return paraXml.replace(/<w:highlight w:val="green"\/>/g, '');
+function removeHighlights(paraXml) {
+  return paraXml
+    .replace(/<w:highlight w:val="yellow"\/>/g, '')
+    .replace(/<w:highlight w:val="green"\/>/g, '');
 }
 
-// Clean markdown from AI text
 function cleanAI(text) {
   if (!text) return '';
   return text
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     .replace(/\*([^*]+)\*/g, '$1')
     .replace(/^#+\s*/gm, '')
+    .replace(/^Unternehmensprofil[^\n]*\n?/m, '')
+    .replace(/^Positionsbeschreibung[^\n]*\n?/m, '')
     .trim();
 }
 
@@ -53,66 +48,51 @@ export default async function handler(req, res) {
 
   try {
     const d = req.body;
-
     const templateBuffer = Buffer.from(TEMPLATE_B64, 'base64');
     const zip = await JSZip.loadAsync(templateBuffer);
     let xml = await zip.file('word/document.xml').async('string');
-
     const paras = xml.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || [];
     const newParas = [...paras];
 
-    // Remove green highlights from ALL paragraphs
+    // Remove all green highlights
     for (let i = 0; i < newParas.length; i++) {
       if (newParas[i].includes('w:val="green"')) {
-        newParas[i] = removeGreenHighlight(newParas[i]);
+        newParas[i] = removeHighlights(newParas[i]);
       }
     }
 
-    // [3] Position on cover
-    newParas[3] = replacePara(newParas[3], d.positionTitle || '');
-    // [8] Client company on cover
-    newParas[8] = replacePara(newParas[8], d.clientCompany || '');
-    // [37] Date on cover
-    newParas[37] = replacePara(newParas[37], d.date || '');
-    // [41] Address line 1
-    newParas[41] = replacePara(newParas[41], d.clientContactName || '');
-    // [42] Name/function
-    newParas[42] = replacePara(newParas[42], `${d.clientSignatoryTitle || ''}`);
-    // [43] Street
-    newParas[43] = replacePara(newParas[43], d.clientAddress || '');
-    // [44] City
-    newParas[44] = replacePara(newParas[44], d.clientCity || '');
-    // [46] Per Mail line
-    newParas[46] = replacePara(newParas[46], `Per Mail: ${d.clientEmail || ''}`);
-    // [47] Email
-    newParas[47] = replacePara(newParas[47], d.clientEmail || '');
-    // [51] Salutation — only the variable part
-    const salutation = `Sehr geehrte ${d.clientSalutation || ''} ${d.clientContactLastName || ''},`;
-    newParas[51] = replacePara(newParas[51], salutation);
-    // [55] Position in intro sentence
-    newParas[55] = replacePara(newParas[55], d.positionTitle || '');
+    // Fixed replacements
+    newParas[3]   = replacePara(newParas[3],   d.positionTitle || '');
+    newParas[8]   = replacePara(newParas[8],   d.clientCompany || '');
+    newParas[37]  = replacePara(newParas[37],  d.date || '');
+    newParas[41]  = replacePara(newParas[41],  d.clientContactName || '');
+    newParas[42]  = replacePara(newParas[42],  d.clientSignatoryTitle || '');
+    newParas[43]  = replacePara(newParas[43],  d.clientAddress || '');
+    newParas[44]  = replacePara(newParas[44],  d.clientCity || '');
+    newParas[46]  = replacePara(newParas[46],  `Per Mail: ${d.clientEmail || ''}`);
+    newParas[47]  = replacePara(newParas[47],  d.clientEmail || '');
+    newParas[51]  = replacePara(newParas[51],  `Sehr geehrte ${d.clientSalutation||''} ${d.clientContactLastName||''},`);
+    newParas[55]  = replacePara(newParas[55],  d.positionTitle || '');
 
-    // [63-65] Company profile — clean AI markdown, split into paragraphs
-    const profileText = cleanAI(d.companyProfile || '');
-    const profileLines = profileText.split('\n').filter(l => l.trim());
-    newParas[63] = replacePara(newParas[63], profileLines[0] || '');
-    newParas[64] = replacePara(newParas[64], profileLines[1] || '');
-    newParas[65] = replacePara(newParas[65], profileLines[2] || '');
+    // Company profile — put ALL text into para 63, blank 64+65
+    const profileClean = cleanAI(d.companyProfile || '');
+    newParas[63] = replacePara(newParas[63], profileClean);
+    newParas[64] = replacePara(newParas[64], '');
+    newParas[65] = replacePara(newParas[65], '');
 
-    // [71-73] Position description
-    const posText = cleanAI(d.positionDescription || '');
-    const posLines = posText.split('\n').filter(l => l.trim());
-    newParas[71] = replacePara(newParas[71], posLines[0] || '');
-    newParas[72] = replacePara(newParas[72], posLines[1] || '');
-    newParas[73] = replacePara(newParas[73], posLines[2] || '');
+    // Position description — put ALL text into para 71, blank 72+73
+    const posClean = cleanAI(d.positionDescription || '');
+    newParas[71] = replacePara(newParas[71], posClean);
+    newParas[72] = replacePara(newParas[72], '');
+    newParas[73] = replacePara(newParas[73], '');
 
-    // [92-94] Functional targets
+    // Functional targets
     const func = d.functionalTargets || [];
     newParas[92] = replacePara(newParas[92], func[0] || '');
     newParas[93] = replacePara(newParas[93], func[1] || '');
     newParas[94] = replacePara(newParas[94], func[2] || '');
 
-    // [98-102] Industry targets
+    // Industry targets
     const ind = d.industryTargets || [];
     newParas[98]  = replacePara(newParas[98],  ind[0] || '');
     newParas[99]  = replacePara(newParas[99],  ind[1] || '');
@@ -120,54 +100,41 @@ export default async function handler(req, res) {
     newParas[101] = replacePara(newParas[101], ind[3] || '');
     newParas[102] = replacePara(newParas[102], ind[4] || '');
 
-    // [105-107] Geo targets
+    // Geo targets
     const geo = d.geoTargets || [];
     newParas[105] = replacePara(newParas[105], geo[0] || '');
     newParas[106] = replacePara(newParas[106], geo[1] || '');
     newParas[107] = replacePara(newParas[107], geo[2] || '');
 
-    // [157-158] Consultant
+    // Consultant
     newParas[157] = replacePara(newParas[157], 'Dr. Sami Hamid');
     newParas[158] = replacePara(newParas[158], 'Managing Partner');
     newParas[163] = replacePara(newParas[163], '+43-1-225 635 452');
     newParas[164] = replacePara(newParas[164], '+43 664 4568862');
     newParas[165] = replacePara(newParas[165], 'sami.hamid@signium.com');
 
-    // [180] Honorar details
+    // Honorar
     newParas[180] = replacePara(newParas[180], d.honorarDetails || '');
-    // [186] Rate 1
     newParas[186] = replacePara(newParas[186], d.rate1 || '');
-    // [189] Rate 2
     newParas[189] = replacePara(newParas[189], d.rate2 || '');
-    // [192] Rate 3
     newParas[192] = replacePara(newParas[192], d.rate3 || '');
-
-    // [264] Signature date
     newParas[264] = replacePara(newParas[264], `Managing Partner          ${d.date || ''}`);
 
-    // Rebuild XML by replacing each paragraph
-    let newXml = xml;
+    // Rebuild XML using positional replacement
+    const parts = xml.split(/<w:p[ >][\s\S]*?<\/w:p>/g);
+    let newXml = parts[0];
     for (let i = 0; i < paras.length; i++) {
-      if (newParas[i] !== paras[i]) {
-        newXml = newXml.replace(paras[i], newParas[i]);
-      }
+      newXml += newParas[i] + (parts[i+1] || '');
     }
 
     zip.file('word/document.xml', newXml);
-
-    const outputBuffer = await zip.generateAsync({
-      type: 'nodebuffer',
-      compression: 'DEFLATE',
-      compressionOptions: { level: 6 }
-    });
-
+    const outputBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 6 } });
     const safeName = `Signium_Angebot_${(d.clientCompany||'Klient').replace(/\s+/g,'_')}_${(d.positionTitle||'Position').replace(/\s+/g,'_')}`;
     const b64 = outputBuffer.toString('base64');
-
     return res.status(200).json({ docx: b64, filename: `${safeName}.docx` });
 
   } catch (err) {
-    console.error('generate-angebot error:', err);
+    console.error(err);
     return res.status(500).json({ error: err.message });
   }
 }
