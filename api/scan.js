@@ -11,9 +11,8 @@ export default async function handler(req, res) {
     const from = fromDate.toISOString().split('T')[0];
 
     const queries = [
-      { q: '(Vorstand OR Geschäftsführer OR Aufsichtsrat OR CEO OR CFO) AND (Wien OR Österreich OR Austria)', language: 'de', label: 'AT' },
-      { q: '(Vorstandswechsel OR "neuer Vorstandsvorsitzender" OR "neuer Geschäftsführer" OR Aufsichtsrat) AND (DAX OR MDAX OR Deutschland)', language: 'de', label: 'DE' },
-      { q: '(CEO OR CFO OR "managing director" OR merger OR acquisition OR appointed) AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia OR Vienna)', language: 'en', label: 'CEE' },
+      { q: '"Vorstandswechsel" OR "neuer CEO" OR "neuer Vorstand" OR "Geschäftsführerwechsel" OR "neuer Geschäftsführer" OR "Aufsichtsratsvorsitzender"', language: 'de', label: 'DACH' },
+      { q: '"CEO appointed" OR "CFO appointed" OR "managing director" OR "merger" OR "acquisition" AND ("Austria" OR "Poland" OR "Romania" OR "Hungary" OR "Czech Republic")', language: 'en', label: 'CEE' },
     ];
 
     const allArticles = [];
