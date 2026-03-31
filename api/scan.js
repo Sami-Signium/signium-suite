@@ -11,8 +11,9 @@ export default async function handler(req, res) {
     const from = fromDate.toISOString().split('T')[0];
 
     const queries = [
-      { q: '"Vorstandswechsel" OR "neuer CEO" OR "neuer Vorstand" OR "Geschäftsführerwechsel" OR "neuer Geschäftsführer" OR "Aufsichtsratsvorsitzender"', language: 'de', label: 'DACH' },
-      { q: '"CEO appointed" OR "CFO appointed" OR "managing director" OR "merger" OR "acquisition" AND ("Austria" OR "Poland" OR "Romania" OR "Hungary" OR "Czech Republic")', language: 'en', label: 'CEE' },
+      { q: '(Vorstand OR Geschäftsführer OR Aufsichtsrat OR CEO OR CFO) AND (Wien OR Österreich OR Austria)', language: 'de', label: 'AT' },
+      { q: '(Vorstandswechsel OR "neuer Vorstandsvorsitzender" OR "neuer Geschäftsführer") AND (DAX OR MDAX OR Deutschland)', language: 'de', label: 'DE' },
+      { q: '(CEO OR CFO OR "managing director" OR merger OR acquisition) AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia)', language: 'en', label: 'CEE' },
     ];
 
     const allArticles = [];
@@ -56,7 +57,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 2000,
-        messages: [{ role: 'user', content: `Extrahiere Business-Ereignisse aus diesen Nachrichten fuer Executive Search. Relevante Ereignisse: Vorstandswechsel, CEO/CFO/CHRO-Wechsel, Geschaeftsfuehrer-Wechsel, Aufsichtsrat-Bestellung/-Ruecktritt, M&A/Fusion/Uebernahme, Funding, Restrukturierung, Expansion. Prioritaet: Oesterreich, Deutschland, CEE (Polen, Rumaenien, Ungarn, Tschechien, Slowakei). trigger_type EXAKT: "CEO-Wechsel", "CFO-Wechsel", "CHRO-Wechsel", "Geschaeftsfuehrer-Wechsel", "Neuer Vorstand", "Aufsichtsrat-Bestellung", "Aufsichtsrat-Ruecktritt", "M&A / Fusion", "Funding", "Restrukturierung", "DACH-Expansion", "Sonstige". NUR JSON-Array zurueckgeben: [{"article_index": 0, "company":"Name","trigger_type":"CEO-Wechsel","description":"Beschreibung"}]. Nachrichten: ${summaries}` }]
+        messages: [{ role: 'user', content: `Extrahiere Business-Ereignisse aus diesen Nachrichten fuer Executive Search. Relevante Ereignisse: Vorstandswechsel, CEO/CFO/CHRO-Wechsel, Geschaeftsfuehrer-Wechsel, Aufsichtsrat-Bestellung/-Ruecktritt, M&A/Fusion/Uebernahme, Funding, Restrukturierung, Expansion. Prioritaet: Oesterreich, Deutschland, CEE. trigger_type EXAKT: "CEO-Wechsel", "CFO-Wechsel", "CHRO-Wechsel", "Geschaeftsfuehrer-Wechsel", "Neuer Vorstand", "Aufsichtsrat-Bestellung", "Aufsichtsrat-Ruecktritt", "M&A / Fusion", "Funding", "Restrukturierung", "DACH-Expansion", "Sonstige". NUR JSON-Array: [{"article_index": 0, "company":"Name","trigger_type":"CEO-Wechsel","description":"Beschreibung"}]. Nachrichten: ${summaries}` }]
       })
     });
 
