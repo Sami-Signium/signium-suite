@@ -1740,146 +1740,349 @@ async function handlePhotoUpload(input, prefix, num) {
   reader.readAsDataURL(file);
 }
 
-// ── DOCX DOWNLOAD ──
-async function downloadDocx(format) {
+// ── HTML MAGAZINE LAYOUT DOWNLOAD ──
+function downloadDocx(format) {
   const text = lastOutputs[format];
   if (!text) { showToast('Bitte zuerst Inhalt generieren', 'error'); return; }
 
-  const { Document, Packer, Paragraph, TextRun, HeadingLevel,
-          AlignmentType, BorderStyle, WidthType, Header, Footer,
-          PageNumber, ImageRun } = docx;
+  if (format === 'newsletter') {
+    renderNewsletterHTML(text);
+  } else if (format === 'whitepaper') {
+    renderWhitepaperHTML(text);
+  } else {
+    renderSimpleHTML(format, text);
+  }
+}
 
-  const navy = "081D4D";
-  const orange = "FF6A42";
-  const gray = "4A4F5C";
+function renderNewsletterHTML(text) {
+  const quarter = document.getElementById('nl-quarter')?.value || '';
+  const focus = document.getElementById('nl-focus')?.value || 'Leadership & Executive Search';
+  const photo1 = uploadedPhotos['nl-1'] || '';
+  const photo2 = uploadedPhotos['nl-2'] || '';
+  const date = new Date().toLocaleDateString('de-AT', {day:'2-digit', month:'long', year:'numeric'});
 
-  function makeHeader() {
-    return new Header({ children: [
-      new Paragraph({
-        children: [new TextRun({ text: "SIGNIUM AUSTRIA  ·  Stein & Partner GmbH", size: 18, color: "999999", font: "Arial" })],
-        border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: "E2E4E9", space: 4 }},
-        spacing: { after: 0 }
-      })
-    ]});
+  // Parse sections from text
+  const sections = parseNewsletterSections(text);
+
+  const html = `<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Signium Newsletter ${quarter}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #f0f2f5; color: #2c2c2c; }
+  .page { max-width: 780px; margin: 0 auto; background: white; box-shadow: 0 4px 40px rgba(0,0,0,0.15); }
+
+  /* HEADER */
+  .nl-header { background: #081D4D; padding: 0; }
+  .nl-header-top { display: flex; align-items: stretch; }
+  .nl-header-brand { padding: 32px 36px; flex: 1; }
+  .nl-brand-name { font-family: 'Cormorant Garamond', serif; font-size: 48px; font-weight: 700; color: white; letter-spacing: -1px; line-height: 1; }
+  .nl-brand-name span { color: #FF6A42; }
+  .nl-brand-sub { font-size: 11px; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 2px; margin-top: 6px; }
+  .nl-header-meta { background: #FF6A42; padding: 32px 28px; text-align: right; min-width: 180px; display: flex; flex-direction: column; justify-content: center; }
+  .nl-quarter-label { font-size: 28px; font-weight: 700; color: white; font-family: 'Cormorant Garamond', serif; }
+  .nl-date-label { font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .nl-header-bottom { background: #6BCBC2; padding: 12px 36px; }
+  .nl-focus-line { font-size: 13px; font-weight: 600; color: #081D4D; text-transform: uppercase; letter-spacing: 1.5px; }
+
+  /* HERO IMAGE */
+  .nl-hero { position: relative; overflow: hidden; height: ${photo1 ? '280px' : '0'}; }
+  .nl-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .nl-hero-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(8,29,77,0.7) 0%, transparent 50%); }
+
+  /* EDITORIAL */
+  .nl-editorial { display: flex; gap: 0; border-bottom: 3px solid #EEF0F4; }
+  .nl-editorial-accent { width: 6px; background: #FF6A42; flex-shrink: 0; }
+  .nl-editorial-body { padding: 32px 36px; background: #F7F8FA; flex: 1; }
+  .nl-editorial-label { font-size: 10px; font-weight: 700; color: #FF6A42; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+  .nl-editorial-text { font-size: 15px; line-height: 1.8; color: #2c2c2c; font-style: italic; font-family: 'Cormorant Garamond', serif; font-size: 18px; }
+  .nl-editorial-sig { margin-top: 16px; font-size: 13px; font-weight: 600; color: #081D4D; }
+
+  /* ARTICLES GRID */
+  .nl-articles { padding: 36px; display: flex; flex-direction: column; gap: 32px; }
+
+  /* Article block */
+  .nl-article { border: 1px solid #EEF0F4; border-radius: 8px; overflow: hidden; }
+  .nl-article-header { background: #081D4D; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+  .nl-article-num { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1.5px; }
+  .nl-article-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; color: white; padding: 20px 24px 0; }
+  .nl-article-body { padding: 16px 24px 24px; font-size: 14px; line-height: 1.8; color: #4A4F5C; background: white; }
+
+  /* Photo in article */
+  .nl-article-photo { width: 100%; height: 200px; object-fit: cover; display: block; }
+
+  /* Highlight box */
+  .nl-highlight { margin: 32px 36px 0; background: linear-gradient(135deg, #081D4D, #0d2a6b); border-radius: 8px; padding: 28px 32px; color: white; }
+  .nl-highlight-label { font-size: 10px; font-weight: 700; color: #6BCBC2; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; }
+  .nl-highlight-text { font-family: 'Cormorant Garamond', serif; font-size: 20px; line-height: 1.6; color: rgba(255,255,255,0.9); font-style: italic; }
+
+  /* Teal info block */
+  .nl-infoblock { margin: 24px 36px 0; background: #EDF7F6; border-left: 4px solid #6BCBC2; border-radius: 0 8px 8px 0; padding: 20px 24px; }
+  .nl-infoblock-title { font-size: 13px; font-weight: 700; color: #081D4D; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.8px; }
+  .nl-infoblock-text { font-size: 13px; line-height: 1.7; color: #4A4F5C; }
+
+  /* FOOTER */
+  .nl-footer { margin-top: 40px; background: #081D4D; padding: 32px 36px; }
+  .nl-footer-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 32px; margin-bottom: 24px; }
+  .nl-footer-brand { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; color: white; }
+  .nl-footer-brand span { color: #FF6A42; }
+  .nl-footer-contact { font-size: 12px; color: rgba(255,255,255,0.6); line-height: 1.8; text-align: right; }
+  .nl-footer-divider { height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 16px; }
+  .nl-footer-legal { font-size: 11px; color: rgba(255,255,255,0.3); text-align: center; }
+
+  /* PRINT */
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; max-width: 100%; }
+    .no-print { display: none; }
   }
 
-  function makeFooter() {
-    return new Footer({ children: [
-      new Paragraph({
-        children: [
-          new TextRun({ text: "Signium Austria  ·  www.signium.com  ·  ", size: 18, color: "BBBBBB", font: "Arial" }),
-          new TextRun({ children: [PageNumber.CURRENT], size: 18, color: "BBBBBB", font: "Arial" })
-        ],
-        border: { top: { style: BorderStyle.SINGLE, size: 4, color: "E2E4E9", space: 4 }},
-        spacing: { before: 80 }
-      })
-    ]});
-  }
+  /* PRINT BAR */
+  .print-bar { background: #FF6A42; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .print-bar span { color: white; font-size: 13px; font-weight: 600; }
+  .print-btn { padding: 8px 20px; background: white; color: #FF6A42; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+</style>
+</head>
+<body>
 
-  // Parse text into paragraphs, detect headings (##)
-  function parseContent(rawText) {
-    const lines = rawText.split('\n');
-    const paras = [];
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) { paras.push(new Paragraph({ spacing: { after: 80 } })); continue; }
-      if (trimmed.startsWith('## ')) {
-        paras.push(new Paragraph({
-          children: [new TextRun({ text: trimmed.replace(/^##\s+/, ''), bold: true, size: 28, color: navy, font: "Arial" })],
-          spacing: { before: 280, after: 100 },
-          border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: orange, space: 4 }}
-        }));
-      } else if (trimmed.startsWith('# ')) {
-        paras.push(new Paragraph({
-          children: [new TextRun({ text: trimmed.replace(/^#\s+/, ''), bold: true, size: 36, color: navy, font: "Arial" })],
-          spacing: { before: 320, after: 160 },
-          border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: orange, space: 6 }}
-        }));
-      } else if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
-        paras.push(new Paragraph({
-          children: [new TextRun({ text: trimmed.replace(/^[-•]\s+/, ''), size: 22, color: gray, font: "Arial" })],
-          bullet: { level: 0 },
-          spacing: { before: 40, after: 40 }
-        }));
-      } else {
-        paras.push(new Paragraph({
-          children: [new TextRun({ text: trimmed, size: 22, color: gray, font: "Arial" })],
-          spacing: { before: 60, after: 80 }
-        }));
-      }
-    }
-    return paras;
-  }
+<div class="print-bar no-print">
+  <span>📄 Signium Newsletter — Druckvorschau</span>
+  <button class="print-btn" onclick="window.print()">🖨 Als PDF drucken</button>
+</div>
 
-  // Title block
-  const formatTitles = {
-    whitepaper: document.getElementById('wp-topic')?.value || 'Whitepaper',
-    newsletter: 'Newsletter · ' + (document.getElementById('nl-quarter')?.value || ''),
-    press: 'Presseaussendung · ' + (document.getElementById('pr-anlass')?.value || ''),
-    linkedin: 'LinkedIn-Kampagne'
-  };
+<div class="page">
+  <!-- HEADER -->
+  <div class="nl-header">
+    <div class="nl-header-top">
+      <div class="nl-header-brand">
+        <div class="nl-brand-name">SIGNI<span>UM</span></div>
+        <div class="nl-brand-sub">Executive Search & Leadership Advisory · Austria</div>
+      </div>
+      <div class="nl-header-meta">
+        <div class="nl-quarter-label">${quarter}</div>
+        <div class="nl-date-label">${date}</div>
+      </div>
+    </div>
+    <div class="nl-header-bottom">
+      <div class="nl-focus-line">Schwerpunkt: ${focus}</div>
+    </div>
+  </div>
 
-  const children = [
-    new Paragraph({
-      children: [new TextRun({ text: formatTitles[format], bold: true, size: 52, color: navy, font: "Arial" })],
-      spacing: { before: 0, after: 60 }
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: new Date().toLocaleDateString('de-AT', {day:'2-digit',month:'long',year:'numeric'}) + '  ·  Signium Austria', size: 20, color: "888888", font: "Arial" })],
-      spacing: { before: 0, after: 480 }
-    }),
-  ];
+  ${photo1 ? `<div class="nl-hero"><img src="${photo1}" alt=""><div class="nl-hero-overlay"></div></div>` : ''}
 
-  // Add photo for whitepaper/newsletter if uploaded
-  const photoKey = format === 'whitepaper' ? 'wp-1' : 'nl-1';
-  if (uploadedPhotos[photoKey] && (format === 'whitepaper' || format === 'newsletter')) {
-    try {
-      const base64 = uploadedPhotos[photoKey].split(',')[1];
-      const mimeMatch = uploadedPhotos[photoKey].match(/data:([^;]+);/);
-      const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-      const imgType = mimeType.includes('png') ? 'png' : 'jpg';
-      children.push(new Paragraph({
-        children: [new ImageRun({ data: base64, transformation: { width: 560, height: 220 }, type: imgType })],
-        spacing: { after: 320 }
-      }));
-    } catch(e) { /* skip photo on error */ }
-  }
+  <!-- EDITORIAL -->
+  <div class="nl-editorial">
+    <div class="nl-editorial-accent"></div>
+    <div class="nl-editorial-body">
+      <div class="nl-editorial-label">Editorial</div>
+      <div class="nl-editorial-text">${sections.editorial || sections.all[0] || ''}</div>
+      <div class="nl-editorial-sig">— Sami Harrach, Managing Partner</div>
+    </div>
+  </div>
 
-  children.push(...parseContent(text));
+  <!-- ARTICLES -->
+  <div class="nl-articles">
+    ${sections.articles.map((art, i) => `
+    <div class="nl-article">
+      <div class="nl-article-header">
+        <span class="nl-article-num">Artikel ${i+1}</span>
+      </div>
+      ${art.title ? `<div class="nl-article-title">${art.title}</div>` : ''}
+      ${i === 0 && photo2 ? `<img class="nl-article-photo" src="${photo2}" alt="">` : ''}
+      <div class="nl-article-body">${art.body.replace(/\n/g,'<br>')}</div>
+    </div>`).join('')}
+  </div>
 
-  // Second photo for newsletter
-  if (format === 'newsletter' && uploadedPhotos['nl-2']) {
-    try {
-      const base64 = uploadedPhotos['nl-2'].split(',')[1];
-      const mimeMatch = uploadedPhotos['nl-2'].match(/data:([^;]+);/);
-      const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-      const imgType = mimeType.includes('png') ? 'png' : 'jpg';
-      children.push(new Paragraph({
-        children: [new ImageRun({ data: base64, transformation: { width: 400, height: 200 }, type: imgType })],
-        spacing: { before: 240, after: 160 }
-      }));
-    } catch(e) { /* skip */ }
-  }
+  ${sections.outlook ? `
+  <div class="nl-highlight">
+    <div class="nl-highlight-label">Marktausblick</div>
+    <div class="nl-highlight-text">${sections.outlook.replace(/\n/g,'<br>')}</div>
+  </div>` : ''}
 
-  const doc = new Document({
-    sections: [{
-      properties: {
-        page: { size: { width: 11906, height: 16838 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }}
-      },
-      headers: { default: makeHeader() },
-      footers: { default: makeFooter() },
-      children
-    }]
-  });
+  <div class="nl-infoblock">
+    <div class="nl-infoblock-title">Über Signium Austria</div>
+    <div class="nl-infoblock-text">Signium Austria — Stein & Partner GmbH ist Teil von Signium International, einem globalen Executive Search Netzwerk mit Präsenz in 40+ Ländern. Wir sind spezialisiert auf die Besetzung von Führungspositionen im DACH/CEE-Raum.</div>
+  </div>
 
-  const blob = await Packer.toBlob(doc);
+  <!-- FOOTER -->
+  <div class="nl-footer">
+    <div class="nl-footer-top">
+      <div>
+        <div class="nl-footer-brand">SIGNI<span>UM</span></div>
+      </div>
+      <div class="nl-footer-contact">
+        Sami Harrach · Managing Partner<br>
+        sami.harrach@signium.com<br>
+        www.signium.com/austria
+      </div>
+    </div>
+    <div class="nl-footer-divider"></div>
+    <div class="nl-footer-legal">© ${new Date().getFullYear()} Signium Austria — Stein & Partner GmbH · Alle Rechte vorbehalten</div>
+  </div>
+</div>
+
+</body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `Signium_${format}_${new Date().toISOString().split('T')[0]}.docx`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('DOCX wird heruntergeladen ✓', 'success');
+  window.open(url, '_blank');
+  showToast('Newsletter geöffnet — "Als PDF drucken" oben rechts ✓', 'success');
+}
+
+function parseNewsletterSections(text) {
+  const lines = text.split('\n');
+  let editorial = '';
+  let outlook = '';
+  const articles = [];
+  let currentArticle = null;
+  let mode = 'editorial';
+
+  for (const line of lines) {
+    const t = line.trim();
+    if (!t) continue;
+
+    const isHeading = t.startsWith('#') || /^(Betreff|Betreffzeile|Editorial|Marktausblick|Closing|Kontakt|Artikel|Thema|Hauptthema)/i.test(t);
+
+    if (/marktausblick|ausblick|outlook/i.test(t) && isHeading) {
+      if (currentArticle) { articles.push(currentArticle); currentArticle = null; }
+      mode = 'outlook'; continue;
+    }
+    if (/closing|kontakt|abschluss|über uns/i.test(t) && isHeading) {
+      if (currentArticle) { articles.push(currentArticle); currentArticle = null; }
+      mode = 'closing'; continue;
+    }
+    if (/betreff|betreffzeile/i.test(t) && isHeading) continue; // skip subject line
+    if ((/editorial|einleitung|liebe|sehr geehrte/i.test(t) || mode === 'editorial') && !currentArticle) {
+      if (!/^#/.test(t)) editorial += (editorial ? ' ' : '') + t;
+      continue;
+    }
+    if (/^##?\s+/.test(t) || (isHeading && (t.length < 80))) {
+      if (currentArticle) articles.push(currentArticle);
+      currentArticle = { title: t.replace(/^#+\s*/, ''), body: '' };
+      mode = 'article'; continue;
+    }
+
+    if (mode === 'outlook') { outlook += (outlook ? '\n' : '') + t; }
+    else if (currentArticle) { currentArticle.body += (currentArticle.body ? '\n' : '') + t; }
+    else { editorial += (editorial ? ' ' : '') + t; }
+  }
+  if (currentArticle) articles.push(currentArticle);
+
+  // Fallback: if no articles parsed, split raw text into blocks
+  if (articles.length === 0) {
+    const chunks = text.split(/\n{2,}/);
+    chunks.slice(1).forEach((c, i) => {
+      if (c.trim()) articles.push({ title: '', body: c.trim() });
+    });
+    if (!editorial && chunks[0]) editorial = chunks[0].trim();
+  }
+
+  return { editorial, articles: articles.slice(0, 4), outlook, all: [text] };
+}
+
+function renderWhitepaperHTML(text) {
+  const topic = document.getElementById('wp-topic')?.value || 'Whitepaper';
+  const date = new Date().toLocaleDateString('de-AT', {day:'2-digit', month:'long', year:'numeric'});
+  const photo1 = uploadedPhotos['wp-1'] || '';
+
+  const lines = text.split('\n');
+  let bodyHtml = '';
+  for (const line of lines) {
+    const t = line.trim();
+    if (!t) { bodyHtml += '<br>'; continue; }
+    if (t.startsWith('## ')) bodyHtml += `<h2>${t.replace(/^##\s*/,'')}</h2>`;
+    else if (t.startsWith('# ')) bodyHtml += `<h1>${t.replace(/^#\s*/,'')}</h1>`;
+    else if (t.startsWith('- ') || t.startsWith('• ')) bodyHtml += `<li>${t.replace(/^[-•]\s*/,'')}</li>`;
+    else bodyHtml += `<p>${t}</p>`;
+  }
+
+  const html = `<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>${topic} · Signium Austria</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #f0f2f5; }
+  .page { max-width: 780px; margin: 0 auto; background: white; box-shadow: 0 4px 40px rgba(0,0,0,0.15); }
+  .wp-header { background: #081D4D; padding: 48px 48px 36px; }
+  .wp-label { font-size: 10px; font-weight: 700; color: #6BCBC2; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; }
+  .wp-title { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 700; color: white; line-height: 1.25; margin-bottom: 16px; }
+  .wp-meta { font-size: 12px; color: rgba(255,255,255,0.45); }
+  .wp-accent { height: 4px; background: linear-gradient(to right, #FF6A42, #6BCBC2); }
+  ${photo1 ? `.wp-hero { height: 260px; overflow: hidden; } .wp-hero img { width: 100%; height: 100%; object-fit: cover; }` : ''}
+  .wp-body { padding: 48px; }
+  .wp-body h1 { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; color: #081D4D; margin: 40px 0 12px; padding-bottom: 10px; border-bottom: 3px solid #FF6A42; }
+  .wp-body h2 { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; color: #081D4D; margin: 32px 0 10px; padding-bottom: 8px; border-bottom: 1.5px solid #EEF0F4; }
+  .wp-body p { font-size: 14px; line-height: 1.85; color: #4A4F5C; margin-bottom: 14px; }
+  .wp-body li { font-size: 14px; line-height: 1.7; color: #4A4F5C; margin: 6px 0 6px 20px; }
+  .wp-body br { display: block; margin: 6px 0; content: ''; }
+  .wp-footer { background: #081D4D; padding: 24px 48px; display: flex; justify-content: space-between; align-items: center; }
+  .wp-footer-brand { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: white; font-weight: 700; }
+  .wp-footer-brand span { color: #FF6A42; }
+  .wp-footer-info { font-size: 11px; color: rgba(255,255,255,0.4); text-align: right; line-height: 1.7; }
+  .print-bar { background: #FF6A42; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .print-bar span { color: white; font-size: 13px; font-weight: 600; }
+  .print-btn { padding: 8px 20px; background: white; color: #FF6A42; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  @media print { body { background: white; } .page { box-shadow: none; } .print-bar { display: none; } }
+</style>
+</head>
+<body>
+<div class="print-bar">
+  <span>📄 Whitepaper Vorschau · Signium Austria</span>
+  <button class="print-btn" onclick="window.print()">🖨 Als PDF drucken</button>
+</div>
+<div class="page">
+  <div class="wp-header">
+    <div class="wp-label">Whitepaper · Signium Austria</div>
+    <div class="wp-title">${topic}</div>
+    <div class="wp-meta">${date} · Signium Austria — Stein & Partner GmbH</div>
+  </div>
+  <div class="wp-accent"></div>
+  ${photo1 ? `<div class="wp-hero"><img src="${photo1}" alt=""></div>` : ''}
+  <div class="wp-body">${bodyHtml}</div>
+  <div class="wp-footer">
+    <div class="wp-footer-brand">SIGNI<span>UM</span></div>
+    <div class="wp-footer-info">Sami Harrach · Managing Partner<br>sami.harrach@signium.com · www.signium.com</div>
+  </div>
+</div>
+</body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  window.open(URL.createObjectURL(blob), '_blank');
+  showToast('Whitepaper geöffnet — "Als PDF drucken" oben ✓', 'success');
+}
+
+function renderSimpleHTML(format, text) {
+  const titles = { press: 'Presseaussendung', linkedin: 'LinkedIn-Kampagne' };
+  const date = new Date().toLocaleDateString('de-AT', {day:'2-digit',month:'long',year:'numeric'});
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'DM Sans', sans-serif; background: #f0f2f5; }
+  .page { max-width: 720px; margin: 40px auto; background: white; border-radius: 8px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); overflow: hidden; }
+  .ph { background: #081D4D; padding: 32px 40px; }
+  .ph h1 { color: white; font-size: 24px; font-weight: 700; }
+  .ph p { color: rgba(255,255,255,0.5); font-size: 12px; margin-top: 6px; }
+  .pb { padding: 40px; font-size: 14px; line-height: 1.85; color: #4A4F5C; white-space: pre-wrap; }
+  .pf { background: #081D4D; padding: 16px 40px; font-size: 11px; color: rgba(255,255,255,0.4); }
+  .print-bar { background: #FF6A42; padding: 10px 24px; display:flex; justify-content:space-between; align-items:center; }
+  .print-bar span { color:white; font-size:13px; font-weight:600; }
+  .print-btn { padding:7px 18px; background:white; color:#FF6A42; border:none; border-radius:5px; font-size:13px; font-weight:700; cursor:pointer; }
+  @media print { .print-bar { display:none; } body { background:white; } .page { box-shadow:none; } }
+</style></head><body>
+<div class="print-bar"><span>Signium Austria · ${titles[format]||format}</span><button class="print-btn" onclick="window.print()">🖨 Als PDF drucken</button></div>
+<div class="page">
+  <div class="ph"><h1>${titles[format]||format}</h1><p>${date} · Signium Austria</p></div>
+  <div class="pb">${text.replace(/</g,'&lt;')}</div>
+  <div class="pf">© ${new Date().getFullYear()} Signium Austria — Stein & Partner GmbH</div>
+</div></body></html>`;
+  window.open(URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'})), '_blank');
+  showToast('Dokument geöffnet — "Als PDF drucken" ✓', 'success');
 }
 
 // ── ARCHIVE ──
