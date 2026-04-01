@@ -81,13 +81,13 @@ function bullet(text) {
 
 function companyHeader(datePart, companyPart) {
   const dateRpr = rpr({ sz: 22, color: '414042' });
-  const companyRpr = rpr({ sz: 28, color: '262626', bold: true });
+  const companyRpr = rpr({ sz: 24, color: '262626', bold: true });
   let ppr = `<w:pStyle w:val="Amrop-header"/>`;
   ppr += `<w:spacing w:before="120" w:after="120"/>`;
   ppr += rpr({ sz: 22, color: '414042' });
   if (companyPart) {
     return `<w:p><w:pPr>${ppr}</w:pPr>
-      <w:r>${dateRpr}<w:t xml:space="preserve">${xe(datePart)}: </w:t><w:tab/></w:r>
+      <w:r>${dateRpr}<w:t xml:space="preserve">${xe(datePart)}</w:t><w:tab/></w:r>
       <w:r>${companyRpr}<w:t xml:space="preserve">${xe(companyPart)}</w:t></w:r>
     </w:p>`;
   }
@@ -355,8 +355,9 @@ function buildBodyXml(reportText, candidateName, position, client, datum) {
           // Date on its own line, company name on next line
           if (!firstCompany) parts.push(hr());
           firstCompany = false;
-          parts.push(companyHeader(line, nextLine));
-          i += 2; // skip both date and company lines
+          const companyName = nextLine.trim();
+          parts.push(companyHeader(line, companyName));
+          i += 2; // skip date line AND company name line
         } else if (isCompanyDesc) {
           const r = rpr({ sz: 22, color: '595959', italic: true });
           parts.push(`<w:p><w:pPr><w:pStyle w:val="Listing1"/><w:spacing w:before="60" w:after="60"/>${r}</w:pPr>
