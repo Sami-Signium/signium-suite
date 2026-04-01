@@ -60,25 +60,24 @@ function hr() {
   return np('________________________________________________________________________________', 60, 60, { color: 'CCCCCC', sz: 16 });
 }
 
-function bullet(text, before, after) {
-  const spacing = `<w:spacing w:before="${before||60}" w:after="${after||120}"/>`;
+function bullet(text) {
   const r = rpr({ sz: 24, color: '262626' });
   return `<w:p>
     <w:pPr>
       <w:pStyle w:val="Listenabsatz"/>
       <w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>
-      ${spacing}
-      ${rpr({ sz: 24, color: '262626' })}
+      <w:spacing w:before="60" w:after="120"/>
+      ${r}
     </w:pPr>
     <w:r>${r}<w:t xml:space="preserve">${xe(text)}</w:t></w:r>
   </w:p>`;
 }
 
-function companyHeader(datePart, companyPart, before, after) {
+function companyHeader(datePart, companyPart) {
   const dateRpr = rpr({ sz: 22, color: '414042' });
   const companyRpr = rpr({ sz: 28, color: '262626', bold: true });
   let ppr = `<w:pStyle w:val="Amrop-header"/>`;
-  ppr += `<w:spacing w:before="${before||120}" w:after="${after||120}"/>`;
+  ppr += `<w:spacing w:before="120" w:after="120"/>`;
   ppr += rpr({ sz: 22, color: '414042' });
   if (companyPart) {
     return `<w:p><w:pPr>${ppr}</w:pPr>
@@ -100,28 +99,49 @@ function sectionHead(text, pageBreak) {
   return `<w:p><w:pPr>${ppr}</w:pPr><w:r>${r}<w:t xml:space="preserve">${xe(text)}</w:t></w:r></w:p>`;
 }
 
+// Sub-heading within a section (no page break, smaller)
+function subHead(text) {
+  const r = rpr({ major: true, bold: true, sz: 24, color: '102E66' });
+  return `<w:p><w:pPr><w:spacing w:before="200" w:after="60"/>${r}</w:pPr><w:r>${r}<w:t xml:space="preserve">${xe(text)}</w:t></w:r></w:p>`;
+}
+
 const SECTION_KEYS = [
   'PERSOENLICHE ANGABEN','PERSONAL DETAILS',
+  'PERSÖNLICHE ANGABEN',
   'AUSBILDUNG UND QUALIFIKATIONEN','AUSBILDUNG','EDUCATION & QUALIFICATIONS','EDUCATION',
-  'VERGUETUNG UND VERFUEGBARKEIT','VERGUETUNG','COMPENSATION & AVAILABILITY','COMPENSATION',
+  'VERGUETUNG UND VERFUEGBARKEIT','VERGUETUNG','VERGÜTUNG','COMPENSATION & AVAILABILITY','COMPENSATION',
   'KARRIERE ZUSAMMENFASSUNG','CAREER SUMMARY',
   'KANDIDATENBEWERTUNG','CANDIDATE ASSESSMENT','CANDIDATE EVALUATION',
-  'FACHLICHES RESUEMEE','PROFESSIONAL SUMMARY',
-  'BEWERTUNG','PERSONALITY',
+  'FACHLICHES RESÜMEE','FACHLICHES RESUEMEE','PROFESSIONAL SUMMARY',
+  'BEWERTUNG','PERSONALITY','PERSÖNLICHKEIT',
   'BEWERBERMOTIVATION','MOTIVATION','KANDIDATENMOTIVATION',
+  'EMPFEHLUNG','RECOMMENDATION',
   'BERUFSERFAHRUNG','BERUFLICHER WERDEGANG','WORK EXPERIENCE','PROFESSIONAL EXPERIENCE',
   'ANMERKUNGEN ZUM WERDEGANG'
 ];
 
 function needsPageBreak(key) {
   const u = key.toUpperCase();
+  // Page 2: Personal details
   if (u.includes('PERS') && (u.includes('NLICH') || u.includes('ONAL'))) return true;
-  if (u.includes('VERG') || u.includes('COMPENSATION')) return true;
-  if (u.includes('KARRIERE') || u.includes('CAREER')) return true;
-  if (u.includes('FACHLICH') || u.includes('PROFESSIONAL SUMMARY')) return true;
-  if (u.includes('BEWERTUNG') || u.includes('PERSONALITY')) return true;
+  // Page 3: Education (new page after cover+personal)
+  if (u.includes('AUSBILDUNG') || u.includes('EDUCATION')) return true;
+  // Page 4: Career summary
+  if (u.includes('KARRIERE') || u.includes('CAREER SUMMARY')) return true;
+  // Page 5: Candidate assessment (covers Fachliches + Bewertung + Motivation)
+  if (u.includes('KANDIDATENBEWERTUNG') || u.includes('CANDIDATE ASSESSMENT') || u.includes('CANDIDATE EVALUATION')) return true;
+  // Page 6: Professional experience
   if (u.includes('BERUFS') || u.includes('BERUFLICHER') || u.includes('WORK EXP') || u.includes('PROFESSIONAL EXP')) return true;
+  // No page break for sub-sections within assessment
   return false;
+}
+
+function isSubSection(key) {
+  const u = key.toUpperCase();
+  return u.includes('FACHLICH') || u.includes('PROFESSIONAL SUMMARY') ||
+         u.includes('BEWERTUNG') || u.includes('PERSONALITY') || u.includes('PERSÖNLICHKEIT') ||
+         u.includes('BEWERBERMOTIVATION') || u.includes('MOTIVATION') ||
+         u.includes('EMPFEHLUNG') || u.includes('RECOMMENDATION');
 }
 
 function parseReport(raw) {
@@ -143,10 +163,40 @@ function parseReport(raw) {
   return result;
 }
 
+// Always render personal details section, even if empty
+function renderPersonalSection(content) {
+  const parts = [];
+  const fields = ['Name','Geburtsdatum','Wohnort','Nationalität','Sprachen','Familienstand'];
+  const parsed = {};
+  for (const line of content) {
+    if (line.includes(':')) {
+      const idx = line.indexOf(':');
+      parsed[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+    }
+  }
+  // Always show all standard fields
+  for (const field of fields) {
+    const value = parsed[field] || '';
+    parts.push(personalRow(field, value));
+  }
+  // Show any extra fields from content
+  for (const line of content) {
+    if (line.includes(':')) {
+      const idx = line.indexOf(':');
+      const label = line.slice(0, idx).trim();
+      if (!fields.includes(label)) {
+        parts.push(personalRow(label, line.slice(idx + 1).trim()));
+      }
+    }
+  }
+  return parts;
+}
+
 function buildBodyXml(reportText, candidateName, position, client, datum) {
   const sections = parseReport(reportText);
   const parts = [];
 
+  // Cover page
   parts.push(`<w:p><w:pPr><w:pStyle w:val="Titleheader"/><w:spacing w:before="120" w:after="0"/></w:pPr>
     ${run((candidateName || 'KANDIDAT').toUpperCase(), { major: true, bold: true, sz: 52, color: '414042' })}</w:p>`);
   parts.push(`<w:p><w:pPr><w:pStyle w:val="Coverdoctitle"/><w:spacing w:before="4080" w:after="0"/></w:pPr>
@@ -158,37 +208,54 @@ function buildBodyXml(reportText, candidateName, position, client, datum) {
   parts.push(`<w:p><w:pPr><w:pStyle w:val="Coverdate"/><w:spacing w:before="120" w:after="1000"/></w:pPr>
     ${run(datum || '', { sz: 22, color: '414042' })}</w:p>`);
   parts.push(np('', 120));
-  parts.push(np('Dieser Vertrauliche Bericht enthaelt zum Teil Informationen, die uns unter Zusicherung strengster Vertraulichkeit mitgeteilt wurden.', 120, undefined, { italic: true, color: '595959', sz: 18, jc: 'both' }));
+  parts.push(np('Dieser Vertrauliche Bericht enthält zum Teil Informationen, die uns unter Zusicherung strengster Vertraulichkeit mitgeteilt wurden. Entsprechend unseren berufsethischen Prinzipien müssen wir Sie dazu verpflichten, nur einer begrenzten Auswahl von Personen Einsicht in diese Berichte zu gewähren.', 120, undefined, { italic: true, color: '595959', sz: 18, jc: 'both' }));
   parts.push(np('', 120));
+
+  // Check if personal section exists in report
+  const hasPersonal = sections.some(s => {
+    const u = s.key.toUpperCase();
+    return u.includes('PERS') && (u.includes('NLICH') || u.includes('ONAL'));
+  });
+
+  // If no personal section, add empty one
+  if (!hasPersonal) {
+    parts.push(sectionHead('PERSÖNLICHE ANGABEN', true));
+    parts.push(hr());
+    parts.push(...renderPersonalSection([]));
+    parts.push(np('', 120));
+  }
 
   for (const section of sections) {
     if (section.key === 'HEADER') continue;
     const content = section.lines.map(l => l.trim()).filter(Boolean);
-    if (!content.length) continue;
 
     const ku = section.key.toUpperCase();
     const isPersonal = ku.includes('PERS') && (ku.includes('NLICH') || ku.includes('ONAL'));
     const isExperience = ku.includes('BERUFS') || ku.includes('BERUFLICHER') || ku.includes('WORK EXP') || ku.includes('PROFESSIONAL EXP');
-    const isKarriere = ku.includes('KARRIERE') || ku.includes('CAREER');
+    const isKarriere = ku.includes('KARRIERE') || ku.includes('CAREER SUMMARY');
     const isVergutung = ku.includes('VERG') || ku.includes('COMPENSATION');
-    const isKandidaten = ku.includes('FACHLICH') || ku.includes('BEWERTUNG') || ku.includes('PERSONALITY') || ku.includes('KANDIDATEN') || ku.includes('MOTIVATION');
+    const isKandidatenBewertung = ku.includes('KANDIDATENBEWERTUNG') || ku.includes('CANDIDATE ASSESSMENT') || ku.includes('CANDIDATE EVALUATION');
+    const isSubSec = isSubSection(section.key);
     const pageBreak = needsPageBreak(section.key);
 
-    parts.push(sectionHead(section.key.toUpperCase(), pageBreak));
-    parts.push(hr());
+    // Sub-sections get sub-heading, main sections get full heading
+    if (isSubSec) {
+      if (content.length === 0) continue; // skip empty sub-sections
+      parts.push(subHead(section.key.toUpperCase()));
+      parts.push(hr());
+    } else {
+      parts.push(sectionHead(section.key.toUpperCase(), pageBreak));
+      parts.push(hr());
+    }
 
     if (isPersonal) {
-      for (const line of content) {
-        if (line.includes(':')) {
-          const idx = line.indexOf(':');
-          parts.push(personalRow(line.slice(0, idx).trim(), line.slice(idx + 1).trim()));
-        } else { parts.push(personalRow(line, '')); }
-      }
+      parts.push(...renderPersonalSection(content));
       parts.push(np('', 120));
       continue;
     }
 
     if (isVergutung) {
+      if (content.length === 0) { parts.push(np('', 120)); continue; }
       for (const line of content) {
         if (line.includes(':')) {
           const idx = line.indexOf(':');
@@ -207,6 +274,7 @@ function buildBodyXml(reportText, candidateName, position, client, datum) {
     }
 
     if (isKarriere) {
+      if (content.length === 0) { parts.push(np('', 120)); continue; }
       for (const line of content) {
         const pipeParts = line.split('|').map(s => s.trim());
         if (pipeParts.length >= 2) {
@@ -224,7 +292,16 @@ function buildBodyXml(reportText, candidateName, position, client, datum) {
       continue;
     }
 
-    if (isKandidaten) {
+    // KANDIDATENBEWERTUNG is just a title page — no content needed
+    if (isKandidatenBewertung) {
+      parts.push(np('', 120));
+      continue;
+    }
+
+    // Sub-sections and other text sections
+    if (content.length === 0) { parts.push(np('', 120)); continue; }
+
+    if (isSubSec || isKandidatenBewertung) {
       for (const line of content) {
         if (!line.trim()) continue;
         if (/^[-•]/.test(line)) { parts.push(bullet(line.replace(/^[-•]\s*/, ''))); }
@@ -241,15 +318,17 @@ function buildBodyXml(reportText, candidateName, position, client, datum) {
         const line = content[i];
         const isBullet = /^[-\u2013\u2022]/.test(line);
         const isCompanyDesc = /^\*/.test(line);
-        const isDateHeader = /^(Jan|Feb|M.r|Apr|Mai|Jun|Jul|Aug|Sep|Okt|Nov|Dez|Oct|Mar|Januar|Februar|M.rz|April|Juni|Juli|August|September|Oktober|November|Dezember|January|February|March|April|May|June|July|August|September|October|November|December|\d{2}\/\d{4}|\d{4})/.test(line) && !isBullet;
+        const isDateHeader = /^(Jan|Feb|M.r|Apr|Mai|Jun|Jul|Aug|Sep|Okt|Nov|Dez|Oct|Mar|Januar|Februar|M.rz|April|Juni|Juli|August|September|Oktober|November|Dezember|January|February|March|April|May|June|July|August|September|October|November|December|\d{2}\/\d{4}|\d{4}|seit\s)/.test(line) && !isBullet;
         if (isDateHeader) {
           if (!firstCompany) parts.push(hr());
           firstCompany = false;
           let datePart = line, companyPart = '';
           const colonIdx = line.indexOf(': ');
           const dashIdx = line.indexOf(' - ');
+          const dashIdx2 = line.indexOf(' – ');
           if (colonIdx > 4) { datePart = line.slice(0, colonIdx); companyPart = line.slice(colonIdx + 2); }
           else if (dashIdx > 4) { datePart = line.slice(0, dashIdx); companyPart = line.slice(dashIdx + 3); }
+          else if (dashIdx2 > 4) { datePart = line.slice(0, dashIdx2); companyPart = line.slice(dashIdx2 + 3); }
           parts.push(companyHeader(datePart, companyPart));
         } else if (isCompanyDesc) {
           const r = rpr({ sz: 22, color: '595959', italic: true });
