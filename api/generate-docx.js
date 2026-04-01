@@ -49,7 +49,6 @@ function np(text, before, after, opts) {
 function personalRow(label, value) {
   const labelRpr = rpr({ sz: 22, color: '414042' });
   const valueRpr = rpr({ sz: 22, color: '262626' });
-  // Use a fixed tab stop at 3600 DXA (about 6.35cm) for alignment
   return `<w:p>
     <w:pPr>
       <w:pStyle w:val="SPTBodytext66"/>
@@ -57,7 +56,7 @@ function personalRow(label, value) {
       ${rpr({ sz: 22 })}
     </w:pPr>
     <w:r>${labelRpr}<w:t>${xe(label)}</w:t></w:r>
-    <w:r>${labelRpr}<w:tab/></w:r>
+    <w:r><w:tab/></w:r>
     <w:r>${valueRpr}<w:t xml:space="preserve">${xe(value)}</w:t></w:r>
   </w:p>`;
 }
@@ -130,22 +129,23 @@ function needsPageBreak(key) {
   const u = key.toUpperCase();
   // Page 2: Personal details
   if (u.includes('PERS') && (u.includes('NLICH') || u.includes('ONAL'))) return true;
-  // Page 3: Education (new page after cover+personal)
+  // Page 3: Education
   if (u.includes('AUSBILDUNG') || u.includes('EDUCATION')) return true;
   // Page 4: Career summary
   if (u.includes('KARRIERE') || u.includes('CAREER SUMMARY')) return true;
-  // Page 5: Candidate assessment (covers Fachliches + Bewertung + Motivation)
+  // Page 5: Candidate assessment section starts here
   if (u.includes('KANDIDATENBEWERTUNG') || u.includes('CANDIDATE ASSESSMENT') || u.includes('CANDIDATE EVALUATION')) return true;
+  // FACHLICHES starts new page (in case KANDIDATENBEWERTUNG is skipped by AI)
+  if (u.includes('FACHLICH') || u.includes('PROFESSIONAL SUMMARY')) return true;
   // Page 6: Professional experience
   if (u.includes('BERUFS') || u.includes('BERUFLICHER') || u.includes('WORK EXP') || u.includes('PROFESSIONAL EXP')) return true;
-  // No page break for sub-sections within assessment
   return false;
 }
 
 function isSubSection(key) {
   const u = key.toUpperCase();
-  return u.includes('FACHLICH') || u.includes('PROFESSIONAL SUMMARY') ||
-         u.includes('BEWERTUNG') || u.includes('PERSONALITY') || u.includes('PERSÖNLICHKEIT') ||
+  // These are sub-sections within KANDIDATENBEWERTUNG — no page break
+  return u.includes('BEWERTUNG') || u.includes('PERSONALITY') || u.includes('PERSÖNLICHKEIT') ||
          u.includes('BEWERBERMOTIVATION') || u.includes('MOTIVATION') ||
          u.includes('EMPFEHLUNG') || u.includes('RECOMMENDATION');
 }
