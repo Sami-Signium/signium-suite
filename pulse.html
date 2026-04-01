@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
 <style>
   :root {
     --navy: #081D4D;
@@ -759,12 +761,63 @@
   .toast.success { background: var(--success); }
   .toast.error { background: #e74c3c; }
 
+  /* ── UPLOAD ZONES ── */
+  .upload-zone {
+    border: 2px dashed var(--gray-mid);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    background: var(--off-white);
+    position: relative;
+  }
+  .upload-zone:hover { border-color: var(--orange); background: #fff8f6; }
+  .upload-zone.has-file { border-color: var(--teal); border-style: solid; background: #f0faf9; }
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-zone-icon { font-size: 24px; margin-bottom: 6px; }
+  .upload-zone-text { font-size: 13px; color: var(--gray-sub); }
+  .upload-zone-text strong { color: var(--navy); }
+  .upload-file-name {
+    font-size: 12px; color: var(--teal); font-weight: 600; margin-top: 4px;
+  }
+  .upload-section-title {
+    font-size: 13px; font-weight: 600; color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.8px;
+    margin-bottom: 12px; margin-top: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .upload-section-title::after {
+    content: ''; flex: 1; height: 1px; background: var(--gray-light);
+  }
+
+  /* Photo upload grid */
+  .photo-upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .photo-preview {
+    width: 100%; height: 90px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-top: 6px;
+    display: none;
+  }
+  .photo-preview.visible { display: block; }
+
+  /* Download button */
+  .action-btn.download {
+    background: linear-gradient(135deg, var(--navy), var(--navy-light));
+    color: white; border-color: var(--navy);
+  }
+  .action-btn.download:hover { background: var(--navy-light); }
+
   @media (max-width: 768px) {
     .format-grid { grid-template-columns: 1fr 1fr; }
     .form-row.cols-2, .form-row.cols-3 { grid-template-columns: 1fr; }
     .content { padding: 20px 16px; }
     .header { padding: 0 16px; }
     .header-tagline { display: none; }
+    .photo-upload-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -938,6 +991,29 @@
               <textarea id="wp-thesis" rows="4" placeholder="Was ist Ihre zentrale Aussage? Welche Erfahrungen / Daten möchten Sie einbringen?"></textarea>
             </div>
           </div>
+
+          <div class="upload-section-title">📎 Quellen & Fotos (optional)</div>
+          <div class="form-row cols-2">
+            <div>
+              <label>Quelldokument hochladen (PDF/DOCX)</label>
+              <div class="upload-zone" id="wp-doc-zone">
+                <input type="file" accept=".pdf,.docx" onchange="handleDocUpload(this,'wp')">
+                <div class="upload-zone-icon">📄</div>
+                <div class="upload-zone-text"><strong>Klicken</strong> oder Datei hierher ziehen<br>Studie, Artikel, Global Newsletter</div>
+                <div class="upload-file-name" id="wp-doc-name"></div>
+              </div>
+            </div>
+            <div>
+              <label>Titelbild hochladen</label>
+              <div class="upload-zone" id="wp-photo-zone">
+                <input type="file" accept="image/*" onchange="handlePhotoUpload(this,'wp','1')">
+                <div class="upload-zone-icon">🖼</div>
+                <div class="upload-zone-text"><strong>Klicken</strong> oder Bild hierher ziehen</div>
+                <div class="upload-file-name" id="wp-photo-name-1"></div>
+              </div>
+              <img id="wp-photo-preview-1" class="photo-preview">
+            </div>
+          </div>
           <div style="display:flex;gap:10px;">
             <button class="generate-btn" id="btn-wp-outline" onclick="generate('whitepaper-outline')" style="background:var(--navy);">
               <div class="spinner"></div>
@@ -955,6 +1031,7 @@
               <div class="output-actions">
                 <button class="action-btn teal" onclick="saveToArchive('whitepaper')">💾 Archivieren</button>
                 <button class="action-btn primary" onclick="copyAll('whitepaper')">📋 Kopieren</button>
+                <button class="action-btn download" onclick="downloadDocx('whitepaper')">⬇ DOCX</button>
               </div>
             </div>
             <div class="text-output" id="wp-text"></div>
@@ -997,6 +1074,40 @@
               <textarea id="nl-editorial" rows="3" placeholder="Was möchten Sie persönlich einleiten? Highlight des Quartals?"></textarea>
             </div>
           </div>
+
+          <div class="upload-section-title">📎 Quellen & Fotos (optional)</div>
+          <div class="form-row cols-2">
+            <div>
+              <label>Quelldokument hochladen (PDF/DOCX)</label>
+              <div class="upload-zone" id="nl-doc-zone">
+                <input type="file" accept=".pdf,.docx" onchange="handleDocUpload(this,'nl')">
+                <div class="upload-zone-icon">📄</div>
+                <div class="upload-zone-text"><strong>Klicken</strong> oder Datei hierher ziehen<br>Global Newsletter, Studien, Artikel</div>
+                <div class="upload-file-name" id="nl-doc-name"></div>
+              </div>
+            </div>
+            <div>
+              <label>Fotos (bis zu 2)</label>
+              <div class="photo-upload-grid">
+                <div>
+                  <div class="upload-zone" id="nl-photo-zone-1">
+                    <input type="file" accept="image/*" onchange="handlePhotoUpload(this,'nl','1')">
+                    <div class="upload-zone-icon">🖼</div>
+                    <div class="upload-zone-text" style="font-size:11px">Foto 1</div>
+                  </div>
+                  <img id="nl-photo-preview-1" class="photo-preview">
+                </div>
+                <div>
+                  <div class="upload-zone" id="nl-photo-zone-2">
+                    <input type="file" accept="image/*" onchange="handlePhotoUpload(this,'nl','2')">
+                    <div class="upload-zone-icon">🖼</div>
+                    <div class="upload-zone-text" style="font-size:11px">Foto 2</div>
+                  </div>
+                  <img id="nl-photo-preview-2" class="photo-preview">
+                </div>
+              </div>
+            </div>
+          </div>
           <button class="generate-btn" id="btn-nl" onclick="generate('newsletter')">
             <div class="spinner"></div>
             <span class="btn-label">Newsletter generieren</span>
@@ -1008,6 +1119,7 @@
               <div class="output-actions">
                 <button class="action-btn teal" onclick="saveToArchive('newsletter')">💾 Archivieren</button>
                 <button class="action-btn primary" onclick="copyAll('newsletter')">📋 Kopieren</button>
+                <button class="action-btn download" onclick="downloadDocx('newsletter')">⬇ DOCX</button>
               </div>
             </div>
             <div class="text-output" id="nl-text"></div>
@@ -1067,6 +1179,7 @@
               <div class="output-actions">
                 <button class="action-btn teal" onclick="saveToArchive('press')">💾 Archivieren</button>
                 <button class="action-btn primary" onclick="copyAll('press')">📋 Kopieren</button>
+                <button class="action-btn download" onclick="downloadDocx('press')">⬇ DOCX</button>
               </div>
             </div>
             <div class="text-output" id="pr-text"></div>
@@ -1340,13 +1453,14 @@ Roter Faden durch alle 4 Posts. Jeder Post steht für sich. Keine Wiederholungen
     const topic = document.getElementById('wp-topic').value || 'Leadership in CEE';
     const audience = getAudience('wp-audience');
     const thesis = document.getElementById('wp-thesis').value;
+    const docCtx = uploadedDocs['wp'] ? `\n\nQUELLDOKUMENT (bitte inhaltlich einbeziehen):\n${uploadedDocs['wp']}` : '';
     prompt = `${voice}
 
 Erstelle eine detaillierte Outline für ein Whitepaper.
 SPRACHE: ${langStr}
 TITEL/THEMA: ${topic}
 ZIELGRUPPE: ${audience}
-KERNTHESEN: ${thesis || 'keine spezifischen Vorgaben'}
+KERNTHESEN: ${thesis || 'keine spezifischen Vorgaben'}${docCtx}
 
 Die Outline soll 6-8 Kapitel/Abschnitte haben, jeweils mit:
 - Kapitelüberschrift
@@ -1385,6 +1499,7 @@ Am Ende: Kurze Zusammenfassung + Kontakthinweis Signium Austria.`;
     const focus = document.getElementById('nl-focus').value;
     const topics = document.getElementById('nl-topics').value;
     const editorial = document.getElementById('nl-editorial').value;
+    const docCtx = uploadedDocs['nl'] ? `\n\nQUELLDOKUMENT (bitte inhaltlich einbeziehen, ggf. Artikel daraus adaptieren):\n${uploadedDocs['nl']}` : '';
     prompt = `${voice}
 
 Erstelle einen Quartalsnewsletter für Signium Austria.
@@ -1392,7 +1507,7 @@ SPRACHE: ${langStr}
 QUARTAL: ${quarter}
 SCHWERPUNKT: ${focus || 'Executive Leadership & Board Governance'}
 KERNTHEMEN: ${topics || 'Leadership, Executive Search, CEE Markt'}
-EDITORIALE NOTIZ VON SAMI: ${editorial || 'keine'}
+EDITORIALE NOTIZ VON SAMI: ${editorial || 'keine'}${docCtx}
 
 Struktur:
 1. Betreffzeile (für Email-Versand)
@@ -1552,6 +1667,208 @@ function buildPostCard(week, tone, content) {
     </div>
     <span id="${id}_ht" style="display:none">${hashtags}</span>
   </div>`;
+}
+
+// ── UPLOAD STATE ──
+const uploadedDocs = {}; // { wp: 'extracted text', nl: 'extracted text' }
+const uploadedPhotos = {}; // { 'nl-1': base64, 'nl-2': base64, 'wp-1': base64 }
+
+// ── DOC UPLOAD (PDF extraction via PDF.js) ──
+async function handleDocUpload(input, prefix) {
+  const file = input.files[0];
+  if (!file) return;
+  const zone = document.getElementById(prefix + '-doc-zone');
+  const nameEl = document.getElementById(prefix + '-doc-name');
+  nameEl.textContent = '⏳ Wird gelesen...';
+
+  try {
+    let text = '';
+    if (file.name.endsWith('.pdf')) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      for (let i = 1; i <= Math.min(pdf.numPages, 15); i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map(s => s.str).join(' ') + '\n';
+      }
+    } else {
+      // DOCX: read as text fallback
+      text = await file.text().catch(() => '[DOCX-Inhalt konnte nicht gelesen werden]');
+    }
+    uploadedDocs[prefix] = text.substring(0, 6000); // limit context
+    zone.classList.add('has-file');
+    nameEl.textContent = '✓ ' + file.name;
+    showToast('Dokument eingelesen ✓', 'success');
+  } catch(e) {
+    nameEl.textContent = '⚠ Fehler beim Lesen';
+    showToast('Dokument konnte nicht gelesen werden', 'error');
+  }
+}
+
+// ── PHOTO UPLOAD ──
+async function handlePhotoUpload(input, prefix, num) {
+  const file = input.files[0];
+  if (!file) return;
+  const key = prefix + '-' + num;
+  const preview = document.getElementById(prefix + '-photo-preview-' + num);
+  const nameEl = document.getElementById(prefix + '-photo-name-' + num);
+  const zone = document.getElementById(prefix + '-photo-zone' + (prefix==='wp' ? '' : '-' + num));
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    uploadedPhotos[key] = e.target.result; // full base64 data URL
+    if (preview) {
+      preview.src = e.target.result;
+      preview.classList.add('visible');
+    }
+    if (zone) zone.classList.add('has-file');
+    if (nameEl) nameEl.textContent = '✓ ' + file.name;
+    showToast('Foto geladen ✓', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── DOCX DOWNLOAD ──
+async function downloadDocx(format) {
+  const text = lastOutputs[format];
+  if (!text) { showToast('Bitte zuerst Inhalt generieren', 'error'); return; }
+
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel,
+          AlignmentType, BorderStyle, WidthType, Header, Footer,
+          PageNumber, ImageRun } = docx;
+
+  const navy = "081D4D";
+  const orange = "FF6A42";
+  const gray = "4A4F5C";
+
+  function makeHeader() {
+    return new Header({ children: [
+      new Paragraph({
+        children: [new TextRun({ text: "SIGNIUM AUSTRIA  ·  Stein & Partner GmbH", size: 18, color: "999999", font: "Arial" })],
+        border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: "E2E4E9", space: 4 }},
+        spacing: { after: 0 }
+      })
+    ]});
+  }
+
+  function makeFooter() {
+    return new Footer({ children: [
+      new Paragraph({
+        children: [
+          new TextRun({ text: "Signium Austria  ·  www.signium.com  ·  ", size: 18, color: "BBBBBB", font: "Arial" }),
+          new TextRun({ children: [PageNumber.CURRENT], size: 18, color: "BBBBBB", font: "Arial" })
+        ],
+        border: { top: { style: BorderStyle.SINGLE, size: 4, color: "E2E4E9", space: 4 }},
+        spacing: { before: 80 }
+      })
+    ]});
+  }
+
+  // Parse text into paragraphs, detect headings (##)
+  function parseContent(rawText) {
+    const lines = rawText.split('\n');
+    const paras = [];
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) { paras.push(new Paragraph({ spacing: { after: 80 } })); continue; }
+      if (trimmed.startsWith('## ')) {
+        paras.push(new Paragraph({
+          children: [new TextRun({ text: trimmed.replace(/^##\s+/, ''), bold: true, size: 28, color: navy, font: "Arial" })],
+          spacing: { before: 280, after: 100 },
+          border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: orange, space: 4 }}
+        }));
+      } else if (trimmed.startsWith('# ')) {
+        paras.push(new Paragraph({
+          children: [new TextRun({ text: trimmed.replace(/^#\s+/, ''), bold: true, size: 36, color: navy, font: "Arial" })],
+          spacing: { before: 320, after: 160 },
+          border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: orange, space: 6 }}
+        }));
+      } else if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+        paras.push(new Paragraph({
+          children: [new TextRun({ text: trimmed.replace(/^[-•]\s+/, ''), size: 22, color: gray, font: "Arial" })],
+          bullet: { level: 0 },
+          spacing: { before: 40, after: 40 }
+        }));
+      } else {
+        paras.push(new Paragraph({
+          children: [new TextRun({ text: trimmed, size: 22, color: gray, font: "Arial" })],
+          spacing: { before: 60, after: 80 }
+        }));
+      }
+    }
+    return paras;
+  }
+
+  // Title block
+  const formatTitles = {
+    whitepaper: document.getElementById('wp-topic')?.value || 'Whitepaper',
+    newsletter: 'Newsletter · ' + (document.getElementById('nl-quarter')?.value || ''),
+    press: 'Presseaussendung · ' + (document.getElementById('pr-anlass')?.value || ''),
+    linkedin: 'LinkedIn-Kampagne'
+  };
+
+  const children = [
+    new Paragraph({
+      children: [new TextRun({ text: formatTitles[format], bold: true, size: 52, color: navy, font: "Arial" })],
+      spacing: { before: 0, after: 60 }
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: new Date().toLocaleDateString('de-AT', {day:'2-digit',month:'long',year:'numeric'}) + '  ·  Signium Austria', size: 20, color: "888888", font: "Arial" })],
+      spacing: { before: 0, after: 480 }
+    }),
+  ];
+
+  // Add photo for whitepaper/newsletter if uploaded
+  const photoKey = format === 'whitepaper' ? 'wp-1' : 'nl-1';
+  if (uploadedPhotos[photoKey] && (format === 'whitepaper' || format === 'newsletter')) {
+    try {
+      const base64 = uploadedPhotos[photoKey].split(',')[1];
+      const mimeMatch = uploadedPhotos[photoKey].match(/data:([^;]+);/);
+      const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      const imgType = mimeType.includes('png') ? 'png' : 'jpg';
+      children.push(new Paragraph({
+        children: [new ImageRun({ data: base64, transformation: { width: 560, height: 220 }, type: imgType })],
+        spacing: { after: 320 }
+      }));
+    } catch(e) { /* skip photo on error */ }
+  }
+
+  children.push(...parseContent(text));
+
+  // Second photo for newsletter
+  if (format === 'newsletter' && uploadedPhotos['nl-2']) {
+    try {
+      const base64 = uploadedPhotos['nl-2'].split(',')[1];
+      const mimeMatch = uploadedPhotos['nl-2'].match(/data:([^;]+);/);
+      const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      const imgType = mimeType.includes('png') ? 'png' : 'jpg';
+      children.push(new Paragraph({
+        children: [new ImageRun({ data: base64, transformation: { width: 400, height: 200 }, type: imgType })],
+        spacing: { before: 240, after: 160 }
+      }));
+    } catch(e) { /* skip */ }
+  }
+
+  const doc = new Document({
+    sections: [{
+      properties: {
+        page: { size: { width: 11906, height: 16838 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }}
+      },
+      headers: { default: makeHeader() },
+      footers: { default: makeFooter() },
+      children
+    }]
+  });
+
+  const blob = await Packer.toBlob(doc);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Signium_${format}_${new Date().toISOString().split('T')[0]}.docx`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('DOCX wird heruntergeladen ✓', 'success');
 }
 
 // ── ARCHIVE ──
