@@ -49,9 +49,15 @@ function np(text, before, after, opts) {
 function personalRow(label, value) {
   const labelRpr = rpr({ sz: 22, color: '414042' });
   const valueRpr = rpr({ sz: 22, color: '262626' });
+  // Use a fixed tab stop at 3600 DXA (about 6.35cm) for alignment
   return `<w:p>
-    <w:pPr><w:pStyle w:val="SPTBodytext66"/>${rpr({ sz: 22 })}</w:pPr>
-    <w:r>${labelRpr}<w:t>${xe(label)}</w:t><w:tab/><w:tab/><w:tab/><w:tab/></w:r>
+    <w:pPr>
+      <w:pStyle w:val="SPTBodytext66"/>
+      <w:tabs><w:tab w:val="left" w:pos="2500"/></w:tabs>
+      ${rpr({ sz: 22 })}
+    </w:pPr>
+    <w:r>${labelRpr}<w:t>${xe(label)}</w:t></w:r>
+    <w:r>${labelRpr}<w:tab/></w:r>
     <w:r>${valueRpr}<w:t xml:space="preserve">${xe(value)}</w:t></w:r>
   </w:p>`;
 }
@@ -198,7 +204,7 @@ function buildBodyXml(reportText, candidateName, position, client, datum) {
 
   // Cover page
   parts.push(`<w:p><w:pPr><w:pStyle w:val="Titleheader"/><w:spacing w:before="120" w:after="0"/></w:pPr>
-    ${run((candidateName || 'KANDIDAT').toUpperCase(), { major: true, bold: true, sz: 52, color: '414042' })}</w:p>`);
+    ${run((candidateName || 'KANDIDAT').toUpperCase(), { major: true, bold: true, sz: 40, color: '808080' })}</w:p>`);
   parts.push(`<w:p><w:pPr><w:pStyle w:val="Coverdoctitle"/><w:spacing w:before="4080" w:after="0"/></w:pPr>
     ${run('VERTRAULICHER KANDIDATENBERICHT', { sz: 32, color: '102E66' })}</w:p>`);
   if (position) parts.push(`<w:p><w:pPr><w:pStyle w:val="Coverdate"/><w:spacing w:before="720" w:after="1000"/></w:pPr>
