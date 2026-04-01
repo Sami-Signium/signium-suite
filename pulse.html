@@ -1161,7 +1161,7 @@
           <div class="form-row cols-2">
             <div>
               <label>Zitat-Person (für direktes Zitat)</label>
-              <input type="text" id="pr-quote-person" placeholder="z.B. Sami Harrach, Managing Partner">
+              <input type="text" id="pr-quote-person" placeholder="z.B. Sami Hamid, Managing Partner">
             </div>
             <div>
               <label>Zitat-Kernaussage</label>
@@ -1545,7 +1545,7 @@ CLOSING
     const anlass = document.getElementById('pr-anlass').value;
     const content = document.getElementById('pr-content').value;
     const date = document.getElementById('pr-date').value || 'Wien, ' + new Date().toLocaleDateString('de-AT', {day:'numeric',month:'long',year:'numeric'});
-    const quotePerson = document.getElementById('pr-quote-person').value || 'Sami Harrach, Managing Partner Signium Austria';
+    const quotePerson = document.getElementById('pr-quote-person').value || 'Sami Hamid, Managing Partner Signium Austria';
     const quoteMsg = document.getElementById('pr-quote-msg').value;
     prompt = `${voice}
 
@@ -1564,7 +1564,7 @@ Format:
 - Hintergrund / Details (3-4 Absätze)
 - Direktes Zitat von ${quotePerson}
 - Über Signium Austria (Boilerplate): Signium Austria — Stein & Partner GmbH ist Teil von Signium International, einem globalen Executive Search Netzwerk mit Präsenz in 40+ Ländern. Spezialisiert auf DACH/CEE Märkte, mit Büros in Wien sowie Partnerbüros in den wichtigsten CEE-Hauptstädten.
-- Kontakt: Sami Harrach | sami.harrach@signium.com | +43...`;
+- Kontakt: Sami Hamid | sami.hamid@signium.com | +43...`;
 
     outputEl = document.getElementById('out-press');
   }
@@ -1674,7 +1674,7 @@ function buildPostCard(week, tone, content) {
       <div class="post-preview-author">
         <div class="post-avatar">SH</div>
         <div>
-          <div class="post-author-name">Sami Harrach</div>
+          <div class="post-author-name">Sami Hamid</div>
           <div class="post-author-title">Managing Partner · Signium Austria</div>
         </div>
       </div>
@@ -1791,122 +1791,180 @@ function renderNewsletterHTML(text) {
 
   const sections = parseNewsletterSections(text);
 
+  // Build article blocks — 2-column layout: text | image alternating
   const articleBlocks = sections.articles.map((art, i) => {
-    const showPhoto = i === 1 && photo2;
+    const hasPhoto = i === 0 && photo2;
+    const imgLeft = i % 2 === 1; // alternate image side
     const bodyParas = clean(art.body).split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('');
-    return `
-      <div class="article-block">
-        <div class="article-number">0${i+1}</div>
-        ${art.title ? `<h2 class="article-title">${clean(art.title)}</h2>` : ''}
-        <div class="article-rule"></div>
-        ${showPhoto ? `<div class="article-image"><img src="${photo2}" alt=""></div>` : ''}
-        <div class="article-body">${bodyParas}</div>
+    const textCol = `<div class="col-text">
+      <div class="art-num">0${i+1}</div>
+      ${art.title ? `<h2 class="art-title">${clean(art.title)}</h2><div class="art-rule"></div>` : ''}
+      <div class="art-body">${bodyParas}</div>
+    </div>`;
+    const imgCol = hasPhoto ? `<div class="col-img"><img src="${photo2}" alt=""></div>` : '';
+
+    if (hasPhoto) {
+      return `<div class="article-row ${imgLeft ? 'img-left' : 'img-right'}">
+        ${imgLeft ? imgCol + textCol : textCol + imgCol}
       </div>`;
+    } else {
+      return `<div class="article-single">${textCol}</div>`;
+    }
   }).join('');
 
   const html = `<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Signium Newsletter ${quarter}</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: #f5f5f5; color: #1a1a1a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .print-bar { position: sticky; top: 0; z-index: 100; background: #081D4D; padding: 10px 32px; display: flex; align-items: center; justify-content: space-between; }
-  .print-bar-text { font-size: 12px; color: rgba(255,255,255,0.5); letter-spacing: 0.5px; }
-  .print-btn { padding: 7px 20px; background: white; color: #081D4D; border: none; border-radius: 3px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
-  .page { max-width: 680px; margin: 24px auto; background: white; box-shadow: 0 2px 32px rgba(0,0,0,0.10); }
-  .top-bar { background: #081D4D; padding: 20px 48px; display: flex; align-items: center; justify-content: space-between; }
-  .top-bar-brand { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 3px; }
-  .top-bar-right { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 2px; }
-  .hero-image { width: 100%; display: ${photo1 ? 'block' : 'none'}; overflow: hidden; height: 340px; }
-  .hero-image img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
-  .main { padding: 56px 64px; }
-  .masthead { margin-bottom: 48px; }
-  .masthead-overline { font-size: 10px; font-weight: 500; color: #FF6A42; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 16px; }
-  .masthead-title { font-family: 'Cormorant Garamond', serif; font-size: 38px; font-weight: 300; color: #081D4D; line-height: 1.2; letter-spacing: -0.5px; margin-bottom: 20px; }
-  .masthead-rule { width: 48px; height: 2px; background: #FF6A42; margin-bottom: 20px; }
-  .masthead-meta { font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 1.5px; }
-  .editorial { margin-bottom: 48px; padding-bottom: 48px; border-bottom: 1px solid #e8e8e8; }
-  .section-label { font-size: 9px; font-weight: 500; color: #081D4D; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 20px; }
-  .editorial-text { font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 300; line-height: 1.9; color: #2a2a2a; font-style: italic; }
-  .editorial-text p { margin-bottom: 16px; }
-  .editorial-sig { margin-top: 24px; font-size: 12px; font-weight: 500; color: #081D4D; letter-spacing: 0.5px; }
-  .articles { display: flex; flex-direction: column; gap: 0; }
-  .article-block { padding: 40px 0; border-bottom: 1px solid #e8e8e8; }
-  .article-block:last-child { border-bottom: none; }
-  .article-number { font-size: 10px; font-weight: 500; color: #FF6A42; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 12px; }
-  .article-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; color: #081D4D; line-height: 1.25; margin-bottom: 16px; }
-  .article-rule { width: 32px; height: 1px; background: #081D4D; margin-bottom: 20px; }
-  .article-image { width: 100%; height: 220px; overflow: hidden; margin-bottom: 24px; }
-  .article-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .article-body p { font-size: 14px; line-height: 1.85; color: #3a3a3a; margin-bottom: 14px; }
-  .article-body p:last-child { margin-bottom: 0; }
-  .outlook-block { background: #081D4D; padding: 40px 64px; }
-  .outlook-label { font-size: 9px; font-weight: 500; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 16px; }
-  .outlook-body p { font-size: 13px; line-height: 1.85; color: rgba(255,255,255,0.65); margin-bottom: 12px; }
-  .about-block { padding: 32px 64px; border-top: 1px solid #e8e8e8; }
-  .about-label { font-size: 9px; font-weight: 500; color: #999; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 10px; }
-  .about-text { font-size: 12px; line-height: 1.75; color: #888; }
-  .footer { background: #081D4D; padding: 28px 64px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-  .footer-brand { font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 4px; }
-  .footer-contact { font-size: 11px; color: rgba(255,255,255,0.4); line-height: 1.8; text-align: right; }
-  .footer-contact a { color: rgba(255,255,255,0.6); text-decoration: none; }
-  @media print { body { background: white; } .print-bar { display: none; } .page { box-shadow: none; margin: 0; max-width: 100%; } }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#C8CBD4;color:#1a1a1a;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+/* PRINT BAR */
+.print-bar{position:sticky;top:0;z-index:100;background:#081D4D;padding:10px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #FF6A42}
+.print-bar span{font-size:12px;color:rgba(255,255,255,0.5);letter-spacing:.5px}
+.print-btn{padding:7px 20px;background:#FF6A42;color:white;border:none;border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:.5px}
+
+/* PAGE — framed like a magazine */
+.page{max-width:760px;margin:28px auto;background:white;box-shadow:0 0 0 1px #c0c3cc,0 8px 48px rgba(0,0,0,0.22);border-top:4px solid #081D4D}
+
+/* TOP BAR */
+.top-bar{background:#081D4D;padding:18px 48px;display:flex;align-items:center;justify-content:space-between}
+.top-brand{font-size:10px;font-weight:500;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:3.5px}
+.top-right{font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:2px}
+
+/* HERO */
+.hero{width:100%;height:300px;overflow:hidden;display:${photo1 ? 'block' : 'none'}}
+.hero img{width:100%;height:100%;object-fit:cover;object-position:center;display:block;image-rendering:high-quality}
+
+/* MASTHEAD */
+.masthead{padding:44px 56px 36px;border-bottom:1px solid #e4e6ea}
+.mast-overline{font-size:10px;font-weight:600;color:#FF6A42;text-transform:uppercase;letter-spacing:3px;margin-bottom:14px}
+.mast-title{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:#081D4D;line-height:1.2;letter-spacing:-.3px;margin-bottom:18px}
+.mast-rule{width:44px;height:2px;background:#FF6A42;margin-bottom:14px}
+.mast-meta{font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:1.5px}
+
+/* EDITORIAL — full width italic block */
+.editorial{padding:36px 56px;background:#F7F8FA;border-bottom:1px solid #e4e6ea}
+.sec-label{font-size:9px;font-weight:600;color:#081D4D;text-transform:uppercase;letter-spacing:3.5px;margin-bottom:18px}
+.ed-text{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;line-height:1.9;color:#2a2a2a;font-style:italic}
+.ed-text p{margin-bottom:14px}
+.ed-text p:last-child{margin-bottom:0}
+.ed-sig{margin-top:22px;font-size:12px;font-weight:600;color:#081D4D;letter-spacing:.3px}
+
+/* ARTICLES WRAPPER */
+.articles-wrap{padding:0 56px}
+
+/* TWO-COLUMN article row */
+.article-row{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid #e4e6ea;padding:40px 0}
+.article-row .col-img{overflow:hidden;border-radius:2px}
+.article-row .col-img img{width:100%;height:100%;object-fit:cover;display:block;min-height:280px;image-rendering:high-quality}
+.article-row.img-right .col-img{margin-left:32px}
+.article-row.img-left .col-img{margin-right:32px}
+
+/* SINGLE-COLUMN article */
+.article-single{border-bottom:1px solid #e4e6ea;padding:40px 0}
+.article-single:last-child{border-bottom:none}
+
+/* Article text */
+.col-text{display:flex;flex-direction:column;justify-content:flex-start}
+.art-num{font-size:10px;font-weight:600;color:#FF6A42;text-transform:uppercase;letter-spacing:3px;margin-bottom:10px}
+.art-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:#081D4D;line-height:1.25;margin-bottom:14px}
+.art-rule{width:28px;height:1px;background:#081D4D;margin-bottom:18px}
+.art-body p{font-size:13.5px;line-height:1.85;color:#3a3a3a;margin-bottom:12px}
+.art-body p:last-child{margin-bottom:0}
+
+/* OUTLOOK — dark full-width band */
+.outlook{background:#081D4D;padding:36px 56px;margin-top:0}
+.outlook-label{font-size:9px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:3.5px;margin-bottom:14px}
+.outlook-body p{font-size:13px;line-height:1.85;color:rgba(255,255,255,0.65);margin-bottom:11px}
+
+/* ABOUT */
+.about{padding:28px 56px;background:#F7F8FA;border-top:1px solid #e4e6ea}
+.about-label{font-size:9px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:3px;margin-bottom:8px}
+.about-text{font-size:12px;line-height:1.75;color:#888}
+
+/* FOOTER */
+.footer{background:#081D4D;padding:28px 56px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.footer-brand{font-size:10px;font-weight:500;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:4.5px}
+.footer-contact{font-size:11px;color:rgba(255,255,255,0.4);line-height:1.9;text-align:right}
+.footer-contact a{color:rgba(255,255,255,0.6);text-decoration:none}
+
+@media print{
+  body{background:white}
+  .print-bar{display:none}
+  .page{box-shadow:none;margin:0;max-width:100%;border-top:4px solid #081D4D}
+  .hero{display:${photo1 ? 'block' : 'none'} !important}
+}
 </style>
 </head>
 <body>
+
 <div class="print-bar">
-  <span class="print-bar-text">Signium Austria · Newsletter ${quarter}</span>
+  <span>Signium Austria · Newsletter ${quarter}</span>
   <button class="print-btn" onclick="window.print()">Als PDF speichern</button>
 </div>
+
 <div class="page">
+
   <div class="top-bar">
-    <div class="top-bar-brand">Signium · Executive Search &amp; Leadership Advisory</div>
-    <div class="top-bar-right">${quarter} · ${date}</div>
+    <div class="top-brand">Signium · Executive Search &amp; Leadership Advisory</div>
+    <div class="top-right">${quarter} · ${date}</div>
   </div>
-  ${photo1 ? `<div class="hero-image"><img src="${photo1}" alt=""></div>` : ''}
-  <div class="main">
-    <div class="masthead">
-      <div class="masthead-overline">Newsletter · Signium Austria</div>
-      <div class="masthead-title">${focus || 'Leadership &amp; Executive Search'}</div>
-      <div class="masthead-rule"></div>
-      <div class="masthead-meta">${quarter} · Signium Austria — Stein &amp; Partner GmbH</div>
-    </div>
-    <div class="editorial">
-      <div class="section-label">Editorial</div>
-      <div class="editorial-text">
-        ${clean(sections.editorial).split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('')}
-      </div>
-      <div class="editorial-sig">— Sami Harrach, Managing Partner</div>
-    </div>
-    <div class="articles">${articleBlocks}</div>
+
+  ${photo1 ? `<div class="hero"><img src="${photo1}" alt=""></div>` : ''}
+
+  <div class="masthead">
+    <div class="mast-overline">Newsletter · Signium Austria</div>
+    <div class="mast-title">${focus || 'Leadership &amp; Executive Search'}</div>
+    <div class="mast-rule"></div>
+    <div class="mast-meta">${quarter} · Signium Austria — Stein &amp; Partner GmbH</div>
   </div>
+
+  <div class="editorial">
+    <div class="sec-label">Editorial</div>
+    <div class="ed-text">
+      ${clean(sections.editorial).split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('')}
+    </div>
+    <div class="ed-sig">— Sami Hamid, Managing Partner</div>
+  </div>
+
+  <div class="articles-wrap">
+    ${articleBlocks}
+  </div>
+
   ${sections.outlook ? `
-  <div class="outlook-block">
+  <div class="outlook">
     <div class="outlook-label">Marktausblick ${quarter}</div>
     <div class="outlook-body">
       ${clean(sections.outlook).split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('')}
     </div>
   </div>` : ''}
-  <div class="about-block">
+
+  <div class="about">
     <div class="about-label">Über Signium Austria</div>
     <div class="about-text">Signium Austria — Stein &amp; Partner GmbH ist Teil von Signium International, einem globalen Executive Search Netzwerk mit Präsenz in 40+ Ländern. Spezialisiert auf Führungspositionen im DACH/CEE-Raum.</div>
   </div>
+
   <div class="footer">
     <div class="footer-brand">Signium</div>
-    <div class="footer-contact">Sami Harrach · Managing Partner<br><a href="mailto:sami.harrach@signium.com">sami.harrach@signium.com</a><br>www.signium.com/austria</div>
+    <div class="footer-contact">
+      Sami Hamid · Managing Partner<br>
+      <a href="mailto:sami.hamid@signium.com">sami.hamid@signium.com</a><br>
+      www.signium.com/austria
+    </div>
   </div>
+
 </div>
-</body></html>`;
+</body></html>\`;
 
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   window.open(URL.createObjectURL(blob), '_blank');
   showToast('Newsletter geöffnet — "Als PDF speichern" oben ✓', 'success');
 }
-
 
 function parseNewsletterSections(text) {
   const lines = text.split('\n');
@@ -2028,7 +2086,7 @@ function renderWhitepaperHTML(text) {
   <div class="wp-body">${bodyHtml}</div>
   <div class="wp-footer">
     <div class="wp-footer-brand">SIGNI<span>UM</span></div>
-    <div class="wp-footer-info">Sami Harrach · Managing Partner<br>sami.harrach@signium.com · www.signium.com</div>
+    <div class="wp-footer-info">Sami Hamid · Managing Partner<br>sami.hamid@signium.com · www.signium.com</div>
   </div>
 </div>
 </body></html>`;
