@@ -1683,26 +1683,37 @@ async function handleDocUpload(input, prefix) {
 
   try {
     let text = '';
-    if (file.name.endsWith('.pdf')) {
+    if (file.name.toLowerCase().endsWith('.pdf')) {
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      for (let i = 1; i <= Math.min(pdf.numPages, 15); i++) {
+      const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
+      const pdf = await loadingTask.promise;
+      const maxPages = Math.min(pdf.numPages, 15);
+      for (let i = 1; i <= maxPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
         text += content.items.map(s => s.str).join(' ') + '\n';
       }
     } else {
-      // DOCX: read as text fallback
-      text = await file.text().catch(() => '[DOCX-Inhalt konnte nicht gelesen werden]');
+      // DOCX: use FileReader as text
+      text = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result || '');
+        reader.onerror = () => reject(new Error('Lesefehler'));
+        reader.readAsText(file);
+      });
     }
-    uploadedDocs[prefix] = text.substring(0, 6000); // limit context
+
+    if (!text.trim()) throw new Error('Kein Text gefunden');
+
+    uploadedDocs[prefix] = text.substring(0, 6000);
     zone.classList.add('has-file');
     nameEl.textContent = '✓ ' + file.name;
     showToast('Dokument eingelesen ✓', 'success');
   } catch(e) {
-    nameEl.textContent = '⚠ Fehler beim Lesen';
+    nameEl.textContent = '⚠ Fehler: ' + e.message;
     showToast('Dokument konnte nicht gelesen werden', 'error');
+    console.error(e);
   }
 }
 
