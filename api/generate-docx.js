@@ -53,6 +53,7 @@ function personalRow(label, value) {
     <w:pPr>
       <w:pStyle w:val="SPTBodytext66"/>
       <w:tabs><w:tab w:val="left" w:pos="2500"/></w:tabs>
+      <w:ind w:left="2500" w:hanging="2500"/>
       ${rpr({ sz: 22 })}
     </w:pPr>
     <w:r>${labelRpr}<w:t>${xe(label)}</w:t></w:r>
@@ -287,8 +288,13 @@ function buildBodyXml(reportText, candidateName, position, client, datum) {
           const dateRpr = rpr({ sz: 22, color: '414042' });
           const compRpr = rpr({ bold: true, sz: 22, color: '262626' });
           const titleRpr = rpr({ sz: 22, color: '262626' });
-          parts.push(`<w:p><w:pPr><w:spacing w:before="120" w:after="120"/></w:pPr>
-            <w:r>${dateRpr}<w:t>${xe(pipeParts[0])}</w:t><w:tab/><w:tab/></w:r>
+          parts.push(`<w:p><w:pPr>
+            <w:tabs><w:tab w:val="left" w:pos="1800"/></w:tabs>
+            <w:ind w:left="1800" w:hanging="1800"/>
+            <w:spacing w:before="120" w:after="120"/>
+          </w:pPr>
+            <w:r>${dateRpr}<w:t>${xe(pipeParts[0])}</w:t></w:r>
+            <w:r><w:tab/></w:r>
             <w:r>${compRpr}<w:t xml:space="preserve">${xe(pipeParts[1])}</w:t></w:r>
             ${pipeParts[2] ? `<w:r>${titleRpr}<w:t xml:space="preserve">  |  ${xe(pipeParts[2])}</w:t></w:r>` : ''}
           </w:p>`);
