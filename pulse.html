@@ -447,46 +447,114 @@
   .action-btn.teal:hover { background: var(--teal-light); }
 
   /* LinkedIn campaign posts */
-  .campaign-posts { display: flex; flex-direction: column; gap: 16px; }
+  .campaign-posts { display: flex; flex-direction: column; gap: 20px; }
   .post-card {
-    background: var(--off-white);
+    background: white;
     border: 1.5px solid var(--gray-light);
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
+    box-shadow: 0 2px 8px rgba(8,29,77,0.07);
+    transition: box-shadow .2s;
   }
+  .post-card:hover { box-shadow: 0 4px 20px rgba(8,29,77,0.12); }
   .post-card-header {
-    background: var(--navy);
-    padding: 10px 16px;
+    background: linear-gradient(135deg, var(--navy), var(--navy-light));
+    padding: 12px 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
-  .post-week {
-    font-size: 11px;
+  .post-week-info { display: flex; align-items: center; gap: 10px; }
+  .post-week-num {
+    width: 32px; height: 32px;
+    background: var(--orange);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: white;
+  }
+  .post-week-label {
+    font-size: 12px;
     font-weight: 600;
-    color: rgba(255,255,255,0.6);
+    color: rgba(255,255,255,0.9);
     text-transform: uppercase;
     letter-spacing: 1px;
   }
+  .post-week-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    margin-top: 1px;
+  }
   .post-tone-badge {
     font-size: 11px;
-    padding: 3px 10px;
+    padding: 4px 12px;
     border-radius: 20px;
     font-weight: 600;
   }
-  .badge-sachlich { background: rgba(107,203,194,0.2); color: var(--teal); }
-  .badge-persönlich { background: rgba(255,106,66,0.2); color: var(--orange); }
-  .badge-provokant { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+  .badge-sachlich { background: rgba(107,203,194,0.25); color: var(--teal-light); }
+  .badge-persönlich { background: rgba(255,106,66,0.25); color: #ffaa8a; }
+  .badge-provokant { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); }
+
+  /* LinkedIn mock preview */
+  .post-linkedin-preview {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--gray-light);
+  }
+  .post-preview-author {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .post-avatar {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--navy), var(--blue));
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: white;
+    font-family: var(--font-display);
+    flex-shrink: 0;
+  }
+  .post-author-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--navy);
+  }
+  .post-author-title {
+    font-size: 11px;
+    color: var(--gray-sub);
+    margin-top: 1px;
+  }
   .post-content {
-    padding: 16px;
     font-size: 14px;
-    line-height: 1.7;
+    line-height: 1.75;
     color: var(--gray-text);
     white-space: pre-wrap;
   }
+  .post-hashtags {
+    margin-top: 10px;
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .post-hashtag {
+    font-size: 12px;
+    color: var(--blue);
+    font-weight: 500;
+    cursor: default;
+  }
+  .post-footer {
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--off-white);
+  }
+  .post-char-count {
+    font-size: 11px;
+    color: var(--gray-sub);
+  }
   .post-copy-btn {
-    margin: 0 16px 12px;
-    padding: 7px 14px;
+    padding: 6px 14px;
     background: white;
     border: 1.5px solid var(--gray-mid);
     border-radius: 6px;
@@ -496,8 +564,9 @@
     font-family: var(--font-body);
     color: var(--gray-text);
     transition: all .2s;
+    display: flex; align-items: center; gap: 5px;
   }
-  .post-copy-btn:hover { border-color: var(--teal); color: var(--navy); }
+  .post-copy-btn:hover { border-color: var(--teal); color: var(--navy); background: white; }
 
   /* Generic text output */
   .text-output {
@@ -1248,16 +1317,22 @@ ZIELGRUPPE: ${audience}
 TON: ${tone}
 ZUSÄTZLICHER KONTEXT: ${ctx || 'keiner'}
 
-WICHTIG: Erstelle alle 4 Posts in ALLEN 3 Tonalitäten (Sachlich, Persönlich, Provokant).
-Das ergibt 12 Posts insgesamt (Woche 1-4, je 3 Varianten).
+WICHTIG: Erstelle NUR 4 Posts im Ton "${tone}" — keine anderen Varianten, keine 12 Posts.
 
-Format für jeden Post:
----WOCHE [N] · [TONALITÄT]---
-[Post-Text, max. 1300 Zeichen, LinkedIn-optimiert]
-[Hashtags: max. 5, inkl. #Signium #SigniumAustria]
+Format EXAKT so:
+---WOCHE 1---
+[Post-Text, max. 1300 Zeichen, Hashtags am Ende inkl. #Signium #SigniumAustria]
 
-Die 4 Posts müssen einen roten Faden haben und zusammen eine kohärente Botschaft transportieren.
-Keine Wiederholungen. Jeder Post steht für sich, gehört aber zur Kampagne.`;
+---WOCHE 2---
+[Post-Text + Hashtags]
+
+---WOCHE 3---
+[Post-Text + Hashtags]
+
+---WOCHE 4---
+[Post-Text + Hashtags]
+
+Roter Faden durch alle 4 Posts. Jeder Post steht für sich. Keine Wiederholungen.`;
 
     outputEl = document.getElementById('out-linkedin');
 
@@ -1404,53 +1479,78 @@ Format:
 function renderLinkedInPosts(text) {
   const container = document.getElementById('posts-container');
   container.innerHTML = '';
+  const tone = currentTone['li'] || 'Sachlich';
 
-  // Parse posts by ---WOCHE N · TONALITÄT---
-  const blocks = text.split(/---WOCHE\s+(\d+)\s*·\s*([^-]+)---/).filter(s => s.trim());
+  // Parse ---WOCHE N--- format
+  const parts = text.split(/---WOCHE\s*(\d+)---/).filter(s => s.trim());
   const posts = [];
-  for (let i = 0; i < blocks.length - 1; i += 3) {
-    const week = blocks[i];
-    const tone = blocks[i+1]?.trim();
-    const content = blocks[i+2]?.trim();
-    if (week && tone && content) posts.push({ week, tone, content });
+  for (let i = 0; i < parts.length - 1; i += 2) {
+    const week = parts[i].trim();
+    const content = parts[i+1]?.trim();
+    if (week && content) posts.push({ week, content });
   }
 
   if (posts.length === 0) {
-    // Fallback: show raw text in 4 blocks
-    const parts = text.split(/\n{3,}/);
-    parts.forEach((p, idx) => {
-      if (!p.trim()) return;
-      container.innerHTML += buildPostCard(`Woche ${idx+1}`, 'Sachlich', p.trim());
+    // Fallback: split by double newlines
+    const chunks = text.split(/\n{3,}/);
+    chunks.forEach((c, idx) => {
+      if (!c.trim()) return;
+      container.innerHTML += buildPostCard(String(idx+1), tone, c.trim());
     });
     return;
   }
 
-  // Group by week
-  const byWeek = {};
   posts.forEach(p => {
-    if (!byWeek[p.week]) byWeek[p.week] = [];
-    byWeek[p.week].push(p);
-  });
-
-  Object.keys(byWeek).sort().forEach(week => {
-    byWeek[week].forEach(p => {
-      container.innerHTML += buildPostCard(`Woche ${week}`, p.tone, p.content);
-    });
+    container.innerHTML += buildPostCard(p.week, tone, p.content);
   });
 }
 
 function buildPostCard(week, tone, content) {
   const toneClass = tone.toLowerCase().includes('sachlich') ? 'badge-sachlich' :
                     tone.toLowerCase().includes('pers') ? 'badge-persönlich' : 'badge-provokant';
-  const escapedContent = content.replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const id = 'post_' + Math.random().toString(36).substr(2,6);
+
+  // Separate hashtags from content
+  const lines = content.split('\n');
+  const hashtagLines = lines.filter(l => l.trim().startsWith('#'));
+  const textLines = lines.filter(l => !l.trim().startsWith('#'));
+  const mainText = textLines.join('\n').trim();
+  const hashtags = hashtagLines.join(' ').trim();
+  const charCount = mainText.length;
+
+  const escapedText = mainText.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const hashtagHtml = hashtags
+    ? hashtags.split(/\s+/).filter(h => h.startsWith('#'))
+        .map(h => `<span class="post-hashtag">${h}</span>`).join('')
+    : '';
+
   return `<div class="post-card">
     <div class="post-card-header">
-      <span class="post-week">${week}</span>
+      <div class="post-week-info">
+        <div class="post-week-num">${week.replace(/\D/g,'') || '?'}</div>
+        <div>
+          <div class="post-week-label">Woche ${week.replace(/\D/g,'') || '?'}</div>
+          <div class="post-week-sub">Veröffentlichung planen</div>
+        </div>
+      </div>
       <span class="post-tone-badge ${toneClass}">${tone}</span>
     </div>
-    <div class="post-content" id="${id}">${escapedContent}</div>
-    <button class="post-copy-btn" onclick="copyText('${id}')">📋 Diesen Post kopieren</button>
+    <div class="post-linkedin-preview">
+      <div class="post-preview-author">
+        <div class="post-avatar">SH</div>
+        <div>
+          <div class="post-author-name">Sami Harrach</div>
+          <div class="post-author-title">Managing Partner · Signium Austria</div>
+        </div>
+      </div>
+      <div class="post-content" id="${id}">${escapedText}</div>
+      ${hashtagHtml ? `<div class="post-hashtags">${hashtagHtml}</div>` : ''}
+    </div>
+    <div class="post-footer">
+      <span class="post-char-count">${charCount} Zeichen</span>
+      <button class="post-copy-btn" onclick="copyPostContent('${id}', '${id}_ht')">📋 Kopieren</button>
+    </div>
+    <span id="${id}_ht" style="display:none">${hashtags}</span>
   </div>`;
 }
 
@@ -1547,6 +1647,13 @@ function exportCSV() {
 }
 
 // ── COPY ──
+function copyPostContent(textId, htId) {
+  const text = document.getElementById(textId)?.textContent || '';
+  const ht = document.getElementById(htId)?.textContent || '';
+  const full = ht ? text + '\n\n' + ht : text;
+  navigator.clipboard.writeText(full).then(() => showToast('Post kopiert ✓', 'success'));
+}
+
 function copyText(elId) {
   const text = document.getElementById(elId)?.textContent || '';
   navigator.clipboard.writeText(text).then(() => showToast('Kopiert ✓', 'success'));
