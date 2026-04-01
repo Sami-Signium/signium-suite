@@ -49,14 +49,13 @@ function np(text, before, after, opts) {
 function personalRow(label, value) {
   const labelRpr = rpr({ sz: 22, color: '414042' });
   const valueRpr = rpr({ sz: 22, color: '262626' });
+  // Pad label to fixed width with non-breaking spaces for alignment
+  const padding = '\u00A0'.repeat(Math.max(1, 22 - label.length));
   return `<w:p>
     <w:pPr>
-      <w:tabs><w:tab w:val="left" w:pos="2500"/></w:tabs>
-      <w:ind w:left="2500" w:hanging="2500"/>
       <w:spacing w:before="80" w:after="80"/>
     </w:pPr>
-    <w:r>${labelRpr}<w:t xml:space="preserve">${xe(label)}</w:t></w:r>
-    <w:r><w:tab/></w:r>
+    <w:r>${labelRpr}<w:t xml:space="preserve">${xe(label)}${xe(padding)}</w:t></w:r>
     <w:r>${valueRpr}<w:t xml:space="preserve">${xe(value)}</w:t></w:r>
   </w:p>`;
 }
@@ -287,13 +286,11 @@ function buildBodyXml(reportText, candidateName, position, client, datum) {
           const dateRpr = rpr({ sz: 22, color: '414042' });
           const compRpr = rpr({ bold: true, sz: 22, color: '262626' });
           const titleRpr = rpr({ sz: 22, color: '262626' });
+          const datePadded = pipeParts[0] + '\u00A0'.repeat(Math.max(1, 14 - pipeParts[0].length));
           parts.push(`<w:p><w:pPr>
-            <w:tabs><w:tab w:val="left" w:pos="1800"/></w:tabs>
-            <w:ind w:left="1800" w:hanging="1800"/>
             <w:spacing w:before="120" w:after="120"/>
           </w:pPr>
-            <w:r>${dateRpr}<w:t>${xe(pipeParts[0])}</w:t></w:r>
-            <w:r><w:tab/></w:r>
+            <w:r>${dateRpr}<w:t xml:space="preserve">${xe(datePadded)}</w:t></w:r>
             <w:r>${compRpr}<w:t xml:space="preserve">${xe(pipeParts[1])}</w:t></w:r>
             ${pipeParts[2] ? `<w:r>${titleRpr}<w:t xml:space="preserve">  |  ${xe(pipeParts[2])}</w:t></w:r>` : ''}
           </w:p>`);
