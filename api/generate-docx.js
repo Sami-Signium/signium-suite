@@ -330,8 +330,16 @@ function buildBodyXml(reportText, candidateName, position, client, datum) {
         const line = content[i];
         const isBullet = /^[-\u2013\u2022]/.test(line);
         const isCompanyDesc = /^\*/.test(line);
-        const isDateHeader = /^(Jan|Feb|M.r|Apr|Mai|Jun|Jul|Aug|Sep|Okt|Nov|Dez|Oct|Mar|Januar|Februar|M.rz|April|Juni|Juli|August|September|Oktober|November|Dezember|January|February|March|April|May|June|July|August|September|October|November|December|\d{2}\/\d{4}|\d{4}|seit\s)/.test(line) && !isBullet;
-        if (isDateHeader) {
+        // Date pattern - can be standalone date line
+        const isDateOnly = /^(seit\s|ab\s|since\s)?\d{4}|^(Jan|Feb|M.r|Apr|Mai|Jun|Jul|Aug|Sep|Okt|Nov|Dez|Oct|Mar|März)/.test(line) && !isBullet && line.length < 30;
+        // Full date+company on same line (e.g. "2019: Firma" or "2019 - Firma")
+        const isDateWithCompany = /^(seit\s|ab\s)?\d{4}/.test(line) && (line.includes(': ') || line.includes(' - ') || line.includes(' – ')) && !isBullet;
+        // Company name line (all caps or title after date line)
+        const nextLine = content[i + 1] || '';
+        const isDateFollowedByCompany = isDateOnly && nextLine.length > 0 && !nextLine.startsWith('*') && !nextLine.startsWith('-');
+
+        if (isDateWithCompany) {
+          // Date and company on same line: "2019: Firma" or "seit 2021 - Firma"
           if (!firstCompany) parts.push(hr());
           firstCompany = false;
           let datePart = line, companyPart = '';
@@ -342,17 +350,29 @@ function buildBodyXml(reportText, candidateName, position, client, datum) {
           else if (dashIdx > 4) { datePart = line.slice(0, dashIdx); companyPart = line.slice(dashIdx + 3); }
           else if (dashIdx2 > 4) { datePart = line.slice(0, dashIdx2); companyPart = line.slice(dashIdx2 + 3); }
           parts.push(companyHeader(datePart, companyPart));
+          i++;
+        } else if (isDateFollowedByCompany) {
+          // Date on its own line, company name on next line
+          if (!firstCompany) parts.push(hr());
+          firstCompany = false;
+          parts.push(companyHeader(line, nextLine));
+          i += 2; // skip both date and company lines
         } else if (isCompanyDesc) {
           const r = rpr({ sz: 22, color: '595959', italic: true });
           parts.push(`<w:p><w:pPr><w:pStyle w:val="Listing1"/><w:spacing w:before="60" w:after="60"/>${r}</w:pPr>
             <w:r>${r}<w:t xml:space="preserve">${xe(line.replace(/^\*|\*$/g, ''))}</w:t></w:r></w:p>`);
           parts.push(hr());
+          i++;
         } else if (isBullet) {
           parts.push(bullet(line.replace(/^[-\u2013\u2022]\s*/, '')));
+          i++;
         } else if (line.trim()) {
+          // Job title or other text
           parts.push(np(line, 120, 80, { bold: true, sz: 24, color: '262626' }));
+          i++;
+        } else {
+          i++;
         }
-        i++;
       }
       parts.push(np('', 120));
       continue;
