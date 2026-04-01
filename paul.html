@@ -298,6 +298,7 @@ tbody td { padding: 11px 16px; font-size: 12px; color: var(--text); vertical-ali
           <div class="pitch-actions" id="pitch-actions" style="display:none">
             <button class="btn btn-sm" onclick="copyPitch()">Kopieren</button>
             <button class="btn btn-sm btn-primary" onclick="savePitch()">Als Entwurf</button>
+            <button class="btn btn-sm" onclick="openOutlook()">📧 In Outlook öffnen</button>
             <button class="btn btn-sm" onclick="printBrief()">🖨️ Als Brief drucken</button>
             <button class="btn btn-sm btn-orange" onclick="approvePitch()">✓ Freigeben</button>
           </div>
@@ -743,7 +744,16 @@ function printBrief() {
 }
 function copyPitch() { navigator.clipboard.writeText(currentPitchText).then(() => showToast('Kopiert ✓')); }
 function savePitch() { showToast('Als Entwurf gespeichert ✓'); }
-
+function openOutlook() {
+  const body = document.getElementById('pitch-body').innerText;
+  const company = document.getElementById('pitch-company').value || '';
+  const contact = document.getElementById('pitch-contact').value || '';
+  const emailMatch = contact.match(/[\w.\-]+@[\w.\-]+\.\w+/);
+  const email = emailMatch ? emailMatch[0] : '';
+  const subject = encodeURIComponent('Signium Austria – ' + company);
+  const bodyEncoded = encodeURIComponent(body);
+  window.location.href = 'mailto:' + email + '?subject=' + subject + '&body=' + bodyEncoded;
+}
 async function approvePitch() {
   if (!currentPitchText) return;
   const company = document.getElementById('pitch-company').value;
