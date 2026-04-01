@@ -342,6 +342,23 @@
   }
   select { cursor: pointer; }
 
+  /* Audience chips */
+  .audience-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .audience-chip {
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--gray-mid);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .2s;
+    background: white;
+    color: var(--gray-text);
+    user-select: none;
+  }
+  .audience-chip:hover { border-color: var(--navy); color: var(--navy); }
+  .audience-chip.active { background: var(--navy); color: white; border-color: var(--navy); }
+
   /* Tone selector */
   .tone-selector { display: flex; gap: 8px; }
   .tone-chip {
@@ -771,14 +788,14 @@
           </div>
           <div class="form-row cols-2">
             <div>
-              <label>Zielgruppe</label>
-              <select id="li-audience">
-                <option>CHROs & HR-Entscheider</option>
-                <option>CEOs & Vorstände</option>
-                <option>Board Members & Aufsichtsräte</option>
-                <option>Private Equity & Investoren</option>
-                <option>Allgemein (DACH/CEE Business)</option>
-              </select>
+              <label>Zielgruppe <span style="font-weight:400;color:var(--gray-sub);text-transform:none;letter-spacing:0">(Mehrfachauswahl)</span></label>
+              <div class="audience-chips" id="li-audience">
+                <div class="audience-chip" onclick="toggleAudience(this)">CHROs & HR-Entscheider</div>
+                <div class="audience-chip" onclick="toggleAudience(this)">CEOs & Vorstände</div>
+                <div class="audience-chip" onclick="toggleAudience(this)">Board Members & Aufsichtsräte</div>
+                <div class="audience-chip" onclick="toggleAudience(this)">Private Equity & Investoren</div>
+                <div class="audience-chip" onclick="toggleAudience(this)">Allgemein (DACH/CEE)</div>
+              </div>
             </div>
             <div>
               <label>Kampagnen-Ton</label>
@@ -829,13 +846,13 @@
           </div>
           <div class="form-row cols-2">
             <div>
-              <label>Zielgruppe</label>
-              <select id="wp-audience">
-                <option>CHROs & HR-Entscheider</option>
-                <option>CEOs & Vorstände</option>
-                <option>Board Members</option>
-                <option>Private Equity</option>
-              </select>
+              <label>Zielgruppe <span style="font-weight:400;color:var(--gray-sub);text-transform:none;letter-spacing:0">(Mehrfachauswahl)</span></label>
+              <div class="audience-chips" id="wp-audience">
+                <div class="audience-chip" onclick="toggleAudience(this)">CHROs & HR-Entscheider</div>
+                <div class="audience-chip" onclick="toggleAudience(this)">CEOs & Vorstände</div>
+                <div class="audience-chip" onclick="toggleAudience(this)">Board Members</div>
+                <div class="audience-chip" onclick="toggleAudience(this)">Private Equity</div>
+              </div>
             </div>
             <div>
               <label>Länge</label>
@@ -1155,6 +1172,16 @@ KOMMUNIKATIONSSTIL DES AUTORS:
 Der gesamte Inhalt muss in dieser Stimme verfasst sein. Kein generisches KI-Klingt-Alles-Gleich-Schreiben.`;
 }
 
+function toggleAudience(el) {
+  el.classList.toggle('active');
+}
+
+function getAudience(id) {
+  const chips = document.querySelectorAll('#' + id + ' .audience-chip.active');
+  if (chips.length === 0) return 'DACH/CEE Business Entscheider';
+  return Array.from(chips).map(c => c.textContent).join(', ');
+}
+
 // ── LANG ──
 function setLang(l) {
   currentLang = l;
@@ -1209,7 +1236,7 @@ async function generate(type) {
 
   if (type === 'linkedin') {
     const topic = document.getElementById('li-topic').value || 'Executive Search in CEE';
-    const audience = document.getElementById('li-audience').value;
+    const audience = getAudience('li-audience');
     const tone = currentTone['li'] || 'Sachlich';
     const ctx = document.getElementById('li-context').value;
     prompt = `${voice}
@@ -1236,7 +1263,7 @@ Keine Wiederholungen. Jeder Post steht für sich, gehört aber zur Kampagne.`;
 
   } else if (type === 'whitepaper-outline') {
     const topic = document.getElementById('wp-topic').value || 'Leadership in CEE';
-    const audience = document.getElementById('wp-audience').value;
+    const audience = getAudience('wp-audience');
     const thesis = document.getElementById('wp-thesis').value;
     prompt = `${voice}
 
