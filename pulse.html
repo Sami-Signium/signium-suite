@@ -1423,18 +1423,20 @@ async function generate(type) {
     const ctx = document.getElementById('li-context').value;
     prompt = `${voice}
 
-Du erstellst eine LinkedIn-Kampagne bestehend aus EXAKT 4 Posts für eine 4-Wochen-Sequenz.
+AUFGABE: LinkedIn-Kampagne mit 4 Posts für eine 4-Wochen-Sequenz.
 SPRACHE: ${langStr}
 THEMA: ${topic}
 ZIELGRUPPE: ${audience}
 TON: ${tone}
 ZUSÄTZLICHER KONTEXT: ${ctx || 'keiner'}
 
-WICHTIG: Erstelle NUR 4 Posts im Ton "${tone}" — keine anderen Varianten, keine 12 Posts.
+WICHTIG — RECHERCHE: Suche zuerst nach aktuellen Studien, Daten und Markttrends zu diesem Thema (McKinsey, Korn Ferry, HBR, Spencer Stuart, WirtschaftsWoche etc.). Baue konkrete Zahlen und Erkenntnisse in die Posts ein.
+
+WICHTIG — FORMAT: Erstelle NUR 4 Posts im Ton "${tone}". KEIN Markdown (kein **fett**, kein *kursiv*). Nur plain text.
 
 Format EXAKT so:
 ---WOCHE 1---
-[Post-Text, max. 1300 Zeichen, Hashtags am Ende inkl. #Signium #SigniumAustria]
+[Post-Text, max. 1300 Zeichen, mit konkreten Fakten/Zahlen, Hashtags am Ende inkl. #Signium #SigniumAustria]
 
 ---WOCHE 2---
 [Post-Text + Hashtags]
@@ -1445,7 +1447,7 @@ Format EXAKT so:
 ---WOCHE 4---
 [Post-Text + Hashtags]
 
-Roter Faden durch alle 4 Posts. Jeder Post steht für sich. Keine Wiederholungen.`;
+Roter Faden durch alle 4 Posts. Jeder Post steht für sich. Keine Wiederholungen. Substanziell und meinungsstark.`;
 
     outputEl = document.getElementById('out-linkedin');
 
@@ -1453,21 +1455,23 @@ Roter Faden durch alle 4 Posts. Jeder Post steht für sich. Keine Wiederholungen
     const topic = document.getElementById('wp-topic').value || 'Leadership in CEE';
     const audience = getAudience('wp-audience');
     const thesis = document.getElementById('wp-thesis').value;
-    const docCtx = uploadedDocs['wp'] ? `\n\nQUELLDOKUMENT (bitte inhaltlich einbeziehen):\n${uploadedDocs['wp']}` : '';
+    const docCtx = uploadedDocs['wp'] ? `\n\nEIGENE QUELLEN/PERSPEKTIVE (diese Kernbotschaft muss im Whitepaper enthalten sein):\n${uploadedDocs['wp']}` : '';
     prompt = `${voice}
 
-Erstelle eine detaillierte Outline für ein Whitepaper.
+AUFGABE: Outline für ein Thought-Leadership-Whitepaper.
 SPRACHE: ${langStr}
 TITEL/THEMA: ${topic}
 ZIELGRUPPE: ${audience}
 KERNTHESEN: ${thesis || 'keine spezifischen Vorgaben'}${docCtx}
 
-Die Outline soll 6-8 Kapitel/Abschnitte haben, jeweils mit:
-- Kapitelüberschrift
-- 3-4 Stichpunkte zu Kernaussagen/Inhalten
-- Geschätzte Wortanzahl pro Kapitel
+WICHTIG — RECHERCHE: Suche aktiv nach aktuellen Studien, Statistiken und Marktdaten zu diesem Thema. Plane konkrete Fakten und Quellen für jedes Kapitel ein.
 
-Schließe mit einer Zusammenfassung der Gesamtbotschaft ab.`;
+Erstelle eine Outline mit 6-8 Kapiteln. Für jedes Kapitel:
+- Prägnante Überschrift (kein Markdown)
+- 3-4 Stichpunkte: Kernaussagen + geplante Quellen/Daten
+- Geschätzte Wortanzahl
+
+Abschluss: Zusammenfassung der Gesamtbotschaft und Signium-Relevanz.`;
 
     outputEl = document.getElementById('out-whitepaper');
     document.getElementById('wp-output-title').textContent = 'Outline — Bitte überprüfen und dann "Volltext generieren"';
@@ -1477,19 +1481,22 @@ Schließe mit einer Zusammenfassung der Gesamtbotschaft ab.`;
     const thesis = document.getElementById('wp-thesis').value;
     const length = document.getElementById('wp-length').value;
     const lenStr = length==='short' ? '1.000–1.500' : length==='medium' ? '1.500–2.500' : '2.500–3.500';
+    const docCtx = uploadedDocs['wp'] ? `\n\nEIGENE QUELLEN/PERSPEKTIVE:\n${uploadedDocs['wp']}` : '';
     prompt = `${voice}
 
-Schreibe den vollständigen Whitepaper-Text basierend auf folgender Outline:
+AUFGABE: Vollständiger Whitepaper-Text basierend auf dieser Outline:
 ${wpOutlineText}
 
 SPRACHE: ${langStr}
 THEMA: ${topic}
 KERNTHESEN: ${thesis || ''}
-LÄNGE: ${lenStr} Wörter
+LÄNGE: ${lenStr} Wörter${docCtx}
 
-Schreibe professionellen, substanziellen Fachtext. Keine Floskeln. 
-Verwende Überschriften (##) zur Strukturierung.
-Am Ende: Kurze Zusammenfassung + Kontakthinweis Signium Austria.`;
+WICHTIG — RECHERCHE: Suche aktiv nach aktuellen Studien, Zahlen und Quellen für jeden Abschnitt. Zitiere konkrete Daten (z.B. "Laut McKinsey-Studie 2024...").
+
+WICHTIG — FORMAT: Kein Markdown (kein **fett**, kein *kursiv*). Schreibe plain text. Überschriften als eigenständige Zeilen in GROSSBUCHSTABEN.
+
+Struktur: Überschrift → substanzieller Text → nächste Überschrift. Klare Absätze. Am Ende: Zusammenfassung + Signium Austria Kontakthinweis.`;
 
     outputEl = document.getElementById('out-whitepaper');
     document.getElementById('wp-output-title').textContent = 'Vollständiges Whitepaper';
@@ -1499,25 +1506,38 @@ Am Ende: Kurze Zusammenfassung + Kontakthinweis Signium Austria.`;
     const focus = document.getElementById('nl-focus').value;
     const topics = document.getElementById('nl-topics').value;
     const editorial = document.getElementById('nl-editorial').value;
-    const docCtx = uploadedDocs['nl'] ? `\n\nQUELLDOKUMENT (bitte inhaltlich einbeziehen, ggf. Artikel daraus adaptieren):\n${uploadedDocs['nl']}` : '';
+    const docCtx = uploadedDocs['nl'] ? `\n\nEIGENE QUELLEN/PERSPEKTIVE (diese Kernbotschaft muss enthalten sein, aber stark ausbauen):\n${uploadedDocs['nl']}` : '';
     prompt = `${voice}
 
-Erstelle einen Quartalsnewsletter für Signium Austria.
+AUFGABE: Quartalsnewsletter für Signium Austria — tiefgehend, substanziell, wie aus einem teuren Fachmagazin.
 SPRACHE: ${langStr}
 QUARTAL: ${quarter}
 SCHWERPUNKT: ${focus || 'Executive Leadership & Board Governance'}
 KERNTHEMEN: ${topics || 'Leadership, Executive Search, CEE Markt'}
-EDITORIALE NOTIZ VON SAMI: ${editorial || 'keine'}${docCtx}
+EDITORIALE NOTIZ: ${editorial || 'keine'}${docCtx}
 
-Struktur:
-1. Betreffzeile (für Email-Versand)
-2. Editorial / Persönliche Einleitung (200 Wörter, Stimme des Managing Partners)
-3. Hauptthema 1 mit Titel + ca. 300 Wörter
-4. Hauptthema 2 mit Titel + ca. 300 Wörter  
-5. Marktausblick ${quarter} (150 Wörter)
-6. Closing + Kontakt Signium Austria
+WICHTIG — RECHERCHE: Suche aktiv nach aktuellen Studien, Marktdaten und Trends zu den Kernthemen. Konkrete Zahlen und Quellen einbauen.
 
-Professioneller, persönlicher Ton. Kein generisches Newsletter-Bla-Bla.`;
+WICHTIG — FORMAT: KEIN Markdown (kein **fett**, kein *kursiv*, keine ---). Schreibe plain text mit klaren Absätzen. Jeder Abschnitt durch eine leere Zeile getrennt.
+
+Struktur — schreibe jeden Abschnitt als eigenen Block:
+
+BETREFF: [prägnante Email-Betreffzeile]
+
+EDITORIAL
+[200 Wörter, persönliche Stimme des Managing Partners, konkret und meinungsstark]
+
+ARTIKEL 1: [Titel in Grossbuchstaben]
+[350-400 Wörter, tiefgehend, mit recherchierten Fakten und Zahlen, klare Absätze]
+
+ARTIKEL 2: [Titel in Grossbuchstaben]
+[350-400 Wörter, tiefgehend, mit recherchierten Fakten, klare Absätze]
+
+MARKTAUSBLICK ${quarter}
+[200 Wörter, konkrete Prognosen mit Daten-Basis]
+
+CLOSING
+[Kurzer persönlicher Abschluss + Kontaktaufforderung]`;
 
     outputEl = document.getElementById('out-newsletter');
 
@@ -1756,181 +1776,137 @@ function downloadDocx(format) {
 
 function renderNewsletterHTML(text) {
   const quarter = document.getElementById('nl-quarter')?.value || '';
-  const focus = document.getElementById('nl-focus')?.value || 'Leadership & Executive Search';
+  const focus = document.getElementById('nl-focus')?.value || '';
   const photo1 = uploadedPhotos['nl-1'] || '';
   const photo2 = uploadedPhotos['nl-2'] || '';
   const date = new Date().toLocaleDateString('de-AT', {day:'2-digit', month:'long', year:'numeric'});
 
-  // Parse sections from text
+  const clean = (t) => (t || '')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/^#{1,3}\s+/gm, '')
+    .replace(/---+/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .trim();
+
   const sections = parseNewsletterSections(text);
+
+  const articleBlocks = sections.articles.map((art, i) => {
+    const showPhoto = i === 1 && photo2;
+    const bodyParas = clean(art.body).split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('');
+    return `
+      <div class="article-block">
+        <div class="article-number">0${i+1}</div>
+        ${art.title ? `<h2 class="article-title">${clean(art.title)}</h2>` : ''}
+        <div class="article-rule"></div>
+        ${showPhoto ? `<div class="article-image"><img src="${photo2}" alt=""></div>` : ''}
+        <div class="article-body">${bodyParas}</div>
+      </div>`;
+  }).join('');
 
   const html = `<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Signium Newsletter ${quarter}</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: #f0f2f5; color: #2c2c2c; }
-  .page { max-width: 780px; margin: 0 auto; background: white; box-shadow: 0 4px 40px rgba(0,0,0,0.15); }
-
-  /* HEADER */
-  .nl-header { background: #081D4D; padding: 0; }
-  .nl-header-top { display: flex; align-items: stretch; }
-  .nl-header-brand { padding: 32px 36px; flex: 1; }
-  .nl-brand-name { font-family: 'Cormorant Garamond', serif; font-size: 48px; font-weight: 700; color: white; letter-spacing: -1px; line-height: 1; }
-  .nl-brand-name span { color: #FF6A42; }
-  .nl-brand-sub { font-size: 11px; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 2px; margin-top: 6px; }
-  .nl-header-meta { background: #FF6A42; padding: 32px 28px; text-align: right; min-width: 180px; display: flex; flex-direction: column; justify-content: center; }
-  .nl-quarter-label { font-size: 28px; font-weight: 700; color: white; font-family: 'Cormorant Garamond', serif; }
-  .nl-date-label { font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
-  .nl-header-bottom { background: #6BCBC2; padding: 12px 36px; }
-  .nl-focus-line { font-size: 13px; font-weight: 600; color: #081D4D; text-transform: uppercase; letter-spacing: 1.5px; }
-
-  /* HERO IMAGE */
-  .nl-hero { position: relative; overflow: hidden; height: ${photo1 ? '280px' : '0'}; }
-  .nl-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .nl-hero-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(8,29,77,0.7) 0%, transparent 50%); }
-
-  /* EDITORIAL */
-  .nl-editorial { display: flex; gap: 0; border-bottom: 3px solid #EEF0F4; }
-  .nl-editorial-accent { width: 6px; background: #FF6A42; flex-shrink: 0; }
-  .nl-editorial-body { padding: 32px 36px; background: #F7F8FA; flex: 1; }
-  .nl-editorial-label { font-size: 10px; font-weight: 700; color: #FF6A42; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
-  .nl-editorial-text { font-size: 15px; line-height: 1.8; color: #2c2c2c; font-style: italic; font-family: 'Cormorant Garamond', serif; font-size: 18px; }
-  .nl-editorial-sig { margin-top: 16px; font-size: 13px; font-weight: 600; color: #081D4D; }
-
-  /* ARTICLES GRID */
-  .nl-articles { padding: 36px; display: flex; flex-direction: column; gap: 32px; }
-
-  /* Article block */
-  .nl-article { border: 1px solid #EEF0F4; border-radius: 8px; overflow: hidden; }
-  .nl-article-header { background: #081D4D; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
-  .nl-article-num { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1.5px; }
-  .nl-article-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; color: white; padding: 20px 24px 0; }
-  .nl-article-body { padding: 16px 24px 24px; font-size: 14px; line-height: 1.8; color: #4A4F5C; background: white; }
-
-  /* Photo in article */
-  .nl-article-photo { width: 100%; height: 200px; object-fit: cover; display: block; }
-
-  /* Highlight box */
-  .nl-highlight { margin: 32px 36px 0; background: linear-gradient(135deg, #081D4D, #0d2a6b); border-radius: 8px; padding: 28px 32px; color: white; }
-  .nl-highlight-label { font-size: 10px; font-weight: 700; color: #6BCBC2; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; }
-  .nl-highlight-text { font-family: 'Cormorant Garamond', serif; font-size: 20px; line-height: 1.6; color: rgba(255,255,255,0.9); font-style: italic; }
-
-  /* Teal info block */
-  .nl-infoblock { margin: 24px 36px 0; background: #EDF7F6; border-left: 4px solid #6BCBC2; border-radius: 0 8px 8px 0; padding: 20px 24px; }
-  .nl-infoblock-title { font-size: 13px; font-weight: 700; color: #081D4D; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.8px; }
-  .nl-infoblock-text { font-size: 13px; line-height: 1.7; color: #4A4F5C; }
-
-  /* FOOTER */
-  .nl-footer { margin-top: 40px; background: #081D4D; padding: 32px 36px; }
-  .nl-footer-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 32px; margin-bottom: 24px; }
-  .nl-footer-brand { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; color: white; }
-  .nl-footer-brand span { color: #FF6A42; }
-  .nl-footer-contact { font-size: 12px; color: rgba(255,255,255,0.6); line-height: 1.8; text-align: right; }
-  .nl-footer-divider { height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 16px; }
-  .nl-footer-legal { font-size: 11px; color: rgba(255,255,255,0.3); text-align: center; }
-
-  /* PRINT */
-  @media print {
-    body { background: white; }
-    .page { box-shadow: none; max-width: 100%; }
-    .no-print { display: none; }
-  }
-
-  /* PRINT BAR */
-  .print-bar { background: #FF6A42; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-  .print-bar span { color: white; font-size: 13px; font-weight: 600; }
-  .print-btn { padding: 8px 20px; background: white; color: #FF6A42; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #f5f5f5; color: #1a1a1a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .print-bar { position: sticky; top: 0; z-index: 100; background: #081D4D; padding: 10px 32px; display: flex; align-items: center; justify-content: space-between; }
+  .print-bar-text { font-size: 12px; color: rgba(255,255,255,0.5); letter-spacing: 0.5px; }
+  .print-btn { padding: 7px 20px; background: white; color: #081D4D; border: none; border-radius: 3px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+  .page { max-width: 680px; margin: 24px auto; background: white; box-shadow: 0 2px 32px rgba(0,0,0,0.10); }
+  .top-bar { background: #081D4D; padding: 20px 48px; display: flex; align-items: center; justify-content: space-between; }
+  .top-bar-brand { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 3px; }
+  .top-bar-right { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 2px; }
+  .hero-image { width: 100%; display: ${photo1 ? 'block' : 'none'}; overflow: hidden; height: 340px; }
+  .hero-image img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
+  .main { padding: 56px 64px; }
+  .masthead { margin-bottom: 48px; }
+  .masthead-overline { font-size: 10px; font-weight: 500; color: #FF6A42; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 16px; }
+  .masthead-title { font-family: 'Cormorant Garamond', serif; font-size: 38px; font-weight: 300; color: #081D4D; line-height: 1.2; letter-spacing: -0.5px; margin-bottom: 20px; }
+  .masthead-rule { width: 48px; height: 2px; background: #FF6A42; margin-bottom: 20px; }
+  .masthead-meta { font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 1.5px; }
+  .editorial { margin-bottom: 48px; padding-bottom: 48px; border-bottom: 1px solid #e8e8e8; }
+  .section-label { font-size: 9px; font-weight: 500; color: #081D4D; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 20px; }
+  .editorial-text { font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 300; line-height: 1.9; color: #2a2a2a; font-style: italic; }
+  .editorial-text p { margin-bottom: 16px; }
+  .editorial-sig { margin-top: 24px; font-size: 12px; font-weight: 500; color: #081D4D; letter-spacing: 0.5px; }
+  .articles { display: flex; flex-direction: column; gap: 0; }
+  .article-block { padding: 40px 0; border-bottom: 1px solid #e8e8e8; }
+  .article-block:last-child { border-bottom: none; }
+  .article-number { font-size: 10px; font-weight: 500; color: #FF6A42; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 12px; }
+  .article-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; color: #081D4D; line-height: 1.25; margin-bottom: 16px; }
+  .article-rule { width: 32px; height: 1px; background: #081D4D; margin-bottom: 20px; }
+  .article-image { width: 100%; height: 220px; overflow: hidden; margin-bottom: 24px; }
+  .article-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .article-body p { font-size: 14px; line-height: 1.85; color: #3a3a3a; margin-bottom: 14px; }
+  .article-body p:last-child { margin-bottom: 0; }
+  .outlook-block { background: #081D4D; padding: 40px 64px; }
+  .outlook-label { font-size: 9px; font-weight: 500; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 16px; }
+  .outlook-body p { font-size: 13px; line-height: 1.85; color: rgba(255,255,255,0.65); margin-bottom: 12px; }
+  .about-block { padding: 32px 64px; border-top: 1px solid #e8e8e8; }
+  .about-label { font-size: 9px; font-weight: 500; color: #999; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 10px; }
+  .about-text { font-size: 12px; line-height: 1.75; color: #888; }
+  .footer { background: #081D4D; padding: 28px 64px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+  .footer-brand { font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 4px; }
+  .footer-contact { font-size: 11px; color: rgba(255,255,255,0.4); line-height: 1.8; text-align: right; }
+  .footer-contact a { color: rgba(255,255,255,0.6); text-decoration: none; }
+  @media print { body { background: white; } .print-bar { display: none; } .page { box-shadow: none; margin: 0; max-width: 100%; } }
 </style>
 </head>
 <body>
-
-<div class="print-bar no-print">
-  <span>📄 Signium Newsletter — Druckvorschau</span>
-  <button class="print-btn" onclick="window.print()">🖨 Als PDF drucken</button>
+<div class="print-bar">
+  <span class="print-bar-text">Signium Austria · Newsletter ${quarter}</span>
+  <button class="print-btn" onclick="window.print()">Als PDF speichern</button>
 </div>
-
 <div class="page">
-  <!-- HEADER -->
-  <div class="nl-header">
-    <div class="nl-header-top">
-      <div class="nl-header-brand">
-        <div class="nl-brand-name">SIGNI<span>UM</span></div>
-        <div class="nl-brand-sub">Executive Search & Leadership Advisory · Austria</div>
-      </div>
-      <div class="nl-header-meta">
-        <div class="nl-quarter-label">${quarter}</div>
-        <div class="nl-date-label">${date}</div>
-      </div>
-    </div>
-    <div class="nl-header-bottom">
-      <div class="nl-focus-line">Schwerpunkt: ${focus}</div>
-    </div>
+  <div class="top-bar">
+    <div class="top-bar-brand">Signium · Executive Search &amp; Leadership Advisory</div>
+    <div class="top-bar-right">${quarter} · ${date}</div>
   </div>
-
-  ${photo1 ? `<div class="nl-hero"><img src="${photo1}" alt=""><div class="nl-hero-overlay"></div></div>` : ''}
-
-  <!-- EDITORIAL -->
-  <div class="nl-editorial">
-    <div class="nl-editorial-accent"></div>
-    <div class="nl-editorial-body">
-      <div class="nl-editorial-label">Editorial</div>
-      <div class="nl-editorial-text">${sections.editorial || sections.all[0] || ''}</div>
-      <div class="nl-editorial-sig">— Sami Harrach, Managing Partner</div>
+  ${photo1 ? `<div class="hero-image"><img src="${photo1}" alt=""></div>` : ''}
+  <div class="main">
+    <div class="masthead">
+      <div class="masthead-overline">Newsletter · Signium Austria</div>
+      <div class="masthead-title">${focus || 'Leadership &amp; Executive Search'}</div>
+      <div class="masthead-rule"></div>
+      <div class="masthead-meta">${quarter} · Signium Austria — Stein &amp; Partner GmbH</div>
     </div>
-  </div>
-
-  <!-- ARTICLES -->
-  <div class="nl-articles">
-    ${sections.articles.map((art, i) => `
-    <div class="nl-article">
-      <div class="nl-article-header">
-        <span class="nl-article-num">Artikel ${i+1}</span>
+    <div class="editorial">
+      <div class="section-label">Editorial</div>
+      <div class="editorial-text">
+        ${clean(sections.editorial).split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('')}
       </div>
-      ${art.title ? `<div class="nl-article-title">${art.title}</div>` : ''}
-      ${i === 0 && photo2 ? `<img class="nl-article-photo" src="${photo2}" alt="">` : ''}
-      <div class="nl-article-body">${art.body.replace(/\n/g,'<br>')}</div>
-    </div>`).join('')}
+      <div class="editorial-sig">— Sami Harrach, Managing Partner</div>
+    </div>
+    <div class="articles">${articleBlocks}</div>
   </div>
-
   ${sections.outlook ? `
-  <div class="nl-highlight">
-    <div class="nl-highlight-label">Marktausblick</div>
-    <div class="nl-highlight-text">${sections.outlook.replace(/\n/g,'<br>')}</div>
-  </div>` : ''}
-
-  <div class="nl-infoblock">
-    <div class="nl-infoblock-title">Über Signium Austria</div>
-    <div class="nl-infoblock-text">Signium Austria — Stein & Partner GmbH ist Teil von Signium International, einem globalen Executive Search Netzwerk mit Präsenz in 40+ Ländern. Wir sind spezialisiert auf die Besetzung von Führungspositionen im DACH/CEE-Raum.</div>
-  </div>
-
-  <!-- FOOTER -->
-  <div class="nl-footer">
-    <div class="nl-footer-top">
-      <div>
-        <div class="nl-footer-brand">SIGNI<span>UM</span></div>
-      </div>
-      <div class="nl-footer-contact">
-        Sami Harrach · Managing Partner<br>
-        sami.harrach@signium.com<br>
-        www.signium.com/austria
-      </div>
+  <div class="outlook-block">
+    <div class="outlook-label">Marktausblick ${quarter}</div>
+    <div class="outlook-body">
+      ${clean(sections.outlook).split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('')}
     </div>
-    <div class="nl-footer-divider"></div>
-    <div class="nl-footer-legal">© ${new Date().getFullYear()} Signium Austria — Stein & Partner GmbH · Alle Rechte vorbehalten</div>
+  </div>` : ''}
+  <div class="about-block">
+    <div class="about-label">Über Signium Austria</div>
+    <div class="about-text">Signium Austria — Stein &amp; Partner GmbH ist Teil von Signium International, einem globalen Executive Search Netzwerk mit Präsenz in 40+ Ländern. Spezialisiert auf Führungspositionen im DACH/CEE-Raum.</div>
+  </div>
+  <div class="footer">
+    <div class="footer-brand">Signium</div>
+    <div class="footer-contact">Sami Harrach · Managing Partner<br><a href="mailto:sami.harrach@signium.com">sami.harrach@signium.com</a><br>www.signium.com/austria</div>
   </div>
 </div>
-
 </body></html>`;
 
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
-  showToast('Newsletter geöffnet — "Als PDF drucken" oben rechts ✓', 'success');
+  window.open(URL.createObjectURL(blob), '_blank');
+  showToast('Newsletter geöffnet — "Als PDF speichern" oben ✓', 'success');
 }
+
 
 function parseNewsletterSections(text) {
   const lines = text.split('\n');
@@ -1938,49 +1914,54 @@ function parseNewsletterSections(text) {
   let outlook = '';
   const articles = [];
   let currentArticle = null;
-  let mode = 'editorial';
+  let mode = 'start';
 
   for (const line of lines) {
     const t = line.trim();
     if (!t) continue;
 
-    const isHeading = t.startsWith('#') || /^(Betreff|Betreffzeile|Editorial|Marktausblick|Closing|Kontakt|Artikel|Thema|Hauptthema)/i.test(t);
-
-    if (/marktausblick|ausblick|outlook/i.test(t) && isHeading) {
+    // Detect section headers from new structured format
+    if (/^BETREFF:/i.test(t)) { mode = 'skip'; continue; }
+    if (/^EDITORIAL$/i.test(t)) { mode = 'editorial'; continue; }
+    if (/^MARKTAUSBLICK/i.test(t)) {
       if (currentArticle) { articles.push(currentArticle); currentArticle = null; }
       mode = 'outlook'; continue;
     }
-    if (/closing|kontakt|abschluss|über uns/i.test(t) && isHeading) {
+    if (/^CLOSING$/i.test(t) || /^KONTAKT$/i.test(t)) {
       if (currentArticle) { articles.push(currentArticle); currentArticle = null; }
-      mode = 'closing'; continue;
+      mode = 'skip'; continue;
     }
-    if (/betreff|betreffzeile/i.test(t) && isHeading) continue; // skip subject line
-    if ((/editorial|einleitung|liebe|sehr geehrte/i.test(t) || mode === 'editorial') && !currentArticle) {
-      if (!/^#/.test(t)) editorial += (editorial ? ' ' : '') + t;
-      continue;
+    if (/^ARTIKEL\s+\d+:/i.test(t)) {
+      if (currentArticle) articles.push(currentArticle);
+      const title = t.replace(/^ARTIKEL\s+\d+:\s*/i, '');
+      currentArticle = { title, body: '' };
+      mode = 'article'; continue;
     }
-    if (/^##?\s+/.test(t) || (isHeading && (t.length < 80))) {
+
+    // Also handle ## headings
+    if (/^##?\s+/.test(t) && mode !== 'editorial') {
       if (currentArticle) articles.push(currentArticle);
       currentArticle = { title: t.replace(/^#+\s*/, ''), body: '' };
       mode = 'article'; continue;
     }
 
+    if (mode === 'skip') continue;
     if (mode === 'outlook') { outlook += (outlook ? '\n' : '') + t; }
-    else if (currentArticle) { currentArticle.body += (currentArticle.body ? '\n' : '') + t; }
-    else { editorial += (editorial ? ' ' : '') + t; }
+    else if (mode === 'article' && currentArticle) { currentArticle.body += (currentArticle.body ? '\n' : '') + t; }
+    else { editorial += (editorial ? '\n' : '') + t; }
   }
   if (currentArticle) articles.push(currentArticle);
 
-  // Fallback: if no articles parsed, split raw text into blocks
-  if (articles.length === 0) {
+  // Fallback if nothing parsed
+  if (!editorial && articles.length === 0) {
     const chunks = text.split(/\n{2,}/);
-    chunks.slice(1).forEach((c, i) => {
+    if (chunks[0]) editorial = chunks[0].trim();
+    chunks.slice(1).forEach(c => {
       if (c.trim()) articles.push({ title: '', body: c.trim() });
     });
-    if (!editorial && chunks[0]) editorial = chunks[0].trim();
   }
 
-  return { editorial, articles: articles.slice(0, 4), outlook, all: [text] };
+  return { editorial, articles: articles.slice(0, 4), outlook };
 }
 
 function renderWhitepaperHTML(text) {
