@@ -87,7 +87,7 @@ function companyHeader(datePart, companyPart) {
   ppr += rpr({ sz: 22, color: '414042' });
   if (companyPart) {
     return `<w:p><w:pPr>${ppr}</w:pPr>
-      <w:r>${dateRpr}<w:t xml:space="preserve">${xe(datePart)}</w:t><w:tab/></w:r>
+      <w:r>${dateRpr}<w:t xml:space="preserve">${xe(datePart)}   </w:t></w:r>
       <w:r>${companyRpr}<w:t xml:space="preserve">${xe(companyPart)}</w:t></w:r>
     </w:p>`;
   }
@@ -331,9 +331,9 @@ function buildBodyXml(reportText, candidateName, position, client, datum) {
         const isBullet = /^[-\u2013\u2022]/.test(line);
         const isCompanyDesc = /^\*/.test(line);
         // Date pattern - can be standalone date line
-        const isDateOnly = /^(seit\s|ab\s|since\s)?\d{4}|^(Jan|Feb|M.r|Apr|Mai|Jun|Jul|Aug|Sep|Okt|Nov|Dez|Oct|Mar|März)/.test(line) && !isBullet && line.length < 30;
-        // Full date+company on same line (e.g. "2019: Firma" or "2019 - Firma")
-        const isDateWithCompany = /^(seit\s|ab\s)?\d{4}/.test(line) && (line.includes(': ') || line.includes(' - ') || line.includes(' – ')) && !isBullet;
+        const isDateOnly = /^(seit\s|ab\s|since\s)?\d{4}\s*[-–]\s*\d{4}$|^(seit|ab|since)\s+\d{4}$/.test(line.trim()) && !isBullet;
+        // Full date+company on same line (e.g. "2019: Firma" or "2019-2021: Firma")
+        const isDateWithCompany = /^(seit\s|ab\s)?\d{4}/.test(line) && (line.includes(': ') || (line.match(/\d{4}/) && line.length > 15 && !line.match(/^\d{4}\s*[-–]\s*\d{4}$/))) && !isBullet;
         // Company name line (all caps or title after date line)
         const nextLine = content[i + 1] || '';
         const isDateFollowedByCompany = isDateOnly && nextLine.length > 0 && !nextLine.startsWith('*') && !nextLine.startsWith('-');
