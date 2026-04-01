@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PULSE — PR & Communication Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --navy: #081D4D;
+    --navy-mid: #0d2a6b;
+    --navy-light: #1a3a7a;
+    --orange: #FF6A42;
+    --orange-light: #ff8a68;
+    --teal: #6BCBC2;
+    --teal-light: #8ddbd3;
+    --blue: #24629B;
+    --white: #ffffff;
+    --off-white: #F7F8FA;
+    --gray-light: #EEF0F4;
+    --gray-mid: #C8CDD8;
+    --gray-text: #4A4F5C;
+    --gray-sub: #7A8090;
+    --success: #2ECC71;
+    --font-display: 'Cormorant Garamond', serif;
+    --font-body: 'DM Sans', sans-serif;
+    --radius: 8px;
+    --shadow: 0 2px 16px rgba(8,29,77,0.10);
+    --shadow-lg: 0 8px 40px rgba(8,29,77,0.16);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--off-white);
+    color: var(--gray-text);
+    min-height: 100vh;
+  }
+
+  /* ── AUTH ── */
+  #auth-screen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    background: var(--navy);
+    background-image: radial-gradient(ellipse at 20% 50%, rgba(36,98,155,0.3) 0%, transparent 60%),
+                      radial-gradient(ellipse at 80% 20%, rgba(107,203,194,0.15) 0%, transparent 50%);
+  }
+  .auth-card {
+    background: white;
+    border-radius: 16px;
+    padding: 48px 40px;
+    width: 380px;
+    text-align: center;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.3);
+  }
+  .auth-logo {
+    font-family: var(--font-display);
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+  .auth-logo span { color: var(--orange); }
+  .auth-sub {
+    font-size: 13px;
+    color: var(--gray-sub);
+    margin: 6px 0 32px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 500;
+  }
+  .auth-input {
+    width: 100%;
+    padding: 13px 16px;
+    border: 1.5px solid var(--gray-mid);
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--navy);
+    outline: none;
+    transition: border-color .2s;
+    margin-bottom: 12px;
+    text-align: center;
+    letter-spacing: 3px;
+  }
+  .auth-input:focus { border-color: var(--orange); }
+  .auth-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--navy);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .auth-btn:hover { background: var(--navy-light); }
+  .auth-error { color: var(--orange); font-size: 13px; margin-top: 8px; }
+
+  /* ── MAIN APP ── */
+  #app { display: none; flex-direction: column; min-height: 100vh; }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--navy);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+  .header-left { display: flex; align-items: center; gap: 20px; }
+  .header-logo {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -0.5px;
+  }
+  .header-logo span { color: var(--orange); }
+  .header-tagline {
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 500;
+    padding-left: 20px;
+    border-left: 1px solid rgba(255,255,255,0.15);
+  }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .header-nav-btn {
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    font-family: var(--font-body);
+    transition: all .2s;
+  }
+  .btn-ghost {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.7);
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.15); color: white; }
+  .btn-ghost.active {
+    background: rgba(255,106,66,0.2);
+    color: var(--orange);
+  }
+  .lang-toggle {
+    display: flex;
+    background: rgba(255,255,255,0.08);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .lang-btn {
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.5);
+    font-family: var(--font-body);
+    transition: all .2s;
+    letter-spacing: 0.5px;
+  }
+  .lang-btn.active { background: var(--orange); color: white; }
+
+  /* ── CONTENT ── */
+  .content { flex: 1; padding: 32px; max-width: 1100px; margin: 0 auto; width: 100%; }
+
+  /* ── VOICE SETUP BANNER ── */
+  .voice-banner {
+    background: linear-gradient(135deg, var(--navy), var(--navy-light));
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .voice-banner-text h3 {
+    font-family: var(--font-display);
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .voice-banner-text p { color: rgba(255,255,255,0.6); font-size: 13px; }
+  .voice-banner-btn {
+    padding: 9px 20px;
+    background: var(--orange);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: var(--font-body);
+    transition: background .2s;
+  }
+  .voice-banner-btn:hover { background: var(--orange-light); }
+
+  /* ── FORMAT CARDS ── */
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+  .section-sub { font-size: 14px; color: var(--gray-sub); margin-bottom: 24px; }
+
+  .format-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .format-card {
+    background: white;
+    border: 2px solid var(--gray-light);
+    border-radius: 12px;
+    padding: 22px 20px;
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .format-card:hover {
+    border-color: var(--navy);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+  .format-card.active {
+    border-color: var(--orange);
+    background: #fff8f6;
+  }
+  .format-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--gray-light);
+    transition: background .2s;
+  }
+  .format-card.active::before { background: var(--orange); }
+  .format-icon {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+  .icon-linkedin { background: #E8F0FD; }
+  .icon-whitepaper { background: #EDF7F6; }
+  .icon-newsletter { background: #FFF0ED; }
+  .icon-press { background: #EEF0F8; }
+  .format-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .format-desc { font-size: 12px; color: var(--gray-sub); line-height: 1.5; }
+
+  /* ── GENERATOR PANEL ── */
+  .generator-panel {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 32px;
+    display: none;
+  }
+  .generator-panel.visible { display: block; }
+  .panel-header {
+    background: var(--navy);
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .panel-header-icon {
+    width: 32px; height: 32px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .panel-header h2 {
+    font-family: var(--font-display);
+    color: white;
+    font-size: 20px;
+    font-weight: 600;
+  }
+  .panel-header span { color: rgba(255,255,255,0.5); font-size: 13px; margin-left: auto; }
+  .panel-body { padding: 28px 24px; }
+
+  /* ── FORM ELEMENTS ── */
+  .form-row { display: grid; gap: 16px; margin-bottom: 20px; }
+  .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--navy);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 7px;
+  }
+  input[type=text], input[type=email], textarea, select {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--gray-light);
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--navy);
+    background: var(--off-white);
+    outline: none;
+    transition: border-color .2s;
+    resize: vertical;
+  }
+  input[type=text]:focus, textarea:focus, select:focus {
+    border-color: var(--orange);
+    background: white;
+  }
+  select { cursor: pointer; }
+
+  /* Tone selector */
+  .tone-selector { display: flex; gap: 8px; }
+  .tone-chip {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1.5px solid var(--gray-mid);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .2s;
+    background: white;
+    color: var(--gray-text);
+  }
+  .tone-chip:hover { border-color: var(--navy); color: var(--navy); }
+  .tone-chip.active { background: var(--navy); color: white; border-color: var(--navy); }
+
+  /* ── GENERATE BTN ── */
+  .generate-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 28px;
+    background: var(--orange);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+    margin-top: 8px;
+  }
+  .generate-btn:hover { background: var(--orange-light); transform: translateY(-1px); }
+  .generate-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .generate-btn .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    display: none;
+  }
+  .generate-btn.loading .spinner { display: block; }
+  .generate-btn.loading .btn-label { opacity: 0.7; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── OUTPUT AREA ── */
+  .output-area {
+    margin-top: 28px;
+    border-top: 1.5px solid var(--gray-light);
+    padding-top: 24px;
+    display: none;
+  }
+  .output-area.visible { display: block; }
+  .output-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .output-title {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--navy);
+  }
+  .output-actions { display: flex; gap: 8px; }
+  .action-btn {
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--gray-mid);
+    background: white;
+    color: var(--gray-text);
+    font-family: var(--font-body);
+    transition: all .2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .action-btn:hover { border-color: var(--navy); color: var(--navy); }
+  .action-btn.primary { background: var(--navy); color: white; border-color: var(--navy); }
+  .action-btn.primary:hover { background: var(--navy-light); }
+  .action-btn.teal { background: var(--teal); color: var(--navy); border-color: var(--teal); }
+  .action-btn.teal:hover { background: var(--teal-light); }
+
+  /* LinkedIn campaign posts */
+  .campaign-posts { display: flex; flex-direction: column; gap: 16px; }
+  .post-card {
+    background: var(--off-white);
+    border: 1.5px solid var(--gray-light);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .post-card-header {
+    background: var(--navy);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .post-week {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.6);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .post-tone-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+  .badge-sachlich { background: rgba(107,203,194,0.2); color: var(--teal); }
+  .badge-persönlich { background: rgba(255,106,66,0.2); color: var(--orange); }
+  .badge-provokant { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+  .post-content {
+    padding: 16px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--gray-text);
+    white-space: pre-wrap;
+  }
+  .post-copy-btn {
+    margin: 0 16px 12px;
+    padding: 7px 14px;
+    background: white;
+    border: 1.5px solid var(--gray-mid);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font-body);
+    color: var(--gray-text);
+    transition: all .2s;
+  }
+  .post-copy-btn:hover { border-color: var(--teal); color: var(--navy); }
+
+  /* Generic text output */
+  .text-output {
+    background: var(--off-white);
+    border: 1.5px solid var(--gray-light);
+    border-radius: 10px;
+    padding: 24px;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--gray-text);
+    white-space: pre-wrap;
+    min-height: 200px;
+  }
+
+  /* ── ARCHIVE TAB ── */
+  #archive-view { display: none; }
+  .archive-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .archive-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-chip {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--gray-mid);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    background: white;
+    color: var(--gray-sub);
+    font-family: var(--font-body);
+    transition: all .2s;
+  }
+  .filter-chip:hover, .filter-chip.active {
+    background: var(--navy); color: white; border-color: var(--navy);
+  }
+  .archive-table {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .archive-table table { width: 100%; border-collapse: collapse; }
+  .archive-table th {
+    background: var(--navy);
+    color: rgba(255,255,255,0.8);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 12px 16px;
+    text-align: left;
+  }
+  .archive-table td {
+    padding: 13px 16px;
+    font-size: 13px;
+    color: var(--gray-text);
+    border-bottom: 1px solid var(--gray-light);
+  }
+  .archive-table tr:last-child td { border-bottom: none; }
+  .archive-table tr:hover td { background: var(--off-white); }
+  .format-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-linkedin { background: #E8F0FD; color: #1a56c4; }
+  .badge-whitepaper { background: #EDF7F6; color: #1a7a72; }
+  .badge-newsletter { background: #FFF0ED; color: #b83d1e; }
+  .badge-press { background: #EEF0F8; color: var(--navy); }
+  .lang-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .lang-de { background: var(--gray-light); color: var(--navy); }
+  .lang-en { background: rgba(107,203,194,0.2); color: #1a7a72; }
+  .archive-view-btn {
+    padding: 5px 12px;
+    background: white;
+    border: 1.5px solid var(--gray-mid);
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--font-body);
+    color: var(--gray-sub);
+    transition: all .2s;
+  }
+  .archive-view-btn:hover { border-color: var(--orange); color: var(--orange); }
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--gray-sub);
+  }
+  .empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+  .empty-state p { font-size: 14px; }
+
+  /* ── VOICE MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(8,29,77,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white;
+    border-radius: 16px;
+    padding: 36px 32px;
+    width: 560px;
+    max-width: 95vw;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.3);
+  }
+  .modal h2 {
+    font-family: var(--font-display);
+    font-size: 26px;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+  .modal p { font-size: 13px; color: var(--gray-sub); margin-bottom: 24px; line-height: 1.6; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+  .modal-cancel {
+    padding: 10px 20px;
+    background: var(--gray-light);
+    color: var(--gray-text);
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .modal-save {
+    padding: 10px 24px;
+    background: var(--navy);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .modal-save:hover { background: var(--navy-light); }
+
+  /* Archive detail modal */
+  .archive-content-view {
+    white-space: pre-wrap;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--gray-text);
+    background: var(--off-white);
+    border-radius: 8px;
+    padding: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+    margin-top: 16px;
+  }
+
+  /* Notification */
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--navy);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all .3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { background: var(--success); }
+  .toast.error { background: #e74c3c; }
+
+  @media (max-width: 768px) {
+    .format-grid { grid-template-columns: 1fr 1fr; }
+    .form-row.cols-2, .form-row.cols-3 { grid-template-columns: 1fr; }
+    .content { padding: 20px 16px; }
+    .header { padding: 0 16px; }
+    .header-tagline { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">PUL<span>SE</span></div>
+    <div class="auth-sub">PR & Communication · Signium Suite</div>
+    <input type="password" class="auth-input" id="auth-pw" placeholder="••••••••••••" onkeydown="if(event.key==='Enter')doAuth()">
+    <button class="auth-btn" onclick="doAuth()">Zugang</button>
+    <div class="auth-error" id="auth-err"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-logo">PUL<span>SE</span></div>
+      <div class="header-tagline">PR & Communication Assistant</div>
+    </div>
+    <div class="header-right">
+      <button class="header-nav-btn btn-ghost active" id="nav-generator" onclick="showView('generator')">Generator</button>
+      <button class="header-nav-btn btn-ghost" id="nav-archive" onclick="showView('archive')">Archiv</button>
+      <div class="lang-toggle">
+        <button class="lang-btn active" id="lang-de" onclick="setLang('de')">DE</button>
+        <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
+      </div>
+      <button class="header-nav-btn btn-ghost" onclick="openVoiceModal()" title="Kommunikationsstil">🎙 Voice</button>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- GENERATOR VIEW -->
+    <div id="generator-view">
+      <!-- Voice Banner (shown if no profile) -->
+      <div class="voice-banner" id="voice-banner">
+        <div class="voice-banner-text">
+          <h3>Richten Sie Ihren Kommunikationsstil ein</h3>
+          <p>Einmaliges Setup — danach klingt jeder generierte Inhalt nach Ihnen, nicht nach einer KI.</p>
+        </div>
+        <button class="voice-banner-btn" onclick="openVoiceModal()">Jetzt einrichten →</button>
+      </div>
+
+      <div class="section-title">Was möchten Sie erstellen?</div>
+      <div class="section-sub">Wählen Sie ein Format und geben Sie Ihr Thema ein.</div>
+
+      <!-- FORMAT CARDS -->
+      <div class="format-grid">
+        <div class="format-card active" id="card-linkedin" onclick="selectFormat('linkedin')">
+          <div class="format-icon icon-linkedin">💼</div>
+          <div class="format-name">LinkedIn-Kampagne</div>
+          <div class="format-desc">4-Post-Sequenz über 4 Wochen mit rotem Faden, 3 Tonalitäts-Varianten</div>
+        </div>
+        <div class="format-card" id="card-whitepaper" onclick="selectFormat('whitepaper')">
+          <div class="format-icon icon-whitepaper">📄</div>
+          <div class="format-name">Whitepaper</div>
+          <div class="format-desc">Thought-Leadership-Artikel, 1.500–3.000 Wörter, DOCX-Download</div>
+        </div>
+        <div class="format-card" id="card-newsletter" onclick="selectFormat('newsletter')">
+          <div class="format-icon icon-newsletter">📬</div>
+          <div class="format-name">Newsletter</div>
+          <div class="format-desc">Quartalskommunikation, HTML-formatiert, versandfertig</div>
+        </div>
+        <div class="format-card" id="card-press" onclick="selectFormat('press')">
+          <div class="format-icon icon-press">📢</div>
+          <div class="format-name">Presseaussendung</div>
+          <div class="format-desc">OTS/APA-Konvention, Boilerplate inklusive, sofort versendbar</div>
+        </div>
+      </div>
+
+      <!-- GENERATOR PANEL — LINKEDIN -->
+      <div class="generator-panel visible" id="panel-linkedin">
+        <div class="panel-header">
+          <div class="panel-header-icon">💼</div>
+          <h2>LinkedIn-Kampagne</h2>
+          <span>4 Posts · 4 Wochen · 3 Varianten</span>
+        </div>
+        <div class="panel-body">
+          <div class="form-row">
+            <div>
+              <label>Thema / Kernbotschaft</label>
+              <input type="text" id="li-topic" placeholder="z.B. Warum scheitern externe CEO-Einstellungen in CEE-Märkten?">
+            </div>
+          </div>
+          <div class="form-row cols-2">
+            <div>
+              <label>Zielgruppe</label>
+              <select id="li-audience">
+                <option>CHROs & HR-Entscheider</option>
+                <option>CEOs & Vorstände</option>
+                <option>Board Members & Aufsichtsräte</option>
+                <option>Private Equity & Investoren</option>
+                <option>Allgemein (DACH/CEE Business)</option>
+              </select>
+            </div>
+            <div>
+              <label>Kampagnen-Ton</label>
+              <div class="tone-selector">
+                <div class="tone-chip active" onclick="selectTone(this,'li')">Sachlich</div>
+                <div class="tone-chip" onclick="selectTone(this,'li')">Persönlich</div>
+                <div class="tone-chip" onclick="selectTone(this,'li')">Provokant</div>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label>Zusätzlicher Kontext (optional)</label>
+              <textarea id="li-context" rows="3" placeholder="Eigene Erfahrungen, aktuelle Studien, spezifische Märkte..."></textarea>
+            </div>
+          </div>
+          <button class="generate-btn" id="btn-li" onclick="generate('linkedin')">
+            <div class="spinner"></div>
+            <span class="btn-label">Kampagne generieren</span>
+          </button>
+
+          <div class="output-area" id="out-linkedin">
+            <div class="output-header">
+              <div class="output-title">Ihre LinkedIn-Kampagne</div>
+              <div class="output-actions">
+                <button class="action-btn teal" onclick="saveToArchive('linkedin')">💾 Archivieren</button>
+                <button class="action-btn primary" onclick="copyAll('linkedin')">📋 Alle kopieren</button>
+              </div>
+            </div>
+            <div class="campaign-posts" id="posts-container"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GENERATOR PANEL — WHITEPAPER -->
+      <div class="generator-panel" id="panel-whitepaper">
+        <div class="panel-header">
+          <div class="panel-header-icon">📄</div>
+          <h2>Whitepaper</h2>
+          <span>Outline → Review → Volltext</span>
+        </div>
+        <div class="panel-body">
+          <div class="form-row">
+            <div>
+              <label>Titel / Thema</label>
+              <input type="text" id="wp-topic" placeholder="z.B. Leadership Transition in CEE: Warum 40% der Führungswechsel scheitern">
+            </div>
+          </div>
+          <div class="form-row cols-2">
+            <div>
+              <label>Zielgruppe</label>
+              <select id="wp-audience">
+                <option>CHROs & HR-Entscheider</option>
+                <option>CEOs & Vorstände</option>
+                <option>Board Members</option>
+                <option>Private Equity</option>
+              </select>
+            </div>
+            <div>
+              <label>Länge</label>
+              <select id="wp-length">
+                <option value="short">Kompakt (1.000–1.500 Wörter)</option>
+                <option value="medium" selected>Standard (1.500–2.500 Wörter)</option>
+                <option value="long">Ausführlich (2.500–3.500 Wörter)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label>Kernthesen / Eigene Perspektive</label>
+              <textarea id="wp-thesis" rows="4" placeholder="Was ist Ihre zentrale Aussage? Welche Erfahrungen / Daten möchten Sie einbringen?"></textarea>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="generate-btn" id="btn-wp-outline" onclick="generate('whitepaper-outline')" style="background:var(--navy);">
+              <div class="spinner"></div>
+              <span class="btn-label">1. Outline erstellen</span>
+            </button>
+            <button class="generate-btn" id="btn-wp-full" onclick="generate('whitepaper-full')" style="display:none;">
+              <div class="spinner"></div>
+              <span class="btn-label">2. Volltext generieren</span>
+            </button>
+          </div>
+
+          <div class="output-area" id="out-whitepaper">
+            <div class="output-header">
+              <div class="output-title" id="wp-output-title">Outline</div>
+              <div class="output-actions">
+                <button class="action-btn teal" onclick="saveToArchive('whitepaper')">💾 Archivieren</button>
+                <button class="action-btn primary" onclick="copyAll('whitepaper')">📋 Kopieren</button>
+              </div>
+            </div>
+            <div class="text-output" id="wp-text"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GENERATOR PANEL — NEWSLETTER -->
+      <div class="generator-panel" id="panel-newsletter">
+        <div class="panel-header">
+          <div class="panel-header-icon">📬</div>
+          <h2>Quartalsnewsletter</h2>
+          <span>HTML · Versandfertig</span>
+        </div>
+        <div class="panel-body">
+          <div class="form-row cols-2">
+            <div>
+              <label>Quartal</label>
+              <select id="nl-quarter">
+                <option>Q1 2026</option>
+                <option>Q2 2026</option>
+                <option>Q3 2026</option>
+                <option>Q4 2026</option>
+              </select>
+            </div>
+            <div>
+              <label>Schwerpunkt-Thema</label>
+              <input type="text" id="nl-focus" placeholder="z.B. Leadership Transition, Board Governance">
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label>Kernthemen des Quartals (2–4, Komma getrennt)</label>
+              <input type="text" id="nl-topics" placeholder="z.B. CEO-Nachfolge DACH, ESG in Aufsichtsräten, CEE Talentmarkt 2026">
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label>Persönliche Nachricht / Editorial-Notiz</label>
+              <textarea id="nl-editorial" rows="3" placeholder="Was möchten Sie persönlich einleiten? Highlight des Quartals?"></textarea>
+            </div>
+          </div>
+          <button class="generate-btn" id="btn-nl" onclick="generate('newsletter')">
+            <div class="spinner"></div>
+            <span class="btn-label">Newsletter generieren</span>
+          </button>
+
+          <div class="output-area" id="out-newsletter">
+            <div class="output-header">
+              <div class="output-title">Ihr Newsletter</div>
+              <div class="output-actions">
+                <button class="action-btn teal" onclick="saveToArchive('newsletter')">💾 Archivieren</button>
+                <button class="action-btn primary" onclick="copyAll('newsletter')">📋 Kopieren</button>
+              </div>
+            </div>
+            <div class="text-output" id="nl-text"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GENERATOR PANEL — PRESS -->
+      <div class="generator-panel" id="panel-press">
+        <div class="panel-header">
+          <div class="panel-header-icon">📢</div>
+          <h2>Presseaussendung</h2>
+          <span>OTS/APA Format · Boilerplate inkl.</span>
+        </div>
+        <div class="panel-body">
+          <div class="form-row cols-2">
+            <div>
+              <label>Anlass</label>
+              <select id="pr-anlass">
+                <option>Gewonnenes Mandat</option>
+                <option>Erfolgreiche Platzierung</option>
+                <option>Neue Partnerschaft</option>
+                <option>Event / Publikation</option>
+                <option>Expansion / Markteintritt</option>
+                <option>Award / Auszeichnung</option>
+              </select>
+            </div>
+            <div>
+              <label>Datum der Aussendung</label>
+              <input type="text" id="pr-date" placeholder="z.B. Wien, 2. April 2026">
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label>Kerninhalt / Was ist passiert?</label>
+              <textarea id="pr-content" rows="4" placeholder="Beschreiben Sie den Sachverhalt: Unternehmen, Position, Branche, Besonderheiten..."></textarea>
+            </div>
+          </div>
+          <div class="form-row cols-2">
+            <div>
+              <label>Zitat-Person (für direktes Zitat)</label>
+              <input type="text" id="pr-quote-person" placeholder="z.B. Sami Harrach, Managing Partner">
+            </div>
+            <div>
+              <label>Zitat-Kernaussage</label>
+              <input type="text" id="pr-quote-msg" placeholder="z.B. Diese Besetzung unterstreicht...">
+            </div>
+          </div>
+          <button class="generate-btn" id="btn-pr" onclick="generate('press')">
+            <div class="spinner"></div>
+            <span class="btn-label">Pressemitteilung generieren</span>
+          </button>
+
+          <div class="output-area" id="out-press">
+            <div class="output-header">
+              <div class="output-title">Ihre Presseaussendung</div>
+              <div class="output-actions">
+                <button class="action-btn teal" onclick="saveToArchive('press')">💾 Archivieren</button>
+                <button class="action-btn primary" onclick="copyAll('press')">📋 Kopieren</button>
+              </div>
+            </div>
+            <div class="text-output" id="pr-text"></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /generator-view -->
+
+    <!-- ARCHIVE VIEW -->
+    <div id="archive-view">
+      <div class="archive-header">
+        <div>
+          <div class="section-title">Archiv</div>
+          <div class="section-sub">Alle generierten Inhalte</div>
+        </div>
+        <button class="action-btn" onclick="exportCSV()">⬇ CSV Export</button>
+      </div>
+      <div class="archive-filters" id="archive-filters">
+        <div class="filter-chip active" onclick="filterArchive('all',this)">Alle</div>
+        <div class="filter-chip" onclick="filterArchive('linkedin',this)">LinkedIn</div>
+        <div class="filter-chip" onclick="filterArchive('whitepaper',this)">Whitepaper</div>
+        <div class="filter-chip" onclick="filterArchive('newsletter',this)">Newsletter</div>
+        <div class="filter-chip" onclick="filterArchive('press',this)">Presseaussendung</div>
+      </div>
+      <div style="margin-top:16px;">
+        <div class="archive-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Datum</th>
+                <th>Format</th>
+                <th>Thema</th>
+                <th>Sprache</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="archive-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /archive-view -->
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<!-- VOICE MODAL -->
+<div class="modal-overlay" id="voice-modal">
+  <div class="modal">
+    <h2>🎙 Ihr Kommunikationsstil</h2>
+    <p>Diese Einstellungen werden in alle generierten Inhalte eingebettet — so klingt PULSE nach Ihnen, nicht nach einer KI. Einmal einrichten, dauerhaft gespeichert.</p>
+    <div class="form-row">
+      <div>
+        <label>Ihre Rolle & Position</label>
+        <input type="text" id="v-role" placeholder="z.B. Managing Partner, Signium Austria — Executive Search DACH/CEE">
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Tonalität (wie schreiben Sie?)</label>
+        <textarea id="v-tone" rows="3" placeholder="z.B. Direkt, substanziell, keine leeren Buzzwords. Ich schreibe aus der Praxis, nicht aus dem Lehrbuch. Klar, aber nie arrogant."></textarea>
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Thematische Schwerpunkte</label>
+        <textarea id="v-topics" rows="2" placeholder="z.B. Executive Search, CEO-Nachfolge, Board Governance, Leadership in CEE-Märkten, Organisationskultur"></textarea>
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Was soll PULSE NICHT schreiben?</label>
+        <textarea id="v-avoid" rows="2" placeholder="z.B. Keine generischen Karrieretipps. Keine Motivationsposter-Phrasen. Nicht zu akademisch."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-cancel" onclick="closeVoiceModal()">Abbrechen</button>
+      <button class="modal-save" onclick="saveVoiceProfile()">Stil speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHIVE DETAIL MODAL -->
+<div class="modal-overlay" id="archive-modal">
+  <div class="modal" style="max-width:680px;">
+    <h2 id="archive-modal-title">Inhalt</h2>
+    <div class="archive-content-view" id="archive-modal-content"></div>
+    <div class="modal-footer">
+      <button class="modal-cancel" onclick="document.getElementById('archive-modal').classList.remove('open')">Schließen</button>
+      <button class="modal-save" onclick="copyArchiveContent()">📋 Kopieren</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── SUPABASE ──
+const SB_URL = 'https://ftdxhswcnghlmcagrsox.supabase.co';
+const SB_KEY = 'sb_publishable_c8YygosML2xrImmWCpI1rw_6j_pvCRA';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+// ── STATE ──
+let currentLang = 'de';
+let currentFormat = 'linkedin';
+let currentTone = { li: 'Sachlich' };
+let voiceProfile = null;
+let archiveData = [];
+let lastOutputs = {};
+let wpOutlineText = '';
+
+// ── AUTH ──
+function doAuth() {
+  const pw = document.getElementById('auth-pw').value;
+  if (pw === 'Signium2026') {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    init();
+  } else {
+    document.getElementById('auth-err').textContent = 'Falsches Passwort';
+  }
+}
+
+// ── INIT ──
+async function init() {
+  loadVoiceProfile();
+  loadArchive();
+}
+
+// ── VOICE PROFILE ──
+function loadVoiceProfile() {
+  const stored = localStorage.getItem('pulse_voice');
+  if (stored) {
+    voiceProfile = JSON.parse(stored);
+    document.getElementById('voice-banner').style.display = 'none';
+    // Prefill modal
+    document.getElementById('v-role').value = voiceProfile.role || '';
+    document.getElementById('v-tone').value = voiceProfile.tone || '';
+    document.getElementById('v-topics').value = voiceProfile.topics || '';
+    document.getElementById('v-avoid').value = voiceProfile.avoid || '';
+  }
+}
+
+function openVoiceModal() {
+  document.getElementById('voice-modal').classList.add('open');
+}
+function closeVoiceModal() {
+  document.getElementById('voice-modal').classList.remove('open');
+}
+function saveVoiceProfile() {
+  voiceProfile = {
+    role: document.getElementById('v-role').value,
+    tone: document.getElementById('v-tone').value,
+    topics: document.getElementById('v-topics').value,
+    avoid: document.getElementById('v-avoid').value,
+  };
+  localStorage.setItem('pulse_voice', JSON.stringify(voiceProfile));
+  document.getElementById('voice-banner').style.display = 'none';
+  closeVoiceModal();
+  showToast('Kommunikationsstil gespeichert ✓', 'success');
+}
+
+function buildVoiceContext() {
+  if (!voiceProfile) return '';
+  return `
+KOMMUNIKATIONSSTIL DES AUTORS:
+- Rolle: ${voiceProfile.role}
+- Tonalität: ${voiceProfile.tone}
+- Thematische Schwerpunkte: ${voiceProfile.topics}
+- Bitte NICHT: ${voiceProfile.avoid}
+
+Der gesamte Inhalt muss in dieser Stimme verfasst sein. Kein generisches KI-Klingt-Alles-Gleich-Schreiben.`;
+}
+
+// ── LANG ──
+function setLang(l) {
+  currentLang = l;
+  document.getElementById('lang-de').classList.toggle('active', l==='de');
+  document.getElementById('lang-en').classList.toggle('active', l==='en');
+  showToast(l === 'de' ? 'Sprache: Deutsch' : 'Language: English');
+}
+
+// ── FORMAT SELECT ──
+function selectFormat(f) {
+  currentFormat = f;
+  ['linkedin','whitepaper','newsletter','press'].forEach(fmt => {
+    document.getElementById('card-'+fmt).classList.toggle('active', fmt===f);
+    document.getElementById('panel-'+fmt).classList.toggle('visible', fmt===f);
+  });
+}
+
+// ── TONE ──
+function selectTone(el, prefix) {
+  el.closest('.tone-selector').querySelectorAll('.tone-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentTone[prefix] = el.textContent;
+}
+
+// ── VIEW ──
+function showView(v) {
+  document.getElementById('generator-view').style.display = v==='generator' ? 'block' : 'none';
+  document.getElementById('archive-view').style.display = v==='archive' ? 'block' : 'none';
+  document.getElementById('nav-generator').classList.toggle('active', v==='generator');
+  document.getElementById('nav-archive').classList.toggle('active', v==='archive');
+  if (v==='archive') renderArchive();
+}
+
+// ── GENERATE ──
+async function generate(type) {
+  const btnMap = {
+    'linkedin': 'btn-li',
+    'whitepaper-outline': 'btn-wp-outline',
+    'whitepaper-full': 'btn-wp-full',
+    'newsletter': 'btn-nl',
+    'press': 'btn-pr'
+  };
+  const btn = document.getElementById(btnMap[type]);
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  const langStr = currentLang === 'de' ? 'Deutsch' : 'English';
+  const voice = buildVoiceContext();
+
+  let prompt = '';
+  let outputEl = null;
+
+  if (type === 'linkedin') {
+    const topic = document.getElementById('li-topic').value || 'Executive Search in CEE';
+    const audience = document.getElementById('li-audience').value;
+    const tone = currentTone['li'] || 'Sachlich';
+    const ctx = document.getElementById('li-context').value;
+    prompt = `${voice}
+
+Du erstellst eine LinkedIn-Kampagne bestehend aus EXAKT 4 Posts für eine 4-Wochen-Sequenz.
+SPRACHE: ${langStr}
+THEMA: ${topic}
+ZIELGRUPPE: ${audience}
+TON: ${tone}
+ZUSÄTZLICHER KONTEXT: ${ctx || 'keiner'}
+
+WICHTIG: Erstelle alle 4 Posts in ALLEN 3 Tonalitäten (Sachlich, Persönlich, Provokant).
+Das ergibt 12 Posts insgesamt (Woche 1-4, je 3 Varianten).
+
+Format für jeden Post:
+---WOCHE [N] · [TONALITÄT]---
+[Post-Text, max. 1300 Zeichen, LinkedIn-optimiert]
+[Hashtags: max. 5, inkl. #Signium #SigniumAustria]
+
+Die 4 Posts müssen einen roten Faden haben und zusammen eine kohärente Botschaft transportieren.
+Keine Wiederholungen. Jeder Post steht für sich, gehört aber zur Kampagne.`;
+
+    outputEl = document.getElementById('out-linkedin');
+
+  } else if (type === 'whitepaper-outline') {
+    const topic = document.getElementById('wp-topic').value || 'Leadership in CEE';
+    const audience = document.getElementById('wp-audience').value;
+    const thesis = document.getElementById('wp-thesis').value;
+    prompt = `${voice}
+
+Erstelle eine detaillierte Outline für ein Whitepaper.
+SPRACHE: ${langStr}
+TITEL/THEMA: ${topic}
+ZIELGRUPPE: ${audience}
+KERNTHESEN: ${thesis || 'keine spezifischen Vorgaben'}
+
+Die Outline soll 6-8 Kapitel/Abschnitte haben, jeweils mit:
+- Kapitelüberschrift
+- 3-4 Stichpunkte zu Kernaussagen/Inhalten
+- Geschätzte Wortanzahl pro Kapitel
+
+Schließe mit einer Zusammenfassung der Gesamtbotschaft ab.`;
+
+    outputEl = document.getElementById('out-whitepaper');
+    document.getElementById('wp-output-title').textContent = 'Outline — Bitte überprüfen und dann "Volltext generieren"';
+
+  } else if (type === 'whitepaper-full') {
+    const topic = document.getElementById('wp-topic').value;
+    const thesis = document.getElementById('wp-thesis').value;
+    const length = document.getElementById('wp-length').value;
+    const lenStr = length==='short' ? '1.000–1.500' : length==='medium' ? '1.500–2.500' : '2.500–3.500';
+    prompt = `${voice}
+
+Schreibe den vollständigen Whitepaper-Text basierend auf folgender Outline:
+${wpOutlineText}
+
+SPRACHE: ${langStr}
+THEMA: ${topic}
+KERNTHESEN: ${thesis || ''}
+LÄNGE: ${lenStr} Wörter
+
+Schreibe professionellen, substanziellen Fachtext. Keine Floskeln. 
+Verwende Überschriften (##) zur Strukturierung.
+Am Ende: Kurze Zusammenfassung + Kontakthinweis Signium Austria.`;
+
+    outputEl = document.getElementById('out-whitepaper');
+    document.getElementById('wp-output-title').textContent = 'Vollständiges Whitepaper';
+
+  } else if (type === 'newsletter') {
+    const quarter = document.getElementById('nl-quarter').value;
+    const focus = document.getElementById('nl-focus').value;
+    const topics = document.getElementById('nl-topics').value;
+    const editorial = document.getElementById('nl-editorial').value;
+    prompt = `${voice}
+
+Erstelle einen Quartalsnewsletter für Signium Austria.
+SPRACHE: ${langStr}
+QUARTAL: ${quarter}
+SCHWERPUNKT: ${focus || 'Executive Leadership & Board Governance'}
+KERNTHEMEN: ${topics || 'Leadership, Executive Search, CEE Markt'}
+EDITORIALE NOTIZ VON SAMI: ${editorial || 'keine'}
+
+Struktur:
+1. Betreffzeile (für Email-Versand)
+2. Editorial / Persönliche Einleitung (200 Wörter, Stimme des Managing Partners)
+3. Hauptthema 1 mit Titel + ca. 300 Wörter
+4. Hauptthema 2 mit Titel + ca. 300 Wörter  
+5. Marktausblick ${quarter} (150 Wörter)
+6. Closing + Kontakt Signium Austria
+
+Professioneller, persönlicher Ton. Kein generisches Newsletter-Bla-Bla.`;
+
+    outputEl = document.getElementById('out-newsletter');
+
+  } else if (type === 'press') {
+    const anlass = document.getElementById('pr-anlass').value;
+    const content = document.getElementById('pr-content').value;
+    const date = document.getElementById('pr-date').value || 'Wien, ' + new Date().toLocaleDateString('de-AT', {day:'numeric',month:'long',year:'numeric'});
+    const quotePerson = document.getElementById('pr-quote-person').value || 'Sami Harrach, Managing Partner Signium Austria';
+    const quoteMsg = document.getElementById('pr-quote-msg').value;
+    prompt = `${voice}
+
+Erstelle eine professionelle Presseaussendung im österreichischen OTS/APA-Format.
+SPRACHE: ${langStr}
+ANLASS: ${anlass}
+DATUM & ORT: ${date}
+INHALT: ${content}
+ZITAT VON: ${quotePerson}
+ZITAT-BOTSCHAFT: ${quoteMsg || 'professionelles Statement zum Anlass'}
+
+Format:
+- BETREFF: [prägnante Headline]
+- ORT/DATUM
+- Lead-Absatz (die wichtigste Aussage in 2-3 Sätzen)
+- Hintergrund / Details (3-4 Absätze)
+- Direktes Zitat von ${quotePerson}
+- Über Signium Austria (Boilerplate): Signium Austria — Stein & Partner GmbH ist Teil von Signium International, einem globalen Executive Search Netzwerk mit Präsenz in 40+ Ländern. Spezialisiert auf DACH/CEE Märkte, mit Büros in Wien sowie Partnerbüros in den wichtigsten CEE-Hauptstädten.
+- Kontakt: Sami Harrach | sami.harrach@signium.com | +43...`;
+
+    outputEl = document.getElementById('out-press');
+  }
+
+  // Call API
+  try {
+    const response = await fetch('/api/pulse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, type })
+    });
+    const data = await response.json();
+    const text = data.content?.[0]?.text || data.text || 'Fehler beim Generieren.';
+
+    // Handle output
+    if (type === 'linkedin') {
+      renderLinkedInPosts(text);
+      lastOutputs['linkedin'] = text;
+    } else if (type === 'whitepaper-outline') {
+      document.getElementById('wp-text').textContent = text;
+      wpOutlineText = text;
+      lastOutputs['whitepaper'] = text;
+      // Show full text button
+      document.getElementById('btn-wp-full').style.display = 'flex';
+    } else if (type === 'whitepaper-full') {
+      document.getElementById('wp-text').textContent = text;
+      lastOutputs['whitepaper'] = text;
+    } else if (type === 'newsletter') {
+      document.getElementById('nl-text').textContent = text;
+      lastOutputs['newsletter'] = text;
+    } else if (type === 'press') {
+      document.getElementById('pr-text').textContent = text;
+      lastOutputs['press'] = text;
+    }
+
+    outputEl.classList.add('visible');
+
+  } catch(e) {
+    showToast('Fehler: ' + e.message, 'error');
+  }
+
+  btn.classList.remove('loading');
+  btn.disabled = false;
+}
+
+// ── RENDER LINKEDIN POSTS ──
+function renderLinkedInPosts(text) {
+  const container = document.getElementById('posts-container');
+  container.innerHTML = '';
+
+  // Parse posts by ---WOCHE N · TONALITÄT---
+  const blocks = text.split(/---WOCHE\s+(\d+)\s*·\s*([^-]+)---/).filter(s => s.trim());
+  const posts = [];
+  for (let i = 0; i < blocks.length - 1; i += 3) {
+    const week = blocks[i];
+    const tone = blocks[i+1]?.trim();
+    const content = blocks[i+2]?.trim();
+    if (week && tone && content) posts.push({ week, tone, content });
+  }
+
+  if (posts.length === 0) {
+    // Fallback: show raw text in 4 blocks
+    const parts = text.split(/\n{3,}/);
+    parts.forEach((p, idx) => {
+      if (!p.trim()) return;
+      container.innerHTML += buildPostCard(`Woche ${idx+1}`, 'Sachlich', p.trim());
+    });
+    return;
+  }
+
+  // Group by week
+  const byWeek = {};
+  posts.forEach(p => {
+    if (!byWeek[p.week]) byWeek[p.week] = [];
+    byWeek[p.week].push(p);
+  });
+
+  Object.keys(byWeek).sort().forEach(week => {
+    byWeek[week].forEach(p => {
+      container.innerHTML += buildPostCard(`Woche ${week}`, p.tone, p.content);
+    });
+  });
+}
+
+function buildPostCard(week, tone, content) {
+  const toneClass = tone.toLowerCase().includes('sachlich') ? 'badge-sachlich' :
+                    tone.toLowerCase().includes('pers') ? 'badge-persönlich' : 'badge-provokant';
+  const escapedContent = content.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const id = 'post_' + Math.random().toString(36).substr(2,6);
+  return `<div class="post-card">
+    <div class="post-card-header">
+      <span class="post-week">${week}</span>
+      <span class="post-tone-badge ${toneClass}">${tone}</span>
+    </div>
+    <div class="post-content" id="${id}">${escapedContent}</div>
+    <button class="post-copy-btn" onclick="copyText('${id}')">📋 Diesen Post kopieren</button>
+  </div>`;
+}
+
+// ── ARCHIVE ──
+async function loadArchive() {
+  const { data } = await sb.from('pulse_archive').select('*').order('created_at', { ascending: false });
+  archiveData = data || [];
+}
+
+async function saveToArchive(format) {
+  const text = lastOutputs[format];
+  if (!text) return;
+  const topicMap = {
+    linkedin: document.getElementById('li-topic').value,
+    whitepaper: document.getElementById('wp-topic').value,
+    newsletter: document.getElementById('nl-quarter').value + ': ' + document.getElementById('nl-focus').value,
+    press: document.getElementById('pr-anlass').value
+  };
+  const { error } = await sb.from('pulse_archive').insert({
+    format,
+    language: currentLang,
+    topic: topicMap[format] || 'Unbekannt',
+    content: text,
+    created_at: new Date().toISOString()
+  });
+  if (!error) {
+    showToast('Im Archiv gespeichert ✓', 'success');
+    loadArchive();
+  } else {
+    showToast('Speichern fehlgeschlagen', 'error');
+    console.error(error);
+  }
+}
+
+function renderArchive(filter = 'all') {
+  const tbody = document.getElementById('archive-tbody');
+  const filtered = filter === 'all' ? archiveData : archiveData.filter(r => r.format === filter);
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">
+      <div class="empty-icon">📂</div>
+      <p>Noch keine Inhalte archiviert.</p>
+    </div></td></tr>`;
+    return;
+  }
+
+  const formatIcons = { linkedin:'💼', whitepaper:'📄', newsletter:'📬', press:'📢' };
+  const formatLabels = { linkedin:'LinkedIn', whitepaper:'Whitepaper', newsletter:'Newsletter', press:'Presseaussendung' };
+
+  tbody.innerHTML = filtered.map(row => {
+    const date = new Date(row.created_at).toLocaleDateString('de-AT', {day:'2-digit',month:'2-digit',year:'numeric'});
+    const fmt = row.format || 'unknown';
+    const lang = row.language || 'de';
+    const topic = (row.topic || '').substring(0, 60) + (row.topic?.length > 60 ? '…' : '');
+    return `<tr>
+      <td>${date}</td>
+      <td><span class="format-badge badge-${fmt}">${formatIcons[fmt]||''} ${formatLabels[fmt]||fmt}</span></td>
+      <td>${topic}</td>
+      <td><span class="lang-badge lang-${lang}">${lang.toUpperCase()}</span></td>
+      <td><button class="archive-view-btn" onclick="viewArchiveItem(${row.id})">Anzeigen</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterArchive(filter, el) {
+  document.querySelectorAll('#archive-filters .filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderArchive(filter);
+}
+
+function viewArchiveItem(id) {
+  const row = archiveData.find(r => r.id === id);
+  if (!row) return;
+  document.getElementById('archive-modal-title').textContent = row.topic || 'Inhalt';
+  document.getElementById('archive-modal-content').textContent = row.content;
+  document.getElementById('archive-modal').classList.add('open');
+}
+
+function copyArchiveContent() {
+  const text = document.getElementById('archive-modal-content').textContent;
+  navigator.clipboard.writeText(text).then(() => showToast('Kopiert ✓', 'success'));
+}
+
+function exportCSV() {
+  const rows = [['Datum','Format','Sprache','Thema']];
+  archiveData.forEach(r => {
+    rows.push([r.created_at, r.format, r.language, r.topic]);
+  });
+  const csv = rows.map(r => r.map(c => `"${(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
+  a.download = 'pulse_archiv.csv';
+  a.click();
+}
+
+// ── COPY ──
+function copyText(elId) {
+  const text = document.getElementById(elId)?.textContent || '';
+  navigator.clipboard.writeText(text).then(() => showToast('Kopiert ✓', 'success'));
+}
+
+function copyAll(format) {
+  const text = lastOutputs[format] || '';
+  navigator.clipboard.writeText(text).then(() => showToast('Alles kopiert ✓', 'success'));
+}
+
+// ── TOAST ──
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+// Enter key on auth
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('auth-screen').style.display !== 'none') doAuth();
+});
+</script>
+</body>
+</html>
