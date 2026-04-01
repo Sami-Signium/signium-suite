@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signium Suite</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #081D4D;
+    --navy-mid: #0d2a6b;
+    --orange: #FF6A42;
+    --teal: #6BCBC2;
+    --blue: #24629B;
+    --off: #F4F5F8;
+    --gray: #7A8090;
+    --light: #E8EBF2;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--navy);
+    min-height: 100vh;
+    color: white;
+    overflow-x: hidden;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at 15% 50%, rgba(36,98,155,0.25) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 20%, rgba(107,203,194,0.10) 0%, transparent 50%),
+      radial-gradient(ellipse at 60% 90%, rgba(255,106,66,0.07) 0%, transparent 45%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* AUTH */
+  #auth {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+    background: var(--navy);
+    background-image: radial-gradient(ellipse at 20% 50%, rgba(36,98,155,0.3) 0%, transparent 60%);
+  }
+  .auth-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 48px 44px;
+    width: 360px;
+    text-align: center;
+    backdrop-filter: blur(20px);
+  }
+  .auth-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 6px;
+    margin-bottom: 8px;
+  }
+  .auth-suite {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 36px;
+    font-weight: 300;
+    color: white;
+    margin-bottom: 36px;
+    letter-spacing: -0.5px;
+  }
+  .auth-suite span { color: var(--orange); }
+  .auth-input {
+    width: 100%;
+    padding: 13px 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    text-align: center;
+    letter-spacing: 3px;
+    outline: none;
+    transition: border-color .2s;
+    margin-bottom: 12px;
+  }
+  .auth-input:focus { border-color: var(--orange); }
+  .auth-input::placeholder { color: rgba(255,255,255,0.2); letter-spacing: 1px; }
+  .auth-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--orange);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: background .2s;
+  }
+  .auth-btn:hover { background: #ff8a68; }
+  .auth-error { color: var(--orange); font-size: 12px; margin-top: 8px; opacity: 0; transition: opacity .2s; }
+  .auth-error.show { opacity: 1; }
+
+  /* MAIN APP */
+  #app { display: none; position: relative; z-index: 1; min-height: 100vh; }
+
+  /* HEADER */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 24px 48px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .header-wordmark {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: 5px;
+  }
+  .header-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.1); }
+  .header-suite {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 1px;
+  }
+  .header-right {
+    font-size: 11px;
+    color: rgba(255,255,255,0.2);
+    letter-spacing: 0.5px;
+  }
+
+  /* HERO */
+  .hero {
+    padding: 64px 48px 48px;
+    max-width: 680px;
+  }
+  .hero-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--orange);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 16px;
+  }
+  .hero-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 52px;
+    font-weight: 300;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 20px;
+  }
+  .hero-sub {
+    font-size: 15px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.7;
+    max-width: 520px;
+  }
+
+  /* TOOLS GRID */
+  .tools-section { padding: 0 48px 64px; }
+  .tools-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.2);
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    margin-bottom: 24px;
+  }
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  /* TOOL CARD */
+  .tool-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 28px 28px 24px;
+    text-decoration: none;
+    color: white;
+    transition: all .25s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    display: block;
+  }
+  .tool-card:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.15);
+    transform: translateY(-2px);
+  }
+  .tool-card.live { cursor: pointer; }
+  .tool-card.dev { cursor: default; opacity: 0.6; }
+  .tool-card.planned { cursor: default; opacity: 0.4; }
+
+  /* Accent line top */
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    transition: opacity .25s;
+  }
+  .tool-card.live:hover::before { opacity: 1; }
+
+  .card-paul::before { background: var(--orange); }
+  .card-pulse::before { background: var(--teal); }
+  .card-docs::before { background: var(--blue); }
+  .card-angebot::before { background: #9B7BC4; }
+  .card-scout::before { background: #C4A23A; }
+  .card-lpr::before { background: var(--teal); }
+
+  /* Glyph */
+  .card-glyph {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 1;
+    opacity: 0.04;
+    position: absolute;
+    bottom: -8px; right: 12px;
+    pointer-events: none;
+    transition: opacity .25s;
+  }
+  .tool-card:hover .card-glyph { opacity: 0.07; }
+
+  .card-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 18px;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .status-live { background: rgba(107,203,194,0.12); color: var(--teal); }
+  .status-dev { background: rgba(255,106,66,0.12); color: var(--orange); }
+  .status-planned { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.3); }
+  .status-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+  }
+  .status-live .status-dot { background: var(--teal); }
+  .status-dev .status-dot { background: var(--orange); animation: pulse 1.5s infinite; }
+  .status-planned .status-dot { background: rgba(255,255,255,0.2); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .card-code {
+    font-size: 9px;
+    color: rgba(255,255,255,0.2);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+  .card-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+  }
+  .card-desc {
+    font-size: 12px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.6;
+  }
+  .card-arrow {
+    position: absolute;
+    bottom: 22px; right: 24px;
+    font-size: 16px;
+    color: rgba(255,255,255,0.15);
+    transition: all .2s;
+  }
+  .tool-card.live:hover .card-arrow {
+    color: rgba(255,255,255,0.5);
+    transform: translateX(3px);
+  }
+
+  /* FOOTER */
+  .suite-footer {
+    padding: 20px 48px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .footer-copy { font-size: 11px; color: rgba(255,255,255,0.15); }
+  .footer-version { font-size: 10px; color: rgba(255,255,255,0.1); letter-spacing: 1px; }
+
+  @media (max-width: 900px) {
+    .tools-grid { grid-template-columns: 1fr 1fr; }
+    .header, .hero, .tools-section { padding-left: 24px; padding-right: 24px; }
+  }
+  @media (max-width: 600px) {
+    .tools-grid { grid-template-columns: 1fr; }
+    .hero-title { font-size: 38px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth">
+  <div class="auth-card">
+    <div class="auth-logo">Signium</div>
+    <div class="auth-suite">Suite<span>.</span></div>
+    <input type="password" class="auth-input" id="pw" placeholder="Passwort" onkeydown="if(event.key==='Enter')login()">
+    <button class="auth-btn" onclick="login()">Zugang</button>
+    <div class="auth-error" id="err">Falsches Passwort</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="header">
+    <div class="header-left">
+      <div class="header-wordmark">Signium</div>
+      <div class="header-divider"></div>
+      <div class="header-suite">Intelligence Suite</div>
+    </div>
+    <div class="header-right">Signium Austria · Stein &amp; Partner GmbH</div>
+  </header>
+
+  <div class="hero">
+    <div class="hero-label">Alle Tools · Ein Ort</div>
+    <div class="hero-title">Signium<br>Suite.</div>
+    <div class="hero-sub">KI-gestützte Tools für Executive Search, Sales Intelligence, PR und Dokumentengenerierung — integriert in einer Plattform.</div>
+  </div>
+
+  <div class="tools-section">
+    <div class="tools-label">Tools &amp; Module</div>
+    <div class="tools-grid">
+
+      <!-- PAUL -->
+      <a href="/paul.html" class="tool-card live card-paul">
+        <div class="card-status status-live"><span class="status-dot"></span>Live</div>
+        <div class="card-code">01 · Sales Intelligence</div>
+        <div class="card-name">PAUL</div>
+        <div class="card-desc">Management-Wechsel, M&amp;A-Signale und Wachstumsereignisse — einsatzbereite Pitch-Mails auf Knopfdruck.</div>
+        <div class="card-arrow">→</div>
+        <div class="card-glyph">P</div>
+      </a>
+
+      <!-- PULSE -->
+      <a href="/pulse.html" class="tool-card live card-pulse">
+        <div class="card-status status-live"><span class="status-dot"></span>Live</div>
+        <div class="card-code">02 · PR & Communication</div>
+        <div class="card-name">PULSE</div>
+        <div class="card-desc">LinkedIn-Kampagnen, Whitepapers, Newsletter und Presseaussendungen — KI-recherchiert und sofort einsatzbereit.</div>
+        <div class="card-arrow">→</div>
+        <div class="card-glyph">U</div>
+      </a>
+
+      <!-- DOCS — Kandidatenbericht -->
+      <a href="https://docs-signium.vercel.app" target="_blank" class="tool-card live card-docs">
+        <div class="card-status status-live"><span class="status-dot"></span>Live</div>
+        <div class="card-code">03 · Document Generation</div>
+        <div class="card-name">REPORT</div>
+        <div class="card-desc">Strukturierte Signium Kandidatenberichte aus CV und Interview-Notizen — automatisch generiert.</div>
+        <div class="card-arrow">→</div>
+        <div class="card-glyph">R</div>
+      </a>
+
+      <!-- ANGEBOT -->
+      <a href="/angebot.html" class="tool-card live card-angebot">
+        <div class="card-status status-live"><span class="status-dot"></span>Live</div>
+        <div class="card-code">04 · Document Generation</div>
+        <div class="card-name">BID</div>
+        <div class="card-desc">Professionelle Angebote und Pitch-Dokumente für Executive Search Mandate — in Minuten statt Stunden.</div>
+        <div class="card-arrow">→</div>
+        <div class="card-glyph">B</div>
+      </a>
+
+      <!-- SCOUT -->
+      <div class="tool-card dev card-scout">
+        <div class="card-status status-dev"><span class="status-dot"></span>In Entwicklung</div>
+        <div class="card-code">05 · Candidate Screening</div>
+        <div class="card-name">SCOUT</div>
+        <div class="card-desc">LinkedIn-Kandidaten-Screening mit KI. Profil-Analyse, Eignung gegen Anforderungsprofil, strukturierter Report.</div>
+        <div class="card-glyph">S</div>
+      </div>
+
+      <!-- LPR -->
+      <a href="https://signium-radar.netlify.app" target="_blank" class="tool-card live card-lpr">
+        <div class="card-status status-live"><span class="status-dot"></span>Live</div>
+        <div class="card-code">06 · Leadership Assessment</div>
+        <div class="card-name">LPR</div>
+        <div class="card-desc">Leadership Performance Radar — strukturiertes 360°-Assessment für neu ernannte CEOs und Führungskräfte.</div>
+        <div class="card-arrow">→</div>
+        <div class="card-glyph">L</div>
+      </a>
+
+    </div>
+  </div>
+
+  <footer class="suite-footer">
+    <div class="footer-copy">© 2026 Signium Austria — Stein &amp; Partner GmbH</div>
+    <div class="footer-version">Suite v2.0</div>
+  </footer>
+</div>
+
+<script>
+function login() {
+  const pw = document.getElementById('pw').value;
+  const err = document.getElementById('err');
+  if (pw === 'Signium2026') {
+    document.getElementById('auth').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  } else {
+    err.classList.add('show');
+    setTimeout(() => err.classList.remove('show'), 2000);
+  }
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') login();
+});
+</script>
+</body>
+</html>
