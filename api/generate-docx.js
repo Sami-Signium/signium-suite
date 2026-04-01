@@ -51,12 +51,11 @@ function personalRow(label, value) {
   const valueRpr = rpr({ sz: 22, color: '262626' });
   return `<w:p>
     <w:pPr>
-      <w:pStyle w:val="SPTBodytext66"/>
       <w:tabs><w:tab w:val="left" w:pos="2500"/></w:tabs>
       <w:ind w:left="2500" w:hanging="2500"/>
-      ${rpr({ sz: 22 })}
+      <w:spacing w:before="80" w:after="80"/>
     </w:pPr>
-    <w:r>${labelRpr}<w:t>${xe(label)}</w:t></w:r>
+    <w:r>${labelRpr}<w:t xml:space="preserve">${xe(label)}</w:t></w:r>
     <w:r><w:tab/></w:r>
     <w:r>${valueRpr}<w:t xml:space="preserve">${xe(value)}</w:t></w:r>
   </w:p>`;
@@ -105,9 +104,9 @@ function sectionHead(text, pageBreak) {
   return `<w:p><w:pPr>${ppr}</w:pPr><w:r>${r}<w:t xml:space="preserve">${xe(text)}</w:t></w:r></w:p>`;
 }
 
-// Sub-heading within a section (no page break, smaller)
+// Sub-heading within a section (no page break)
 function subHead(text) {
-  const r = rpr({ major: true, bold: true, sz: 24, color: '102E66' });
+  const r = rpr({ major: true, bold: true, sz: 28, color: '102E66' });
   return `<w:p><w:pPr><w:spacing w:before="200" w:after="60"/>${r}</w:pPr><w:r>${r}<w:t xml:space="preserve">${xe(text)}</w:t></w:r></w:p>`;
 }
 
