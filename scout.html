@@ -199,7 +199,10 @@ textarea { resize:vertical; }
       <div class="card">
         <div class="card-title" style="justify-content:space-between">
           🔒 Anonymisiertes Jobprofil
-          <button class="btn btn-sm btn-green" onclick="copyAnon()">Kopieren</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm" onclick="copyAnon()">Kopieren</button>
+            <button class="btn btn-sm btn-green" id="btnDownloadAnon" onclick="downloadAnonProfile()">⬇ Als DOCX</button>
+          </div>
         </div>
         <div class="anon-box" id="resAnon"></div>
       </div>
@@ -276,6 +279,7 @@ let jdFileBase64 = null;
 let jdMediaType = null;
 let currentCriteria = null;
 let screeningResults = [];
+let currentAjdData = null;
 
 // ─── TABS ────────────────────────────────────────────────────────────────────
 function switchTab(name) {
@@ -348,6 +352,7 @@ async function analyzeJD() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     currentCriteria = data;
+    currentAjdData = data.ajdData || null;
     renderCriteria(data);
     document.getElementById('jdResults').style.display = 'block';
   } catch (err) {
@@ -517,6 +522,125 @@ async function generateOutreach(candidateName) {
     if (resultEl) resultEl.innerHTML = '<span style="font-size:12px;color:var(--success)">✓ Generiert</span>';
   } catch (err) {
     if (resultEl) resultEl.innerHTML = '<span style="font-size:12px;color:var(--danger)">Fehler</span>';
+  }
+}
+
+async function downloadAnonProfile() {
+  const text = document.getElementById('resAnon').textContent;
+  if (!text) return;
+  const btn = document.getElementById('btnDownloadAnon');
+  btn.textContent = '⏳ Generiere...';
+  btn.disabled = true;
+  const positionTitle = currentMandate?.position_title || currentCriteria?.jobTitles?.[0] || 'Position';
+  const lang = document.getElementById('jdLang').value;
+  try {
+    const res = await fetch('/api/anon-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profileText: text, positionTitle, language: lang })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const bytes = Uint8Array.from(atob(data.docx), c => c.charCodeAt(0));
+    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = data.filename; a.click();
+    URL.revokeObjectURL(url);
+    btn.textContent = '✓ Heruntergeladen';
+    setTimeout(() => { btn.textContent = '⬇ Als DOCX'; btn.disabled = false; }, 3000);
+  } catch(err) {
+    alert('Fehler: ' + err.message);
+    btn.textContent = '⬇ Als DOCX'; btn.disabled = false;
+  }
+}
+
+async function downloadAjd() {
+  if (!currentAjdData) {
+    alert('Bitte zuerst Jobprofil analysieren.');
+    return;
+  }
+  const btn = document.getElementById('btnDownloadAjd');
+  const status = document.getElementById('ajdDownloadStatus');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generiere...';
+  status.style.display = 'block';
+  status.style.color = 'var(--muted)';
+  status.textContent = 'Dokument wird generiert (Web-Recherche + DOCX)...';
+
+  try {
+    const res = await fetch('/api/generate-ajd', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ajdData: currentAjdData })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    const bytes = Uint8Array.from(atob(data.docx), c => c.charCodeAt(0));
+    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = data.filename;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    status.style.color = 'var(--success)';
+    status.textContent = '✓ ' + data.filename + ' heruntergeladen';
+  } catch (err) {
+    status.style.color = 'var(--danger)';
+    status.textContent = 'Fehler: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⬇ Als DOCX herunterladen';
+  }
+}
+
+async function downloadAJD() {
+  const btn = document.getElementById('btnDownloadAJD');
+  const status = document.getElementById('ajdStatus');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generiere DOCX...';
+  status.style.display = 'block';
+  status.style.color = 'var(--lightblue)';
+  status.textContent = 'KI recherchiert Unternehmen und erstellt Dokument...';
+
+  try {
+    const res = await fetch('/api/generate-ajd', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileBase64: jdFileBase64,
+        mediaType: jdMediaType,
+        notes: document.getElementById('jdNotes').value,
+        mandate: currentMandate,
+        language: document.getElementById('jdLang').value
+      })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+
+    // Download DOCX
+    const bytes = Uint8Array.from(atob(data.docx), c => c.charCodeAt(0));
+    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = data.filename;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    status.style.color = 'var(--success)';
+    status.textContent = '✓ ' + data.filename + ' heruntergeladen';
+    btn.textContent = '📄 Als DOCX herunterladen';
+    btn.disabled = false;
+  } catch (err) {
+    status.style.color = 'var(--danger)';
+    status.textContent = 'Fehler: ' + err.message;
+    btn.textContent = '📄 Als DOCX herunterladen';
+    btn.disabled = false;
   }
 }
 
