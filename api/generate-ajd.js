@@ -19,7 +19,7 @@ function titlePara(text, size='72') {
 }
 
 function metaPara(text, align='left') {
-  return `<w:p><w:pPr><w:jc w:val="${align}"/><w:spacing w:before="120" w:after="120"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:color w:val="888888"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
+  return `<w:p><w:pPr><w:jc w:val="${align}"/><w:spacing w:before="120" w:after="120"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri Light" w:hAnsi="Calibri Light"/><w:color w:val="888888"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
 }
 
 function sectionHeading(text) {
@@ -27,16 +27,16 @@ function sectionHeading(text) {
 }
 
 function subheadingPara(text) {
-  return `<w:p><w:pPr><w:spacing w:before="180" w:after="120" w:line="276" w:lineRule="auto"/></w:pPr><w:r><w:rPr><w:b/><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:color w:val="1A1A1A"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
+  return `<w:p><w:pPr><w:spacing w:before="180" w:after="120" w:line="276" w:lineRule="auto"/></w:pPr><w:r><w:rPr><w:b/><w:rFonts w:ascii="Calibri Light" w:hAnsi="Calibri Light"/><w:color w:val="1A1A1A"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
 }
 
 function bodyPara(text) {
-  return `<w:p><w:pPr><w:spacing w:before="0" w:after="160" w:line="276" w:lineRule="auto"/><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:color w:val="1A1A1A"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
+  return `<w:p><w:pPr><w:spacing w:before="0" w:after="160" w:line="276" w:lineRule="auto"/><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri Light" w:hAnsi="Calibri Light"/><w:color w:val="1A1A1A"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
 }
 
 function bulletPara(text) {
   const clean = text.replace(/^[•\-– ]+/, '').trim();
-  return `<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr><w:spacing w:before="0" w:after="80" w:line="276" w:lineRule="auto"/><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:color w:val="1A1A1A"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t xml:space="preserve">${esc(clean)}</w:t></w:r></w:p>`;
+  return `<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr><w:spacing w:before="0" w:after="80" w:line="276" w:lineRule="auto"/><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri Light" w:hAnsi="Calibri Light"/><w:color w:val="1A1A1A"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">${esc(clean)}</w:t></w:r></w:p>`;
 }
 
 function spacer() {
@@ -69,7 +69,7 @@ function buildDocumentXml(data, sectPr, numXml) {
   const line2 = words.slice(mid).join(' ');
 
   const companyParas = (data.company_text || '')
-    .split('\n').filter(p => p.trim());
+    .split(/\n\n+/).map(p => p.replace(/\n/g, ' ').trim()).filter(p => p);
 
   const parts = [];
 
