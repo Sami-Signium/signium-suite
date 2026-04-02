@@ -1444,6 +1444,21 @@ async function saveToSupabase() {
 }
   });
 });
+  async function saveToSupabase() {
+  const data = collectFormData();
+  if (!data.positionTitle) return showStatus('Bitte Position eingeben.', 'err');
+  if (!data.clientCompany) return showStatus('Bitte Unternehmen eingeben.', 'err');
+  const btn = document.getElementById('saveBtn');
+  btn.textContent = 'Speichern...'; btn.disabled = true;
+  const payload = { position_title: data.positionTitle, client_company: data.clientCompany, client_contact: data.clientContactName, position_description: data.positionDescription, search_criteria: JSON.stringify({functional: data.functionalTargets, industry: data.industryTargets, geo: data.geoTargets}), requirements: data.companyProfile, language: data.language, status: 'offen' };
+  try {
+    const res = await fetch('https://ftdxhswcnghlmcagrsox.supabase.co/rest/v1/mandates', { method: 'POST', headers: { 'apikey': 'sb_publishable_c8YygosML2xrImmWCpI1rw_6j_pvCRA', 'Authorization': 'Bearer sb_publishable_c8YygosML2xrImmWCpI1rw_6j_pvCRA', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify(payload) });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    showStatus('Mandat gespeichert - steht SCOUT zur Verfügung.', 'ok');
+    btn.textContent = 'Gespeichert';
+    setTimeout(() => { btn.textContent = 'Als Mandat speichern'; btn.disabled = false; }, 3000);
+  } catch (err) { showStatus('Fehler: ' + err.message, 'err'); btn.textContent = 'Als Mandat speichern'; btn.disabled = false; }
+}
 </script>
 </body>
 </html>
