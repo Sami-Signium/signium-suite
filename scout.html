@@ -214,8 +214,8 @@ textarea { resize:vertical; }
   <div id="tab-screen" class="tab-panel">
 
     <div class="card">
-      <div class="card-title">👤 Kandidaten einfügen</div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">LinkedIn Profil-Text oder Lebenslauf pro Kandidat einfügen. Name eingeben, dann Profil-Text darunter.</p>
+      <div class="card-title">👤 Kandidaten hochladen</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">LinkedIn Profil als PDF herunterladen und hier hochladen. In LinkedIn Recruiter: Kandidat öffnen → <strong>... → Save to PDF</strong>.</p>
 
       <div id="candidateList"></div>
 
@@ -419,21 +419,27 @@ function getCandidates() {
 // ─── SCREEN CANDIDATES ────────────────────────────────────────────────────────
 async function screenCandidates() {
   const candidates = getCandidates();
-  if (!candidates.length) { showStatus('statusScreen', 'Bitte mindestens einen Kandidaten einfügen.', 'err'); return; }
-  if (!currentMandate && !currentCriteria) { showStatus('statusScreen', 'Bitte zuerst ein Mandat auswählen oder Jobprofil analysieren.', 'err'); return; }
+  if (!candidates.length) { showStatus('statusScreen', 'Bitte mindestens einen Kandidaten hinzufügen.', 'err'); return; }
+  if (!currentMandate && !currentCriteria) { showStatus('statusScreen', 'Bitte zuerst Mandat auswählen oder Jobprofil analysieren.', 'err'); return; }
+
+  const hasPDFs = candidates.some(c => candidatePDFs[c.id]);
+  if (!hasPDFs) { showStatus('statusScreen', 'Bitte mindestens ein LinkedIn PDF hochladen.', 'err'); return; }
 
   document.getElementById('loadingScreen').style.display = 'flex';
   document.getElementById('screenResults').style.display = 'none';
   document.getElementById('btnScreen').disabled = true;
 
   const mandate = currentMandate || { position_title: 'Position', client_company: '', requirements: '', search_criteria: JSON.stringify(currentCriteria) };
-  const candidatesText = candidates.map(c => '=== KANDIDAT ' + c.num + ': ' + c.name + ' ===\n' + c.profile).join('\n\n');
+
+  const candidateFiles = candidates
+    .filter(c => candidatePDFs[c.id])
+    .map(c => ({ name: c.name, base64: candidatePDFs[c.id].base64, mediaType: 'application/pdf' }));
 
   try {
     const res = await fetch('/api/scout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode: 'screen', mandate, candidates: candidatesText })
+      body: JSON.stringify({ mode: 'screen-pdf', mandate, candidateFiles })
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
