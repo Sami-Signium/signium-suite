@@ -201,7 +201,7 @@ textarea { resize:vertical; }
           🔒 Anonymisiertes Jobprofil
           <div style="display:flex;gap:8px">
             <button class="btn btn-sm" onclick="copyAnon()">Kopieren</button>
-            <button class="btn btn-sm btn-green" id="btnDownloadAnon" onclick="downloadAnonProfile()">⬇ Als DOCX</button>
+            <button class="btn btn-sm btn-green" id="btnDownloadAjd" onclick="downloadAjd()">⬇ Als DOCX</button>
           </div>
         </div>
         <div class="anon-box" id="resAnon"></div>
@@ -379,7 +379,19 @@ function renderCriteria(data) {
   if (data.yearsExperience) { const s = document.createElement('span'); s.className='criteria-tag'; s.textContent='📅 ' + data.yearsExperience; misc.appendChild(s); }
   if (data.education) { const s = document.createElement('span'); s.className='criteria-tag'; s.textContent='🎓 ' + data.education; misc.appendChild(s); }
   document.getElementById('resGuide').textContent = data.linkedinGuide || '';
-  document.getElementById('resAnon').textContent = data.anonymizedProfile || '';
+  // Build preview text from ajdData
+  if (data.ajdData) {
+    const d = data.ajdData;
+    let preview = '';
+    if (d.position_intro) preview += d.position_intro + '\n\n';
+    if (d.accountabilities && d.accountabilities.length) {
+      preview += (d.language === 'EN' ? 'Main Accountabilities:\n' : 'Ihre Aufgaben:\n');
+      d.accountabilities.forEach(a => { preview += '• ' + a + '\n'; });
+    }
+    document.getElementById('resAnon').textContent = preview.trim();
+  } else {
+    document.getElementById('resAnon').textContent = data.anonymizedProfile || '';
+  }
 }
 
 function copyCriteria() {
