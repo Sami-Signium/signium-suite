@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCOUT – Signium Austria</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --navy:#081D4D;--navy-mid:#122a62;--orange:#FF6A42;--turquoise:#6BCBC2;--lightblue:#24629B;
+  --white:#ffffff;--bg:#F4F6FA;--border:#dce3ef;--muted:#6b7a9a;--success:#2d7a4f;--success-bg:#e8f5ee;
+  --danger:#c0392b;--danger-bg:#fceaea;--warning-bg:#fef3d0;--info-bg:#e3f0fb;
+  --radius:6px;--shadow:0 2px 12px rgba(8,29,77,.09);
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'DM Sans','Segoe UI',sans-serif; background:var(--bg); color:var(--navy); min-height:100vh; }
+.topbar { background:var(--navy); padding:0 32px; height:52px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; box-shadow:0 2px 8px rgba(0,0,0,.25); }
+.topbar-brand { display:flex; align-items:center; gap:10px; }
+.topbar-brand span { font-size:13px; font-weight:700; letter-spacing:.12em; color:rgba(255,255,255,.5); text-transform:uppercase; }
+.topbar-brand strong { color:#fff; letter-spacing:.06em; }
+.topbar-back { font-size:12px; color:rgba(255,255,255,.6); text-decoration:none; display:flex; align-items:center; gap:6px; transition:color .2s; }
+.topbar-back:hover { color:#fff; }
+.page { max-width:1100px; margin:0 auto; padding:32px 24px 60px; }
+.page-header { margin-bottom:28px; padding-bottom:20px; border-bottom:2px solid var(--border); }
+.page-title { font-size:24px; font-weight:700; color:var(--navy); }
+.page-subtitle { font-size:13px; color:var(--muted); margin-top:3px; }
+.tabs { display:flex; gap:0; border:1.5px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:28px; }
+.tab-btn { flex:1; padding:12px; background:none; border:none; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; transition:all .15s; letter-spacing:.04em; }
+.tab-btn.active { background:var(--navy); color:#fff; }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+.card { background:var(--white); border:1px solid var(--border); border-radius:8px; padding:24px; margin-bottom:20px; box-shadow:var(--shadow); }
+.card-title { font-size:14px; font-weight:700; color:var(--navy); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+.field-group { margin-bottom:16px; }
+.field-label { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:5px; display:block; }
+input, textarea, select { width:100%; padding:8px 11px; font-size:13px; font-family:inherit; border:1.5px solid var(--border); border-radius:var(--radius); background:#fff; color:var(--navy); transition:border-color .15s; }
+input:focus, textarea:focus, select:focus { outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(8,29,77,.07); }
+textarea { resize:vertical; }
+.upload-zone { border:2px dashed var(--border); border-radius:8px; padding:28px; text-align:center; cursor:pointer; transition:all .2s; background:#f8faff; margin-bottom:12px; }
+.upload-zone:hover { border-color:var(--turquoise); background:#edfafa; }
+.upload-zone-icon { font-size:28px; margin-bottom:8px; }
+.upload-zone-text { font-size:13px; color:var(--muted); }
+.upload-zone-text strong { color:var(--lightblue); }
+.btn { padding:10px 20px; font-size:13px; font-weight:600; border-radius:var(--radius); cursor:pointer; border:1.5px solid var(--border); background:var(--white); color:var(--navy); font-family:inherit; transition:all .15s; display:inline-flex; align-items:center; gap:6px; }
+.btn:hover { background:#f0f2f8; }
+.btn:disabled { opacity:.5; cursor:not-allowed; }
+.btn-primary { background:var(--navy); color:#fff; border-color:var(--navy); }
+.btn-primary:hover { background:var(--navy-mid); }
+.btn-orange { background:var(--orange); color:#fff; border-color:var(--orange); }
+.btn-orange:hover { background:#e85a32; }
+.btn-green { background:#1D9E75; color:#fff; border-color:#1D9E75; }
+.btn-green:hover { background:#0F6E56; }
+.btn-sm { padding:6px 14px; font-size:12px; }
+.loading { display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--lightblue); padding:10px 14px; background:var(--info-bg); border-radius:var(--radius); margin-bottom:12px; }
+.spinner { width:16px; height:16px; border:2px solid rgba(36,98,155,.2); border-top-color:var(--lightblue); border-radius:50%; animation:spin .7s linear infinite; flex-shrink:0; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.status-msg { padding:10px 16px; border-radius:var(--radius); font-size:13px; display:none; margin-bottom:16px; }
+.status-msg.ok { background:var(--success-bg); color:var(--success); display:block; }
+.status-msg.err { background:var(--danger-bg); color:var(--danger); display:block; }
+.status-msg.info { background:var(--info-bg); color:var(--lightblue); display:block; }
+.criteria-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+.criteria-box { background:#f8faff; border:1.5px solid var(--border); border-radius:8px; padding:16px; }
+.criteria-box h4 { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+.criteria-tag { display:inline-flex; align-items:center; background:var(--navy); color:#fff; border-radius:20px; padding:3px 12px; font-size:12px; margin:3px; }
+.guide-box { background:#fffbea; border:1.5px solid #F59E0B; border-radius:8px; padding:18px; margin-bottom:20px; white-space:pre-wrap; font-size:13px; line-height:1.7; }
+.anon-box { background:#f0fdf4; border:1.5px solid #4CAF50; border-radius:8px; padding:18px; margin-bottom:20px; font-size:13px; line-height:1.7; }
+.candidate-input { border:1.5px solid var(--border); border-radius:8px; overflow:hidden; margin-bottom:12px; }
+.candidate-header { background:var(--navy); padding:10px 16px; display:flex; align-items:center; justify-content:space-between; }
+.candidate-num { width:22px; height:22px; background:var(--orange); border-radius:50%; font-size:11px; font-weight:700; color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.candidate-name-input { background:transparent; border:none; color:#fff; font-size:13px; font-weight:600; flex:1; margin:0 12px; padding:0; }
+.candidate-name-input:focus { outline:none; }
+.candidate-name-input::placeholder { color:rgba(255,255,255,.4); }
+.candidate-body { padding:12px; }
+.candidate-body textarea { border:none; background:#f8faff; font-size:12px; min-height:80px; }
+.result-card { background:var(--white); border:1px solid var(--border); border-radius:8px; padding:18px; margin-bottom:12px; box-shadow:var(--shadow); }
+.result-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.result-name { font-size:15px; font-weight:700; color:var(--navy); }
+.score-badge { font-size:20px; font-weight:700; padding:6px 16px; border-radius:8px; }
+.score-high { background:#e8f5ee; color:#2d7a4f; }
+.score-mid { background:#fef3d0; color:#9a6a00; }
+.score-low { background:#fceaea; color:#c0392b; }
+.rec-badge { font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; text-transform:uppercase; letter-spacing:.05em; }
+.rec-yes { background:#e8f5ee; color:#2d7a4f; }
+.rec-maybe { background:#fef3d0; color:#9a6a00; }
+.rec-no { background:#fceaea; color:#c0392b; }
+.strength-list li { font-size:12px; color:#2d7a4f; margin-bottom:3px; }
+.gap-list li { font-size:12px; color:#c0392b; margin-bottom:3px; }
+.mandate-select { background:#f0fdf4; border:1.5px solid #4CAF50; border-radius:8px; padding:14px; margin-bottom:16px; display:flex; align-items:center; gap:12px; }
+.mandate-select select { border-color:#4CAF50; }
+.top-pick { background:linear-gradient(135deg,#081D4D,#122a62); color:#fff; border-radius:8px; padding:16px 20px; margin-bottom:20px; }
+.top-pick-label { font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.5); margin-bottom:4px; }
+.top-pick-name { font-size:18px; font-weight:700; color:#FF6A42; margin-bottom:4px; }
+.top-pick-note { font-size:12px; color:rgba(255,255,255,.7); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <span>SIGNIUM</span>
+    <strong>SCOUT</strong>
+  </div>
+  <a href="index.html" class="topbar-back">&#8592; Zurück zum Dashboard</a>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-title">SCOUT – Kandidaten-Screening</div>
+    <div class="page-subtitle">Job Description → LinkedIn Suchkriterien → Kandidaten bewerten → Outreach</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('jd')">① Job Description & Suchkriterien</button>
+    <button class="tab-btn" onclick="switchTab('screen')">② Kandidaten bewerten</button>
+    <button class="tab-btn" onclick="switchTab('outreach')">③ Outreach Mails</button>
+  </div>
+
+  <!-- TAB 1: JD + SUCHKRITERIEN -->
+  <div id="tab-jd" class="tab-panel active">
+
+    <!-- Mandat aus Supabase laden -->
+    <div class="card">
+      <div class="card-title">📋 Bestehendes Mandat laden (optional)</div>
+      <div class="mandate-select">
+        <span style="font-size:13px;color:var(--muted);flex-shrink:0">Mandat:</span>
+        <select id="mandateSelect" onchange="loadMandate()">
+          <option value="">– Neues Mandat –</option>
+        </select>
+        <span id="mandateLoaded" style="font-size:12px;color:var(--success);display:none">✓ Geladen</span>
+      </div>
+    </div>
+
+    <!-- Jobprofil Upload -->
+    <div class="card">
+      <div class="card-title">📎 Jobprofil hochladen</div>
+      <div class="upload-zone" onclick="document.getElementById('jdFile').click()">
+        <div class="upload-zone-icon">📄</div>
+        <div class="upload-zone-text"><strong>PDF oder Word hochladen</strong><br>Job Description, Briefing, Anforderungsprofil</div>
+        <input type="file" id="jdFile" accept=".pdf,.docx,.doc" style="display:none" onchange="handleJDUpload(event)">
+      </div>
+      <div id="jdFileStatus" style="font-size:12px;color:var(--success);display:none;margin-bottom:8px"></div>
+
+      <div class="field-group">
+        <label class="field-label">Persönliche Notizen (optional)</label>
+        <textarea id="jdNotes" rows="3" placeholder="z.B. Kandidat sollte CEE-Erfahrung mitbringen, kein Quereinsteiger, Fokus Wien..."></textarea>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:center">
+        <select id="jdLang" style="width:auto;padding:8px 14px">
+          <option value="DE">Deutsch</option>
+          <option value="EN">Englisch</option>
+        </select>
+        <button class="btn btn-orange" id="btnAnalyze" onclick="analyzeJD()">✦ Suchkriterien generieren</button>
+      </div>
+    </div>
+
+    <div class="loading" id="loadingJD" style="display:none">
+      <div class="spinner"></div>
+      <span>Analysiere Jobprofil und generiere LinkedIn Suchkriterien…</span>
+    </div>
+    <div id="statusJD" class="status-msg"></div>
+
+    <!-- ERGEBNISSE -->
+    <div id="jdResults" style="display:none">
+
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between">
+          🔍 LinkedIn Recruiter Suchkriterien
+          <button class="btn btn-sm btn-green" onclick="copyCriteria()">Kopieren</button>
+        </div>
+        <div class="criteria-grid">
+          <div class="criteria-box">
+            <h4>Job Titles</h4>
+            <div id="resTitles"></div>
+          </div>
+          <div class="criteria-box">
+            <h4>Keywords</h4>
+            <div id="resKeywords"></div>
+          </div>
+          <div class="criteria-box">
+            <h4>Industries</h4>
+            <div id="resIndustries"></div>
+          </div>
+          <div class="criteria-box">
+            <h4>Geography · Seniority · Experience · Education</h4>
+            <div id="resMisc"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between">
+          📋 LinkedIn Recruiter Anleitung
+          <button class="btn btn-sm" onclick="copyGuide()">Kopieren</button>
+        </div>
+        <div class="guide-box" id="resGuide"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between">
+          🔒 Anonymisiertes Jobprofil
+          <button class="btn btn-sm btn-green" onclick="copyAnon()">Kopieren</button>
+        </div>
+        <div class="anon-box" id="resAnon"></div>
+      </div>
+
+      <div style="text-align:right">
+        <button class="btn btn-primary" onclick="switchTab('screen')">Weiter zu Kandidaten bewerten →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: KANDIDATEN SCREENING -->
+  <div id="tab-screen" class="tab-panel">
+
+    <div class="card">
+      <div class="card-title">👤 Kandidaten einfügen</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">LinkedIn Profil-Text oder Lebenslauf pro Kandidat einfügen. Name eingeben, dann Profil-Text darunter.</p>
+
+      <div id="candidateList"></div>
+
+      <button class="btn btn-sm" onclick="addCandidate()" style="margin-top:8px">+ Kandidat hinzufügen</button>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-bottom:20px">
+      <button class="btn btn-orange" id="btnScreen" onclick="screenCandidates()">✦ Kandidaten bewerten</button>
+    </div>
+
+    <div class="loading" id="loadingScreen" style="display:none">
+      <div class="spinner"></div>
+      <span>Bewerte Kandidaten gegen Mandat…</span>
+    </div>
+    <div id="statusScreen" class="status-msg"></div>
+
+    <!-- RANKING ERGEBNISSE -->
+    <div id="screenResults" style="display:none">
+      <div id="topPickBox"></div>
+      <div id="candidateResults"></div>
+      <div style="text-align:right;margin-top:12px">
+        <button class="btn btn-primary" onclick="switchTab('outreach')">Weiter zu Outreach Mails →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: OUTREACH -->
+  <div id="tab-outreach" class="tab-panel">
+
+    <div class="card">
+      <div class="card-title">📧 Outreach Mail Generator</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Für jeden ausgewählten Kandidaten wird eine personalisierte LinkedIn-Nachricht mit anonymisiertem Jobprofil generiert.</p>
+
+      <div id="outreachCandidateList"></div>
+
+      <div class="field-group" style="margin-top:16px">
+        <label class="field-label">Sprache</label>
+        <select id="outreachLang" style="width:auto;padding:8px 14px">
+          <option value="DE">Deutsch</option>
+          <option value="EN">Englisch</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="outreachResults"></div>
+  </div>
+
+</div>
+
+<script>
+const SU = 'https://ftdxhswcnghlmcagrsox.supabase.co';
+const SK = 'sb_publishable_c8YygosML2xrImmWCpI1rw_6j_pvCRA';
+const { createClient } = supabase;
+const db = createClient(SU, SK);
+
+let currentMandate = null;
+let jdFileBase64 = null;
+let jdMediaType = null;
+let currentCriteria = null;
+let screeningResults = [];
+
+// ─── TABS ────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', ['jd','screen','outreach'][i]===name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+// ─── LOAD MANDATES FROM SUPABASE ─────────────────────────────────────────────
+async function loadMandates() {
+  const { data } = await db.from('mandates').select('*').order('created_at', { ascending: false });
+  if (!data) return;
+  const sel = document.getElementById('mandateSelect');
+  data.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = m.position_title + ' — ' + m.client_company;
+    opt.dataset.mandate = JSON.stringify(m);
+    sel.appendChild(opt);
+  });
+}
+
+function loadMandate() {
+  const sel = document.getElementById('mandateSelect');
+  const opt = sel.selectedOptions[0];
+  if (!opt || !opt.dataset.mandate) { currentMandate = null; document.getElementById('mandateLoaded').style.display='none'; return; }
+  currentMandate = JSON.parse(opt.dataset.mandate);
+  document.getElementById('mandateLoaded').style.display='inline';
+}
+
+// ─── JD FILE UPLOAD ───────────────────────────────────────────────────────────
+async function handleJDUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('jdFileStatus');
+  status.style.display = 'block';
+  status.textContent = '📄 ' + file.name + ' geladen';
+  jdMediaType = file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  jdFileBase64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+// ─── ANALYZE JD ───────────────────────────────────────────────────────────────
+async function analyzeJD() {
+  if (!jdFileBase64 && !currentMandate && !document.getElementById('jdNotes').value) {
+    showStatus('statusJD', 'Bitte Jobprofil hochladen oder Mandat auswählen.', 'err');
+    return;
+  }
+  document.getElementById('loadingJD').style.display = 'flex';
+  document.getElementById('jdResults').style.display = 'none';
+  document.getElementById('btnAnalyze').disabled = true;
+
+  try {
+    const res = await fetch('/api/scout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'jd',
+        fileBase64: jdFileBase64,
+        mediaType: jdMediaType,
+        notes: document.getElementById('jdNotes').value,
+        mandate: currentMandate,
+        language: document.getElementById('jdLang').value
+      })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    currentCriteria = data;
+    renderCriteria(data);
+    document.getElementById('jdResults').style.display = 'block';
+  } catch (err) {
+    showStatus('statusJD', 'Fehler: ' + err.message, 'err');
+  } finally {
+    document.getElementById('loadingJD').style.display = 'none';
+    document.getElementById('btnAnalyze').disabled = false;
+  }
+}
+
+function renderCriteria(data) {
+  const tags = (arr, el) => {
+    const container = document.getElementById(el);
+    container.innerHTML = '';
+    (arr || []).forEach(t => { const s = document.createElement('span'); s.className='criteria-tag'; s.textContent=t; container.appendChild(s); });
+  };
+  tags(data.jobTitles, 'resTitles');
+  tags(data.keywords, 'resKeywords');
+  tags(data.industries, 'resIndustries');
+  const misc = document.getElementById('resMisc');
+  misc.innerHTML = '';
+  if (data.geography) { const s = document.createElement('span'); s.className='criteria-tag'; s.textContent='📍 ' + (Array.isArray(data.geography) ? data.geography.join(', ') : data.geography); misc.appendChild(s); }
+  if (data.seniority) { const s = document.createElement('span'); s.className='criteria-tag'; s.textContent='⭐ ' + data.seniority; misc.appendChild(s); }
+  if (data.yearsExperience) { const s = document.createElement('span'); s.className='criteria-tag'; s.textContent='📅 ' + data.yearsExperience; misc.appendChild(s); }
+  if (data.education) { const s = document.createElement('span'); s.className='criteria-tag'; s.textContent='🎓 ' + data.education; misc.appendChild(s); }
+  document.getElementById('resGuide').textContent = data.linkedinGuide || '';
+  document.getElementById('resAnon').textContent = data.anonymizedProfile || '';
+}
+
+function copyCriteria() {
+  if (!currentCriteria) return;
+  const text = 'JOB TITLES: ' + (currentCriteria.jobTitles||[]).join(', ') + '\nKEYWORDS: ' + (currentCriteria.keywords||[]).join(', ') + '\nINDUSTRIES: ' + (currentCriteria.industries||[]).join(', ') + '\nGEOGRAPHY: ' + (Array.isArray(currentCriteria.geography) ? currentCriteria.geography.join(', ') : currentCriteria.geography) + '\nSENIORITY: ' + currentCriteria.seniority + '\nEXPERIENCE: ' + currentCriteria.yearsExperience + '\nEDUCATION: ' + currentCriteria.education;
+  navigator.clipboard.writeText(text).then(() => alert('Kopiert!'));
+}
+function copyGuide() { navigator.clipboard.writeText(document.getElementById('resGuide').textContent).then(() => alert('Kopiert!')); }
+function copyAnon() { navigator.clipboard.writeText(document.getElementById('resAnon').textContent).then(() => alert('Kopiert!')); }
+
+// ─── CANDIDATES ───────────────────────────────────────────────────────────────
+let candidateCount = 0;
+
+function addCandidate() {
+  candidateCount++;
+  const list = document.getElementById('candidateList');
+  const div = document.createElement('div');
+  div.className = 'candidate-input';
+  div.id = 'cand-' + candidateCount;
+  div.innerHTML = '<div class="candidate-header">'
+    + '<div class="candidate-num">' + candidateCount + '</div>'
+    + '<input class="candidate-name-input" placeholder="Name des Kandidaten" id="cname-' + candidateCount + '">'
+    + '<button style="background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:16px" onclick="document.getElementById(\'cand-' + candidateCount + '\').remove()">✕</button>'
+    + '</div>'
+    + '<div class="candidate-body">'
+    + '<textarea id="cprofile-' + candidateCount + '" placeholder="LinkedIn Profil-Text hier einfügen (Erfahrung, Ausbildung, Skills)..." rows="5"></textarea>'
+    + '</div>';
+  list.appendChild(div);
+}
+
+function getCandidates() {
+  const result = [];
+  document.querySelectorAll('.candidate-input').forEach((el, i) => {
+    const id = el.id.replace('cand-', '');
+    const name = document.getElementById('cname-' + id)?.value.trim();
+    const profile = document.getElementById('cprofile-' + id)?.value.trim();
+    if (name || profile) result.push({ num: i+1, name: name || 'Kandidat ' + (i+1), profile });
+  });
+  return result;
+}
+
+// ─── SCREEN CANDIDATES ────────────────────────────────────────────────────────
+async function screenCandidates() {
+  const candidates = getCandidates();
+  if (!candidates.length) { showStatus('statusScreen', 'Bitte mindestens einen Kandidaten einfügen.', 'err'); return; }
+  if (!currentMandate && !currentCriteria) { showStatus('statusScreen', 'Bitte zuerst ein Mandat auswählen oder Jobprofil analysieren.', 'err'); return; }
+
+  document.getElementById('loadingScreen').style.display = 'flex';
+  document.getElementById('screenResults').style.display = 'none';
+  document.getElementById('btnScreen').disabled = true;
+
+  const mandate = currentMandate || { position_title: 'Position', client_company: '', requirements: '', search_criteria: JSON.stringify(currentCriteria) };
+  const candidatesText = candidates.map(c => '=== KANDIDAT ' + c.num + ': ' + c.name + ' ===\n' + c.profile).join('\n\n');
+
+  try {
+    const res = await fetch('/api/scout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'screen', mandate, candidates: candidatesText })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    screeningResults = data.candidates || [];
+    renderScreening(data);
+    populateOutreach(data.candidates);
+    document.getElementById('screenResults').style.display = 'block';
+  } catch (err) {
+    showStatus('statusScreen', 'Fehler: ' + err.message, 'err');
+  } finally {
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('btnScreen').disabled = false;
+  }
+}
+
+function renderScreening(data) {
+  if (data.topPick) {
+    document.getElementById('topPickBox').innerHTML = '<div class="top-pick"><div class="top-pick-label">⭐ Top-Kandidat</div><div class="top-pick-name">' + data.topPick + '</div><div class="top-pick-note">' + (data.rankingNote||'') + '</div></div>';
+  }
+  const container = document.getElementById('candidateResults');
+  container.innerHTML = '';
+  const sorted = [...(data.candidates||[])].sort((a,b) => b.fitScore - a.fitScore);
+  sorted.forEach((c, i) => {
+    const scoreClass = c.fitScore >= 75 ? 'score-high' : c.fitScore >= 50 ? 'score-mid' : 'score-low';
+    const recClass = c.recommendation === 'Ja' ? 'rec-yes' : c.recommendation === 'Bedingt' ? 'rec-maybe' : 'rec-no';
+    container.innerHTML += '<div class="result-card">'
+      + '<div class="result-header">'
+      + '<div><span style="font-size:11px;color:var(--muted);margin-right:8px">#' + (i+1) + '</span><span class="result-name">' + c.name + '</span></div>'
+      + '<div style="display:flex;gap:8px;align-items:center">'
+      + '<span class="rec-badge ' + recClass + '">' + c.recommendation + '</span>'
+      + '<span class="score-badge ' + scoreClass + '">' + c.fitScore + '</span>'
+      + '</div></div>'
+      + '<p style="font-size:12.5px;color:#555;margin-bottom:12px;line-height:1.6">' + c.summary + '</p>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'
+      + '<div><div style="font-size:11px;font-weight:700;color:var(--success);margin-bottom:6px">STÄRKEN</div><ul class="strength-list">' + (c.strengths||[]).map(s=>'<li>✓ '+s+'</li>').join('') + '</ul></div>'
+      + '<div><div style="font-size:11px;font-weight:700;color:var(--danger);margin-bottom:6px">LÜCKEN</div><ul class="gap-list">' + (c.gaps||[]).map(g=>'<li>✗ '+g+'</li>').join('') + '</ul></div>'
+      + '</div></div>';
+  });
+}
+
+// ─── OUTREACH ─────────────────────────────────────────────────────────────────
+function populateOutreach(candidates) {
+  const list = document.getElementById('outreachCandidateList');
+  list.innerHTML = '';
+  (candidates||[]).forEach((c, i) => {
+    list.innerHTML += '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">'
+      + '<input type="checkbox" id="oc-' + i + '" value="' + c.name + '" style="width:auto" checked>'
+      + '<label for="oc-' + i + '" style="font-size:13px;font-weight:500">' + c.name + '</label>'
+      + '<button class="btn btn-sm btn-orange" onclick="generateOutreach(\'' + c.name.replace(/'/g,"\\'") + '\')">📧 Mail generieren</button>'
+      + '<div id="outreach-result-' + i + '" style="flex:1"></div>'
+      + '</div>';
+  });
+}
+
+async function generateOutreach(candidateName) {
+  const anon = document.getElementById('resAnon')?.textContent || '';
+  const lang = document.getElementById('outreachLang').value;
+  const idx = screeningResults.findIndex(c => c.name === candidateName);
+  const resultEl = document.getElementById('outreach-result-' + idx);
+  if (resultEl) resultEl.innerHTML = '<span style="font-size:12px;color:var(--muted)">Generiere...</span>';
+
+  try {
+    const res = await fetch('/api/scout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'outreach', candidateName, anonymizedProfile: anon, language: lang })
+    });
+    const data = await res.json();
+    const container = document.getElementById('outreachResults');
+    container.innerHTML += '<div class="card" style="margin-top:12px">'
+      + '<div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px">📧 ' + candidateName + '</div>'
+      + '<div style="white-space:pre-wrap;font-size:13px;line-height:1.7;background:#f8faff;padding:14px;border-radius:6px;margin-bottom:10px">' + data.text + '</div>'
+      + '<button class="btn btn-sm btn-green" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent).then(()=>alert(\'Kopiert!\'))">Kopieren</button>'
+      + '</div>';
+    if (resultEl) resultEl.innerHTML = '<span style="font-size:12px;color:var(--success)">✓ Generiert</span>';
+  } catch (err) {
+    if (resultEl) resultEl.innerHTML = '<span style="font-size:12px;color:var(--danger)">Fehler</span>';
+  }
+}
+
+function showStatus(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status-msg ' + type;
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+loadMandates();
+addCandidate();
+addCandidate();
+addCandidate();
+</script>
+</body>
+</html>
