@@ -890,6 +890,7 @@
   <div class="gen-bar-info">
     <span id="genBarInfo">Formular ausfüllen → Angebot generieren</span>
   </div>
+  <button id="saveBtn" onclick="saveToSupabase()" style="background:#1D9E75;color:#fff;border:none;border-radius:6px;padding:11px 20px;font-size:13px;font-weight:600;cursor:pointer;">✦ Als Mandat speichern</button>
   <button class="btn-reset" onclick="resetForm()">↺ Zurücksetzen</button>
   <button class="btn-generate" id="genBtn" onclick="generateAngebot()">
     <div class="spinner"></div>
@@ -1392,6 +1393,55 @@ document.addEventListener('DOMContentLoaded', () => {
     if (i < 4) { body.classList.add('open'); }
     const chev = body.previousElementSibling?.querySelector('.card-chevron');
     if (chev && i < 4) chev.classList.add('open');
+    // ─── SAVE TO SUPABASE ─────────────────────────────────────────────────────────
+const SB_URL = 'https://ftdxhswcnghlmcagrsox.supabase.co';
+const SB_KEY = 'sb_publishable_c8YygosML2xrImmWCpI1rw_6j_pvCRA';
+
+async function saveToSupabase() {
+  const data = collectFormData();
+  if (!data.positionTitle) return showStatus('Bitte Position eingeben.', 'err');
+  if (!data.clientCompany) return showStatus('Bitte Unternehmen eingeben.', 'err');
+
+  const btn = document.getElementById('saveBtn');
+  btn.textContent = '⏳ Speichern...';
+  btn.disabled = true;
+
+  const payload = {
+    position_title: data.positionTitle,
+    client_company: data.clientCompany,
+    client_contact: data.clientContactName,
+    position_description: data.positionDescription,
+    search_criteria: JSON.stringify({
+      functional: data.functionalTargets,
+      industry: data.industryTargets,
+      geo: data.geoTargets
+    }),
+    requirements: data.companyProfile,
+    language: data.language,
+    status: 'offen'
+  };
+
+  try {
+    const res = await fetch(SB_URL + '/rest/v1/mandates', {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    showStatus('✓ Mandat "' + data.positionTitle + '" für ' + data.clientCompany + ' gespeichert — steht SCOUT zur Verfügung.', 'ok');
+    btn.textContent = '✓ Gespeichert';
+    setTimeout(() => { btn.textContent = '✦ Als Mandat speichern'; btn.disabled = false; }, 3000);
+  } catch (err) {
+    showStatus('Fehler: ' + err.message, 'err');
+    btn.textContent = '✦ Als Mandat speichern';
+    btn.disabled = false;
+  }
+}
   });
 });
 </script>
