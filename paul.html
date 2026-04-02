@@ -708,14 +708,22 @@ async function generatePitch() {
   const prompt = `Du bist Dr. Sami Hamid, Managing Partner bei Signium Austria (globales Executive Search, 40+ Länder).
 
 Schreibe einen professionellen Outreach-Pitch:
-const prompt = `FAKTEN FÜR DEN SALESBRIEF:
+Trigger: ${labels[trigger]}
 Unternehmen: ${company}
 ${contact ? 'Ansprechpartner: ' + contact : ''}
-KONKRETER ANLASS: ${context || labels[trigger]}
+${context ? 'Kontext: ' + context : ''}
 Sprache: ${lang === 'de' ? 'Deutsch' : 'Englisch'}
-${selectedDocLinks ? 'Unterlagen am Ende einfügen:\n' + selectedDocLinks : ''}
 
-Schreibe den Salesbrief jetzt.`;
+Der Pitch soll:
+- Mit Betreffzeile beginnen (Format: "Betreff: ...")
+- 4 Absätze sein
+- Das Ereignis als Aufhänger nutzen
+- Signiums Expertise einbringen
+- Mit Call-to-Action enden (30-min Austausch)
+- Förmlich aber persönlich
+${selectedDocLinks ? '\nFüge am Ende einen Abschnitt "Weiterführende Unterlagen:" ein mit:\n' + selectedDocLinks : ''}
+
+Nur die E-Mail, keine Erklärungen.`;
   try {
     const response = await fetch('/api/pitch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
     const data = await response.json();
