@@ -82,10 +82,14 @@ Schreibe den Brief in dieser Reihenfolge:
 6. CLOSING (immer verwenden)
 7. Grußformel: "Mit freundlichen Grüßen, Sami Hamid · Managing Partner · Signium Austria"
 
-Halte den Brief präzise und professionell. Keine Erfindungen. Nur die Bausteine, mit echten Daten gefüllt.`;
+Halte den Brief präzise und professionell. Die Bausteine geben Struktur und Tonalität vor — fülle sie aber mit konkreten, recherchierten Inhalten:
+- Beziehe dich spezifisch auf den aktuellen Anlassfall (was genau ist passiert, wann, warum relevant)
+- Baue aktuelle Marktdaten, Branchentrends oder Unternehmenssituation ein wo sinnvoll
+- Der Brief soll sich anfühlen als hätte Sami Hamid 10 Minuten über diesen konkreten Fall nachgedacht — nicht als Serienbrief`;
+
 
     const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1500,
       system: systemPrompt,
       messages: [{ role: 'user', content: prompt }]
