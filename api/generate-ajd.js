@@ -202,7 +202,11 @@ Antworte NUR mit den 3 Absätzen, keine Erklärungen, keine Überschriften.` }]
     // Extract sectPr from template (preserves headers/footers/page setup)
     const docXml = await zip.file('word/document.xml').async('string');
     const sectPrMatch = docXml.match(/<w:sectPr[\s\S]*?<\/w:sectPr>/);
-    const sectPr = sectPrMatch ? sectPrMatch[0] : '<w:sectPr/>';
+    let sectPr = sectPrMatch ? sectPrMatch[0] : '<w:sectPr/>';
+    // Override margins: 2.5cm left/right, 2.5cm top, 2cm bottom (standard document margins)
+    // 1cm = 567 DXA approx
+    sectPr = sectPr.replace(/<w:pgMar[^/]*\/>/,
+      '<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="850" w:footer="444" w:gutter="0"/>');
 
     // ── Build new document XML ──────────────────────────────────────────────
     const finalData = { ...ajdData, company_text: companyText };
