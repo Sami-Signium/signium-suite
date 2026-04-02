@@ -144,6 +144,12 @@ tbody td { padding: 11px 16px; font-size: 12px; color: var(--text); vertical-ali
 .doc-card { background: var(--white); border: 2px solid var(--gray-200); border-radius: var(--radius-lg); padding: 20px; cursor: pointer; transition: all .2s; box-shadow: var(--shadow); }
 .doc-card:hover { border-color: var(--navy); box-shadow: var(--shadow-md); }
 .doc-card.selected { border-color: var(--orange); background: rgba(255,106,66,.04); }
+.reminder-block { background: #fef3d0; border: 1px solid #e6c84a; border-left: 3px solid #FF6A42; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; }
+.reminder-title { font-size: 10px; font-weight: 600; color: #9a6a00; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 10px; }
+.reminder-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(154,106,0,.1); font-size: 12px; }
+.reminder-item:last-child { border-bottom: none; padding-bottom: 0; }
+.reminder-company { font-weight: 600; color: #0D1B3E; font-family: 'Petrona', Georgia, serif; }
+.reminder-date { font-size: 10px; color: #9a6a00; margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -195,6 +201,7 @@ tbody td { padding: 11px 16px; font-size: 12px; color: var(--text); vertical-ali
         <div class="stat-card"><div class="stat-label">Trigger</div><div class="stat-value" id="stat-triggers">–</div><div class="stat-delta">erkannte Ereignisse</div></div>
         <div class="stat-card"><div class="stat-label">Pitches</div><div class="stat-value" id="stat-outreach">–</div><div class="stat-delta">generiert</div></div>
       </div>
+      <div id="followup-reminders"></div>
       <div class="section-header">
         <div><div class="brand-line"></div><div class="section-title">Heutige Trigger</div><div class="section-sub">Klicken zum Pitch erstellen</div></div>
         <button class="btn btn-sm" onclick="showPanel('triggers')">Alle ansehen →</button>
@@ -418,11 +425,7 @@ const docUrls = {
   whitepaper: 'https://paul-signium.netlify.app/Signium_Whitepaper_100Tage_v3.pdf',
   references: 'https://paul-signium.netlify.app/Signium_CEE_reference_list.pdf'
 };
-const docNames = {
-  presentation: 'Signium Präsentation',
-  whitepaper: 'Whitepaper 100 Tage',
-  references: 'CEE Referenzliste'
-};
+const docNames = { presentation: 'Signium Präsentation', whitepaper: 'Whitepaper 100 Tage', references: 'CEE Referenzliste' };
 
 function toggleDoc(key) {
   const card = document.getElementById('doccard-' + key);
@@ -459,8 +462,7 @@ function updateDocInfo() {
 function getSelectedDocLinks() {
   return ['presentation','whitepaper','references']
     .filter(k => document.getElementById('doccard-'+k)?.classList.contains('selected'))
-    .map(k => docNames[k] + ': ' + docUrls[k])
-    .join('\n');
+    .map(k => docNames[k] + ': ' + docUrls[k]).join('\n');
 }
 
 const typeMap = {
@@ -502,13 +504,13 @@ document.querySelectorAll('.modal-overlay').forEach(o => { o.addEventListener('c
 
 async function loadAll() {
   await Promise.all([loadCompanies(), loadContacts(), loadTriggers(), loadOutreach(), checkDb()]);
-  updateStats(); renderDashboard();
+  updateStats(); renderDashboard(); renderFollowupReminders();
 }
 
 async function loadCompanies() { const { data } = await db.from('companies').select('*').order('name'); if (data) { allCompanies = data; renderCompanies(); } }
 async function loadContacts() { const { data } = await db.from('contacts').select('*, companies(name)').order('full_name'); if (data) { allContacts = data; renderContacts(); } }
 async function loadTriggers() { const { data } = await db.from('triggers').select('*, companies(name)').order('created_at', { ascending: false }); if (data) { allTriggers = data; renderTriggers(); } }
-async function loadOutreach() { const { data } = await db.from('outreach').select('*, companies(name)').order('created_at', { ascending: false }); if (data) { allOutreach = data; renderOutreach(); } }
+async function loadOutreach() { const { data } = await db.from('outreach').select('*, companies(name)').order('created_at', { ascending: false }); if (data) { allOutreach = data; renderOutreach(); renderFollowupReminders(); } }
 async function checkDb() {
   const el = document.getElementById('db-status');
   try { const { error } = await db.from('companies').select('id').limit(1); el.textContent = error ? '● Fehler' : '● Verbunden'; el.className = error ? 'badge badge-danger' : 'badge badge-success'; }
@@ -524,57 +526,81 @@ function updateStats() {
 
 function refreshData() { loadAll(); showToast('Aktualisiert ✓'); }
 
+function renderFollowupReminders() {
+  const el = document.getElementById('followup-reminders');
+  if (!el) return;
+  const now = new Date();
+  const eightDays = 8 * 24 * 60 * 60 * 1000;
+  const due = allOutreach.filter(o => {
+    if (!o.approved_at) return false;
+    if (o.status === 'Geantwortet' || o.status === 'Gesendet') return false;
+    return (now - new Date(o.approved_at)) >= eightDays;
+  });
+  if (!due.length) { el.innerHTML = ''; return; }
+  let h = '<div class="reminder-block"><div class="reminder-title">&#9200; Follow-up fällig — ' + due.length + ' Pitch' + (due.length > 1 ? 'es' : '') + ' ohne Antwort nach 8 Tagen</div>';
+  due.forEach(o => {
+    const days = Math.floor((now - new Date(o.approved_at)) / (24*60*60*1000));
+    const company = (o.companies && o.companies.name) ? o.companies.name : 'Unbekannt';
+    const dt = new Date(o.approved_at).toLocaleDateString('de-AT');
+    const safeCompany = company.replace(/'/g, "\'");
+    const ctx = 'Follow-up zu Pitch vom ' + dt + ' - bisher keine Antwort erhalten.';
+    h += '<div class="reminder-item">'
+      + '<div><div class="reminder-company">' + company + '</div>'
+      + '<div class="reminder-date">Pitch freigegeben vor ' + days + ' Tagen</div></div>'
+      + '<button class="btn btn-sm btn-orange" onclick="showPanel(\'compose\');document.getElementById(\'pitch-company\').value=\'' + safeCompany + '\';document.getElementById(\'pitch-context\').value=\'' + ctx + '\'">&#10022; Follow-up</button>'
+      + '</div>';
+  });
+  h += '</div>';
+  el.innerHTML = h;
+}
+
 function renderDashboard() {
   const el = document.getElementById('dashboard-triggers');
   const today = new Date().toDateString();
   const todayTriggers = allTriggers.filter(t => t.created_at && new Date(t.created_at).toDateString() === today);
   const slice = todayTriggers.slice(0, 20);
   if (!slice.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚡</div><div class="empty-title">Heute noch keine Trigger</div><div class="empty-sub">Scan starten um Ereignisse zu erkennen.</div><br><button class="btn btn-primary btn-sm" onclick="showPanel('scan')">⚡ Scan starten</button></div>`;
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚡</div><div class="empty-title">Heute noch keine Trigger</div><div class="empty-sub">Scan starten um Ereignisse zu erkennen.</div><br><button class="btn btn-primary btn-sm" onclick="showPanel(\'scan\')">⚡ Scan starten</button></div>';
     return;
   }
   el.innerHTML = '<div class="trigger-list">' + slice.map(t => {
     const dt = t.created_at ? new Date(t.created_at).toLocaleDateString('de-AT') : '';
-    return `<div class="trigger-card ${(t.relevance_score||0)>=80?'high':''}" onclick="showPanel('compose');document.getElementById('pitch-company').value='${(t.companies?.name||'').replace(/'/g,"\\'")}';document.getElementById('pitch-context').value='${(t.description||'').replace(/'/g,"\\'")}'">
-      <div class="trigger-header">
-        <span class="badge ${typeMap[t.trigger_type]||'badge-gray'}">${t.trigger_type}</span>
-        <span class="trigger-company">${t.companies?.name||'–'}</span>
-        <span class="trigger-time">${dt}</span>
-        <button class="btn btn-sm btn-ghost" style="margin-left:8px;color:var(--danger);padding:2px 6px" onclick="event.stopPropagation();deleteTrigger('${t.id}')" title="Löschen">✕</button>
-      </div>
-      <div class="trigger-desc">${t.description||''}</div>
-    </div>`;
+    return '<div class="trigger-card ' + ((t.relevance_score||0)>=80?'high':'') + '" onclick="showPanel(\'compose\');document.getElementById(\'pitch-company\').value=\'' + (t.companies?.name||'').replace(/'/g,"\\'") + '\';document.getElementById(\'pitch-context\').value=\'' + (t.description||'').replace(/'/g,"\\'") + '\'">'
+      + '<div class="trigger-header">'
+      + '<span class="badge ' + (typeMap[t.trigger_type]||'badge-gray') + '">' + t.trigger_type + '</span>'
+      + '<span class="trigger-company">' + (t.companies?.name||'–') + '</span>'
+      + '<span class="trigger-time">' + dt + '</span>'
+      + '<button class="btn btn-sm btn-ghost" style="margin-left:8px;color:var(--danger);padding:2px 6px" onclick="event.stopPropagation();deleteTrigger(\''+t.id+'\')">✕</button>'
+      + '</div>'
+      + '<div class="trigger-desc">' + (t.description||'') + '</div>'
+      + '</div>';
   }).join('') + '</div>';
 }
 
 function renderTriggers() {
   const el = document.getElementById('triggers-list');
-  if (!allTriggers.length) { el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚡</div><div class="empty-title">Noch keine Trigger</div></div>`; return; }
+  if (!allTriggers.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚡</div><div class="empty-title">Noch keine Trigger</div></div>'; return; }
   let filtered = allTriggers;
   if (currentTriggerFilter === 'mgmt') filtered = allTriggers.filter(t => mgmtTypes.some(m => (t.trigger_type||'').toLowerCase().includes(m.toLowerCase())));
   else if (currentTriggerFilter === 'ma') filtered = allTriggers.filter(t => maTypes.some(m => (t.trigger_type||'').toLowerCase().includes(m.toLowerCase())));
   else if (currentTriggerFilter === 'funding') filtered = allTriggers.filter(t => fundingTypes.some(m => (t.trigger_type||'').toLowerCase().includes(m.toLowerCase())));
   else if (currentTriggerFilter === 'other') filtered = allTriggers.filter(t => !mgmtTypes.concat(maTypes).concat(fundingTypes).some(m => (t.trigger_type||'').toLowerCase().includes(m.toLowerCase())));
-  if (!filtered.length) { el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚡</div><div class="empty-title">Keine Einträge in dieser Kategorie</div></div>`; return; }
+  if (!filtered.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚡</div><div class="empty-title">Keine Einträge</div></div>'; return; }
   el.innerHTML = '<div class="trigger-list">' + filtered.map(t => {
     const score = t.relevance_score || 0;
     const dt = t.created_at ? new Date(t.created_at).toLocaleDateString('de-AT') : '';
-    return `<div class="trigger-card ${score>=80?'high':''}" onclick="showPanel('compose');document.getElementById('pitch-company').value='${(t.companies?.name||'').replace(/'/g,"\\'")}';document.getElementById('pitch-context').value='${(t.description||'').replace(/'/g,"\\'")}'">
-      <div class="trigger-header">
-        <span class="badge ${typeMap[t.trigger_type]||'badge-gray'}">${t.trigger_type}</span>
-        <span class="trigger-company">${t.companies?.name||'–'}</span>
-        <span class="trigger-time">${dt}</span>
-      </div>
-      <div class="trigger-desc">${t.description||''}</div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
-        <span style="font-size:10px;color:var(--text-muted)">Score</span>
-        <div class="score-bar"><div class="score-fill" style="width:${score}%"></div></div>
-        <span style="font-size:10px;font-weight:600;color:var(--navy)">${score}</span>
-        <button class="btn btn-orange btn-sm" style="margin-left:auto" onclick="event.stopPropagation();showPanel('compose');document.getElementById('pitch-company').value='${(t.companies?.name||'').replace(/'/g,"\\'")}'">✦ Pitch</button>
-        ${t.source_url ? `<a href="${t.source_url}" target="_blank" class="btn btn-sm" onclick="event.stopPropagation()">→ Artikel</a>` : ''}
-        <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();deleteTrigger('${t.id}')" style="color:var(--danger)">✕</button>
-      </div>
-    </div>`;
+    return '<div class="trigger-card ' + (score>=80?'high':'') + '" onclick="showPanel(\'compose\');document.getElementById(\'pitch-company\').value=\'' + (t.companies?.name||'').replace(/'/g,"\\'") + '\';document.getElementById(\'pitch-context\').value=\'' + (t.description||'').replace(/'/g,"\\'") + '\'">'
+      + '<div class="trigger-header"><span class="badge ' + (typeMap[t.trigger_type]||'badge-gray') + '">' + t.trigger_type + '</span>'
+      + '<span class="trigger-company">' + (t.companies?.name||'–') + '</span><span class="trigger-time">' + dt + '</span></div>'
+      + '<div class="trigger-desc">' + (t.description||'') + '</div>'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-top:10px">'
+      + '<span style="font-size:10px;color:var(--text-muted)">Score</span>'
+      + '<div class="score-bar"><div class="score-fill" style="width:' + score + '%"></div></div>'
+      + '<span style="font-size:10px;font-weight:600;color:var(--navy)">' + score + '</span>'
+      + '<button class="btn btn-orange btn-sm" style="margin-left:auto" onclick="event.stopPropagation();showPanel(\'compose\');document.getElementById(\'pitch-company\').value=\'' + (t.companies?.name||'').replace(/'/g,"\\'") + '\';document.getElementById(\'pitch-context\').value=\'' + (t.description||'').replace(/'/g,"\\'") + '\'">✦ Pitch</button>'
+      + (t.source_url ? '<a href="' + t.source_url + '" target="_blank" class="btn btn-sm" onclick="event.stopPropagation()">→ Artikel</a>' : '')
+      + '<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();deleteTrigger(\''+t.id+'\')">✕</button>'
+      + '</div></div>';
   }).join('') + '</div>';
 }
 
@@ -598,9 +624,9 @@ async function deleteTrigger(id) {
   showToast('Gelöscht'); loadTriggers(); updateStats(); renderDashboard();
 }
 
-function priorityBadge(p) { if (!p) return '<span class="badge badge-gray">–</span>'; const m = { Hoch: 'badge-danger', Mittel: 'badge-warning', Niedrig: 'badge-success' }; return `<span class="badge ${m[p] || 'badge-gray'}">${p}</span>`; }
-function sourceBadge(s) { const m = { 'CEE HQs Austria': 'badge-info', 'Consulting': 'badge-success', 'Packaging': 'badge-warning', 'Construction Materials': 'badge-orange', 'Auto-Scan': 'badge-turquoise', 'Manuell': 'badge-gray' }; return `<span class="badge ${m[s] || 'badge-gray'}">${s || '–'}</span>`; }
-function statusBadge(s) { const m = { Entwurf: 'badge-gray', Freigegeben: 'badge-info', Gesendet: 'badge-navy', Geantwortet: 'badge-success' }; return `<span class="badge ${m[s] || 'badge-gray'}">${s}</span>`; }
+function priorityBadge(p) { if (!p) return '<span class="badge badge-gray">–</span>'; const m = { Hoch: 'badge-danger', Mittel: 'badge-warning', Niedrig: 'badge-success' }; return '<span class="badge ' + (m[p]||'badge-gray') + '">' + p + '</span>'; }
+function sourceBadge(s) { const m = { 'CEE HQs Austria':'badge-info','Consulting':'badge-success','Packaging':'badge-warning','Construction Materials':'badge-orange','Auto-Scan':'badge-turquoise','Manuell':'badge-gray' }; return '<span class="badge ' + (m[s]||'badge-gray') + '">' + (s||'–') + '</span>'; }
+function statusBadge(s) { const m = { Entwurf:'badge-gray',Freigegeben:'badge-info',Gesendet:'badge-navy',Geantwortet:'badge-success' }; return '<span class="badge ' + (m[s]||'badge-gray') + '">' + s + '</span>'; }
 
 const aC = ['#E6F1FB','#EAF3DE','#FAEEDA','#FBEAF0','#E1F5EE','#FCEBEB'];
 const aT = ['#0C447C','#27500A','#633806','#4B1528','#04342C','#501313'];
@@ -611,14 +637,11 @@ function renderCompanies(data) {
   document.getElementById('companies-sub').textContent = list.length + ' Unternehmen';
   const tbody = document.getElementById('companies-tbody');
   if (!list.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-title">Keine Unternehmen</div></div></td></tr>'; return; }
-  tbody.innerHTML = list.map(c => `<tr>
-    <td><strong style="font-family:'Petrona',Georgia,serif">${c.name}</strong></td>
-    <td>${c.industry||'–'}</td><td>${c.hq_region||'–'}</td><td style="font-size:11px">${c.cee_countries||'–'}</td>
-    <td>${priorityBadge(c.priority)}</td><td>${sourceBadge(c.source)}</td>
-    <td style="white-space:nowrap">
-      <button class="btn btn-sm" onclick="showPanel('compose');document.getElementById('pitch-company').value='${c.name.replace(/'/g,"\\'")}'" title="Pitch">✦</button>
-      <button class="btn btn-sm btn-ghost" onclick="deleteCompany('${c.id}')" style="color:var(--danger)">✕</button>
-    </td></tr>`).join('');
+  tbody.innerHTML = list.map(c => '<tr><td><strong style="font-family:\'Petrona\',Georgia,serif">' + c.name + '</strong></td>'
+    + '<td>' + (c.industry||'–') + '</td><td>' + (c.hq_region||'–') + '</td><td style="font-size:11px">' + (c.cee_countries||'–') + '</td>'
+    + '<td>' + priorityBadge(c.priority) + '</td><td>' + sourceBadge(c.source) + '</td>'
+    + '<td style="white-space:nowrap"><button class="btn btn-sm" onclick="showPanel(\'compose\');document.getElementById(\'pitch-company\').value=\'' + c.name.replace(/'/g,"\\'") + '\'">✦</button>'
+    + '<button class="btn btn-sm btn-ghost" onclick="deleteCompany(\''+c.id+'\')">✕</button></td></tr>').join('');
 }
 
 function renderContacts(data) {
@@ -626,34 +649,34 @@ function renderContacts(data) {
   document.getElementById('contacts-sub').textContent = list.length + ' Kontakte';
   const tbody = document.getElementById('contacts-tbody');
   if (!list.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-title">Keine Kontakte</div></div></td></tr>'; return; }
-  tbody.innerHTML = list.map((c, i) => { const ci = i % aC.length; return `<tr>
-    <td><div style="display:flex;align-items:center;gap:9px"><div class="avatar" style="background:${aC[ci]};color:${aT[ci]}">${initials(c.full_name)}</div><div><div style="font-weight:500;font-family:'Petrona',Georgia,serif">${c.full_name}</div></div></div></td>
-    <td>${c.role||'–'}</td><td>${c.companies?.name||'–'}</td>
-    <td style="font-size:11px">${c.email ? `<a href="mailto:${c.email}" style="color:var(--lightblue)">${c.email}</a>` : '–'}</td>
-    <td><button class="btn btn-sm" onclick="showPanel('compose');document.getElementById('pitch-contact').value='${(c.full_name+(c.role?' – '+c.role:'')).replace(/'/g,"\\'")}'">✦</button>
-    <button class="btn btn-sm btn-ghost" onclick="deleteContact('${c.id}')" style="color:var(--danger)">✕</button></td></tr>`; }).join('');
+  tbody.innerHTML = list.map((c,i) => { const ci = i%aC.length; return '<tr>'
+    + '<td><div style="display:flex;align-items:center;gap:9px"><div class="avatar" style="background:'+aC[ci]+';color:'+aT[ci]+'">' + initials(c.full_name) + '</div><div><div style="font-weight:500;font-family:\'Petrona\',Georgia,serif">' + c.full_name + '</div></div></div></td>'
+    + '<td>' + (c.role||'–') + '</td><td>' + (c.companies?.name||'–') + '</td>'
+    + '<td style="font-size:11px">' + (c.email ? '<a href="mailto:'+c.email+'" style="color:var(--lightblue)">'+c.email+'</a>' : '–') + '</td>'
+    + '<td><button class="btn btn-sm" onclick="showPanel(\'compose\');document.getElementById(\'pitch-contact\').value=\'' + (c.full_name+(c.role?' – '+c.role:'')).replace(/'/g,"\\'") + '\'">✦</button>'
+    + '<button class="btn btn-sm btn-ghost" onclick="deleteContact(\''+c.id+'\')">✕</button></td></tr>'; }).join('');
 }
 
 function renderOutreach() {
   const tbody = document.getElementById('outreach-tbody');
   if (!allOutreach.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">◷</div><div class="empty-title">Noch keine Aktivitäten</div></div></td></tr>'; return; }
-  tbody.innerHTML = allOutreach.map(o => `<tr>
-    <td style="font-family:'Petrona',Georgia,serif;font-weight:500">${o.companies?.name||'–'}</td>
-    <td><span class="badge badge-gray">${o.channel||'Email'}</span></td>
-    <td>${statusBadge(o.status)}</td>
-    <td style="font-size:11px;color:var(--text-muted)">${o.created_at ? new Date(o.created_at).toLocaleDateString('de-AT') : '–'}</td>
-    <td><button class="btn btn-sm" onclick="viewPitch('${o.id}')">Ansehen</button></td></tr>`).join('');
+  tbody.innerHTML = allOutreach.map(o => '<tr>'
+    + '<td style="font-family:\'Petrona\',Georgia,serif;font-weight:500">' + (o.companies?.name||'–') + '</td>'
+    + '<td><span class="badge badge-gray">' + (o.channel||'Email') + '</span></td>'
+    + '<td>' + statusBadge(o.status) + '</td>'
+    + '<td style="font-size:11px;color:var(--text-muted)">' + (o.created_at ? new Date(o.created_at).toLocaleDateString('de-AT') : '–') + '</td>'
+    + '<td><button class="btn btn-sm" onclick="viewPitch(\''+o.id+'\')">Ansehen</button></td></tr>').join('');
 }
 
 function filterCompanies() {
   const q = document.getElementById('company-search').value.toLowerCase();
   const src = document.getElementById('company-source-filter').value;
-  renderCompanies(allCompanies.filter(c => (!q || c.name?.toLowerCase().includes(q) || c.industry?.toLowerCase().includes(q)) && (!src || c.source === src)));
+  renderCompanies(allCompanies.filter(c => (!q||c.name?.toLowerCase().includes(q)||c.industry?.toLowerCase().includes(q))&&(!src||c.source===src)));
 }
 
 function filterContacts() {
   const q = document.getElementById('contact-search').value.toLowerCase();
-  renderContacts(allContacts.filter(c => !q || c.full_name?.toLowerCase().includes(q) || c.role?.toLowerCase().includes(q)));
+  renderContacts(allContacts.filter(c => !q||c.full_name?.toLowerCase().includes(q)||c.role?.toLowerCase().includes(q)));
 }
 
 function setScanMsg(txt, cls) { const el = document.getElementById('scan-msg'); el.textContent = txt; el.className = 'scan-msg ' + cls; el.style.display = 'block'; }
@@ -667,30 +690,30 @@ async function startScan() {
     const d = await r.json();
     if (d.error) { setScanMsg('Fehler: ' + d.error, 'err'); btn.disabled = false; btn.textContent = '⚡ Jetzt scannen'; return; }
     let items = [];
-    try { const clean = (d.text || '').replace(/```json|```/g, '').trim(); const s = clean.indexOf('['), e = clean.lastIndexOf(']'); if (s >= 0 && e > s) items = JSON.parse(clean.substring(s, e + 1)); } catch (e) {}
-    if (!items.length) { setScanMsg('Scan abgeschlossen — keine Ereignisse gefunden.', 'ok'); btn.disabled = false; btn.textContent = '⚡ Jetzt scannen'; return; }
-    const cr = await fetch(SU + '/rest/v1/companies?select=id,name', { headers: { apikey: SK, Authorization: 'Bearer ' + SK } });
+    try { const clean = (d.text||'').replace(/```json|```/g,'').trim(); const s=clean.indexOf('['),e=clean.lastIndexOf(']'); if(s>=0&&e>s) items=JSON.parse(clean.substring(s,e+1)); } catch(e) {}
+    if (!items.length) { setScanMsg('Scan abgeschlossen — keine Ereignisse gefunden.', 'ok'); btn.disabled=false; btn.textContent='⚡ Jetzt scannen'; return; }
+    const cr = await fetch(SU+'/rest/v1/companies?select=id,name', { headers: { apikey: SK, Authorization: 'Bearer '+SK } });
     const companies = await cr.json();
     const found = [];
     for (const it of items) {
       if (!it.company) continue;
-      let comp = companies.find(c => c.name.toLowerCase().includes(it.company.toLowerCase()) || it.company.toLowerCase().includes(c.name.toLowerCase()));
+      let comp = companies.find(c => c.name.toLowerCase().includes(it.company.toLowerCase())||it.company.toLowerCase().includes(c.name.toLowerCase()));
       if (!comp) {
-        const nr = await fetch(SU + '/rest/v1/companies', { method: 'POST', headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ name: it.company, source: 'Auto-Scan' }) });
-        const nd = await nr.json(); if (nd && nd[0]) { comp = nd[0]; companies.push(comp); }
+        const nr = await fetch(SU+'/rest/v1/companies', { method:'POST', headers:{apikey:SK,Authorization:'Bearer '+SK,'Content-Type':'application/json',Prefer:'return=representation'}, body:JSON.stringify({name:it.company,source:'Auto-Scan'}) });
+        const nd = await nr.json(); if(nd&&nd[0]){comp=nd[0];companies.push(comp);}
       }
       if (comp) {
-        await fetch(SU + '/rest/v1/triggers', { method: 'POST', headers: { apikey: SK, Authorization: 'Bearer ' + SK, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ company_id: comp.id, trigger_type: it.trigger_type || 'Sonstige', description: it.description || '', source_url: it.source_url || null, relevance_score: 80 }) });
-        found.push({ company: it.company, trigger_type: it.trigger_type, description: it.description || '', source_url: it.source_url || null });
+        await fetch(SU+'/rest/v1/triggers', {method:'POST',headers:{apikey:SK,Authorization:'Bearer '+SK,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({company_id:comp.id,trigger_type:it.trigger_type||'Sonstige',description:it.description||'',source_url:it.source_url||null,relevance_score:80})});
+        found.push({company:it.company,trigger_type:it.trigger_type,description:it.description||'',source_url:it.source_url||null});
       }
     }
     if (found.length) {
       setScanMsg('✓ ' + found.length + ' Trigger gespeichert.', 'ok');
-      document.getElementById('scan-results').innerHTML = '<div class="trigger-list">' + found.map(f => `<div class="trigger-card high"><div class="trigger-header"><span class="badge ${typeMap[f.trigger_type]||'badge-gray'}">${f.trigger_type}</span><span class="trigger-company">${f.company}</span></div><div class="trigger-desc">${f.description}</div></div>`).join('') + '</div>';
+      document.getElementById('scan-results').innerHTML = '<div class="trigger-list">' + found.map(f => '<div class="trigger-card high"><div class="trigger-header"><span class="badge '+(typeMap[f.trigger_type]||'badge-gray')+'">'+f.trigger_type+'</span><span class="trigger-company">'+f.company+'</span></div><div class="trigger-desc">'+f.description+'</div></div>').join('') + '</div>';
       loadTriggers(); updateStats(); renderDashboard();
     } else { setScanMsg('Scan abgeschlossen — keine Matches.', 'ok'); }
-  } catch (e) { setScanMsg('Fehler: ' + e.message, 'err'); }
-  btn.disabled = false; btn.textContent = '⚡ Jetzt scannen';
+  } catch(e) { setScanMsg('Fehler: ' + e.message, 'err'); }
+  btn.disabled=false; btn.textContent='⚡ Jetzt scannen';
 }
 
 async function generatePitch() {
@@ -699,43 +722,40 @@ async function generatePitch() {
   const contact = document.getElementById('pitch-contact').value || '';
   const context = document.getElementById('pitch-context').value || '';
   const lang = document.getElementById('pitch-lang').value;
-  const labels = { ceo:'CEO-Nachfolge', gf:'Geschäftsführer-Wechsel', cfo:'CFO-Wechsel', vorstand:'Neuer Vorstand', ar:'Aufsichtsrat-Bestellung', funding:'Funding-Runde', merger:'M&A / Fusion', expansion:'DACH-Expansion', reorg:'Restrukturierung' };
+  const labels = { ceo:'CEO-Nachfolge',gf:'Geschäftsführer-Wechsel',cfo:'CFO-Wechsel',vorstand:'Neuer Vorstand',ar:'Aufsichtsrat-Bestellung',funding:'Funding-Runde',merger:'M&A / Fusion',expansion:'DACH-Expansion',reorg:'Restrukturierung' };
   const selectedDocLinks = getSelectedDocLinks();
   const pitchBody = document.getElementById('pitch-body');
   const pitchActions = document.getElementById('pitch-actions');
   pitchBody.innerHTML = '<div class="loading"><div class="spinner"></div> PAUL generiert Pitch...</div>';
   pitchActions.style.display = 'none';
-  const prompt = `Du bist Dr. Sami Hamid, Managing Partner bei Signium Austria (globales Executive Search, 40+ Länder).
-
-Schreibe einen professionellen Outreach-Pitch:
-Trigger: ${labels[trigger]}
-Unternehmen: ${company}
-${contact ? 'Ansprechpartner: ' + contact : ''}
-${context ? 'Kontext: ' + context : ''}
-Sprache: ${lang === 'de' ? 'Deutsch' : 'Englisch'}
-
-Der Pitch soll:
-- Mit Betreffzeile beginnen (Format: "Betreff: ...")
-- 4 Absätze sein
-- Das Ereignis als Aufhänger nutzen
-- Signiums Expertise einbringen
-- Mit Call-to-Action enden (30-min Austausch)
-- Förmlich aber persönlich
-${selectedDocLinks ? '\nFüge am Ende einen Abschnitt "Weiterführende Unterlagen:" ein mit:\n' + selectedDocLinks : ''}
-
-Nur die E-Mail, keine Erklärungen.`;
+  const anlass = context || labels[trigger];
+  const prompt = 'FAKTEN FUER DEN SALESBRIEF:\nUnternehmen: ' + company
+    + (contact ? '\nAnsprechpartner: ' + contact : '')
+    + '\nKONKRETER ANLASS (genau diesen Inhalt verwenden): ' + anlass
+    + '\nSprache: ' + (lang === 'de' ? 'Deutsch' : 'Englisch')
+    + (selectedDocLinks ? '\nUnterlagen am Ende einfuegen:\n' + selectedDocLinks : '')
+    + '\n\nSchreibe den Salesbrief jetzt.';
   try {
     const response = await fetch('/api/pitch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
     const data = await response.json();
-    let text = data.text;
+    const text = data.text;
     if (text) {
       currentPitchText = text;
       const linkedText = text.replace(/(https?:\/\/\S+)/g, '<a href="$1" target="_blank" style="color:var(--lightblue)">$1</a>');
-      pitchBody.innerHTML = `<div style="white-space:pre-wrap;font-size:12.5px;line-height:1.85">${linkedText}</div>`;
+      pitchBody.innerHTML = '<div style="white-space:pre-wrap;font-size:12.5px;line-height:1.85">' + linkedText + '</div>';
       pitchActions.style.display = 'flex';
-      document.getElementById('pitch-meta').textContent = `${labels[trigger]} · ${company} · ${new Date().toLocaleDateString('de-AT')}`;
+      document.getElementById('pitch-meta').textContent = anlass.substring(0,50) + ' · ' + company + ' · ' + new Date().toLocaleDateString('de-AT');
     } else throw new Error('Keine Antwort');
-  } catch (e) { pitchBody.innerHTML = `<div style="color:var(--danger);padding:20px;font-size:12px">Fehler: ${e.message}</div>`; }
+  } catch(e) { pitchBody.innerHTML = '<div style="color:var(--danger);padding:20px;font-size:12px">Fehler: ' + e.message + '</div>'; }
+}
+
+function openOutlook() {
+  const body = document.getElementById('pitch-body').innerText;
+  const company = document.getElementById('pitch-company').value || '';
+  const contact = document.getElementById('pitch-contact').value || '';
+  const emailMatch = contact.match(/[\w.\-]+@[\w.\-]+\.\w+/);
+  const email = emailMatch ? emailMatch[0] : '';
+  window.location.href = 'mailto:' + email + '?subject=' + encodeURIComponent('Signium Austria – ' + company) + '&body=' + encodeURIComponent(body);
 }
 
 function printBrief() {
@@ -744,21 +764,12 @@ function printBrief() {
 }
 function copyPitch() { navigator.clipboard.writeText(currentPitchText).then(() => showToast('Kopiert ✓')); }
 function savePitch() { showToast('Als Entwurf gespeichert ✓'); }
-function openOutlook() {
-  const body = document.getElementById('pitch-body').innerText;
-  const company = document.getElementById('pitch-company').value || '';
-  const contact = document.getElementById('pitch-contact').value || '';
-  const emailMatch = contact.match(/[\w.\-]+@[\w.\-]+\.\w+/);
-  const email = emailMatch ? emailMatch[0] : '';
-  const subject = encodeURIComponent('Signium Austria – ' + company);
-  const bodyEncoded = encodeURIComponent(body);
-  window.location.href = 'mailto:' + email + '?subject=' + subject + '&body=' + bodyEncoded;
-}
+
 async function approvePitch() {
   if (!currentPitchText) return;
   const company = document.getElementById('pitch-company').value;
   const comp = allCompanies.find(c => c.name.toLowerCase() === company.toLowerCase());
-  const { error } = await db.from('outreach').insert({ company_id: comp?.id || null, channel: 'Email', body: currentPitchText, generated_by: 'PAUL', status: 'Freigegeben', approved_by: 'Dr. Sami Hamid', approved_at: new Date().toISOString() });
+  const { error } = await db.from('outreach').insert({ company_id: comp?.id||null, channel: 'Email', body: currentPitchText, generated_by: 'PAUL', status: 'Freigegeben', approved_by: 'Sami Hamid', approved_at: new Date().toISOString() });
   if (!error) { showToast('Pitch freigegeben ✓'); loadOutreach(); }
 }
 
@@ -767,7 +778,7 @@ function viewPitch(id) {
   if (!o) return;
   currentPitchText = o.body;
   showPanel('compose');
-  document.getElementById('pitch-body').innerHTML = `<div style="white-space:pre-wrap;font-size:12.5px;line-height:1.85">${o.body}</div>`;
+  document.getElementById('pitch-body').innerHTML = '<div style="white-space:pre-wrap;font-size:12.5px;line-height:1.85">' + o.body + '</div>';
   document.getElementById('pitch-actions').style.display = 'flex';
 }
 
@@ -778,14 +789,14 @@ async function saveTrigger() {
   const match = allCompanies.find(c => c.name.toLowerCase() === compName.toLowerCase());
   if (match) { compId = match.id; }
   else { const { data } = await db.from('companies').insert({ name: compName, source: 'Manuell' }).select().single(); if (data) { compId = data.id; allCompanies.push(data); } }
-  const { error } = await db.from('triggers').insert({ company_id: compId, trigger_type: document.getElementById('t-type').value, description: document.getElementById('t-desc').value, relevance_score: parseInt(document.getElementById('t-score').value) || 75 });
+  const { error } = await db.from('triggers').insert({ company_id: compId, trigger_type: document.getElementById('t-type').value, description: document.getElementById('t-desc').value, relevance_score: parseInt(document.getElementById('t-score').value)||75 });
   if (!error) { showToast('Trigger gespeichert ✓'); closeModal('modal-trigger'); loadTriggers(); updateStats(); }
 }
 
 async function saveCompany() {
   const name = document.getElementById('c-name').value.trim();
   if (!name) return;
-  const { error } = await db.from('companies').insert({ name, industry: document.getElementById('c-industry').value, hq_region: document.getElementById('c-hq').value, cee_countries: document.getElementById('c-cee').value, priority: document.getElementById('c-priority').value || null, source: document.getElementById('c-source').value });
+  const { error } = await db.from('companies').insert({ name, industry: document.getElementById('c-industry').value, hq_region: document.getElementById('c-hq').value, cee_countries: document.getElementById('c-cee').value, priority: document.getElementById('c-priority').value||null, source: document.getElementById('c-source').value });
   if (!error) { showToast('Gespeichert ✓'); closeModal('modal-company'); loadCompanies(); } else showToast('Fehler: ' + error.message);
 }
 
