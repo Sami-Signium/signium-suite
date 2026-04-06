@@ -1,157 +1,74 @@
-import Anthropic from '@anthropic-ai/sdk';
-import JSZip from 'jszip';
+import {
+  Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+  AlignmentType, BorderStyle, WidthType, ShadingType, HeadingLevel,
+  PageNumber, Header, Footer, TabStopType, TabStopPosition, PageBreak
+} from 'docx';
 
-const TEMPLATE_URL = 'https://raw.githubusercontent.com/Sami-Signium/signium-suite/refs/heads/main/template.docx';
+// Signium CI Colors
+const NAVY = '081D4D';
+const ORANGE = 'FF6A42';
+const WHITE = 'FFFFFF';
+const LIGHT_GRAY = 'F5F6F8';
+const MID_GRAY = 'E8E9EC';
+const TEXT_DARK = '1A1A2E';
+const TEXT_MUTED = '6B7280';
 
-function esc(text) {
-  if (!text) return '';
-  return text
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/\u2019/g, '&#x2019;')
-    .replace(/\u201c/g, '&#x201C;').replace(/\u201d/g, '&#x201D;')
-    .replace(/\u2013/g, '&#x2013;').replace(/\u2014/g, '&#x2014;');
+const noBorder = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+const noBorders = { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder };
+
+// Page width A4 with 2cm margins: 11906 - 2*1134 = 9638 DXA
+const PAGE_W = 9638;
+
+function sp(n = 1) {
+  return new Paragraph({ children: [new TextRun('')], spacing: { before: n * 80, after: 0 } });
 }
 
-const NAVY = '0F2E66';
-
-function titlePara(text, size='72') {
-  return `<w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri Light" w:hAnsi="Calibri Light"/><w:color w:val="${NAVY}"/><w:sz w:val="${size}"/><w:szCs w:val="${size}"/></w:rPr><w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
+function divider(color = NAVY) {
+  return new Paragraph({
+    children: [new TextRun('')],
+    border: { bottom: { style: BorderStyle.SINGLE, size: 8, color, space: 1 } },
+    spacing: { before: 100, after: 100 }
+  });
 }
 
-function metaPara(text, align='left') {
-  return `<w:p><w:pPr><w:jc w:val="${align}"/><w:spacing w:before="120" w:after="120"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri Light" w:hAnsi="Calibri Light"/><w:color w:val="888888"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
+function sectionHeader(text) {
+  return new Paragraph({
+    children: [new TextRun({ text: text.toUpperCase(), bold: true, color: WHITE, size: 20, font: 'Gill Sans MT' })],
+    shading: { fill: NAVY, type: ShadingType.CLEAR },
+    spacing: { before: 200, after: 0 },
+    indent: { left: 160, right: 160 },
+    contextualSpacing: true
+  });
 }
 
-function sectionHeading(text) {
-  return `<w:p><w:pPr><w:pStyle w:val="berschrift2"/><w:spacing w:before="320" w:after="120" w:line="276" w:lineRule="auto"/><w:contextualSpacing/><w:rPr><w:b/><w:iCs/><w:color w:val="${NAVY}"/><w:spacing w:val="15"/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr></w:pPr><w:r><w:rPr><w:b/><w:iCs/><w:color w:val="${NAVY}"/><w:spacing w:val="15"/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr><w:t>${esc(text)}</w:t></w:r></w:p>`;
+function bodyText(text, opts = {}) {
+  return new Paragraph({
+    children: [new TextRun({ text, size: 20, font: 'Calibri', color: TEXT_DARK, ...opts })],
+    spacing: { before: 60, after: 60 },
+    indent: { left: 160, right: 160 }
+  });
 }
 
-function subheadingPara(text) {
-  return `<w:p><w:pPr><w:spacing w:before="180" w:after="120" w:line="276" w:lineRule="auto"/></w:pPr><w:r><w:rPr><w:b/><w:rFonts w:ascii="Calibri Light" w:hAnsi="Calibri Light"/><w:color w:val="1A1A1A"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
+function bulletItem(text) {
+  return new Paragraph({
+    children: [new TextRun({ text, size: 20, font: 'Calibri', color: TEXT_DARK })],
+    numbering: { reference: 'bullets', level: 0 },
+    spacing: { before: 40, after: 40 },
+    indent: { left: 560, right: 160 }
+  });
 }
 
-function bodyPara(text) {
-  return `<w:p><w:pPr><w:spacing w:before="0" w:after="160" w:line="276" w:lineRule="auto"/><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri Light" w:hAnsi="Calibri Light"/><w:color w:val="1A1A1A"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
-}
-
-function bulletPara(text) {
-  const clean = text.replace(/^[•\-– ]+/, '').trim();
-  return `<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr><w:spacing w:before="0" w:after="80" w:line="276" w:lineRule="auto"/><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri Light" w:hAnsi="Calibri Light"/><w:color w:val="1A1A1A"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">${esc(clean)}</w:t></w:r></w:p>`;
-}
-
-function spacer() {
-  return `<w:p><w:pPr><w:spacing w:before="0" w:after="160"/></w:pPr></w:p>`;
-}
-
-function pageBreak() {
-  return `<w:p><w:r><w:br w:type="page"/></w:r></w:p>`;
-}
-
-function buildDocumentXml(data, sectPr, numXml) {
-  const lang = data.language || 'DE';
-  const isDE = lang === 'DE';
-
-  const lbl = {
-    company:    isDE ? 'DAS UNTERNEHMEN'      : 'THE COMPANY',
-    position:   isDE ? 'DIE POSITION'         : 'THE POSITION',
-    purpose:    isDE ? 'Positionsbeschreibung' : 'Position Purpose',
-    tasks:      isDE ? 'Ihre Aufgaben'        : 'Main Accountabilities',
-    reporting:  isDE ? 'BERICHTSLINIE'        : 'REPORTING',
-    candidate:  isDE ? 'IHR PROFIL'           : 'YOUR PROFILE',
-    brings:     isDE ? 'Sie bringen mit'      : 'Your Profile',
-    represented:isDE ? 'vertreten durch SIGNIUM' : 'represented by SIGNIUM',
-  };
-
-  const title = data.title || 'Position';
-  const words = title.split(' ');
-  const mid = Math.ceil(words.length / 2);
-  const line1 = words.slice(0, mid).join(' ');
-  const line2 = words.slice(mid).join(' ');
-
-  const companyParas = (data.company_text || '')
-    .split(/\n\n+/).map(p => p.replace(/\n/g, ' ').trim()).filter(p => p);
-
-  const parts = [];
-
-  // ── COVER PAGE ──────────────────────────────────────────────────────────────
-  parts.push(spacer());
-  parts.push(spacer());
-  parts.push(spacer());
-  parts.push(spacer());
-  parts.push(spacer());
-  parts.push(titlePara(line1, '72'));
-  if (line2) parts.push(titlePara(line2, '72'));
-  parts.push(spacer());
-  parts.push(metaPara(lbl.represented, 'left'));
-  parts.push(metaPara(data.date || 'April 2026', 'right'));
-  parts.push(pageBreak());
-
-  // ── DAS UNTERNEHMEN ─────────────────────────────────────────────────────────
-  parts.push(sectionHeading(lbl.company));
-  companyParas.forEach(p => parts.push(bodyPara(p)));
-  parts.push(spacer());
-
-  // ── DIE POSITION ────────────────────────────────────────────────────────────
-  parts.push(sectionHeading(lbl.position));
-  parts.push(subheadingPara(lbl.purpose));
-  if (data.position_intro) parts.push(bodyPara(data.position_intro));
-  parts.push(spacer());
-
-  // Ihre Aufgaben
-  parts.push(subheadingPara(lbl.tasks));
-  (data.accountabilities || []).filter(a => a.trim()).forEach(a => parts.push(bulletPara(a)));
-  parts.push(spacer());
-
-  // ── BERICHTSLINIE ───────────────────────────────────────────────────────────
-  if (data.reporting) {
-    parts.push(sectionHeading(lbl.reporting));
-    parts.push(bodyPara(data.reporting));
-    parts.push(spacer());
-  }
-
-  // ── IHR PROFIL ──────────────────────────────────────────────────────────────
-  parts.push(sectionHeading(lbl.candidate));
-  if (data.profile_intro) parts.push(subheadingPara(lbl.brings));
-  (data.profile_bullets || []).filter(b => b.trim()).forEach(b => parts.push(bulletPara(b)));
-  parts.push(spacer());
-
-  const body = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
-  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-  xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
-  xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"
-  xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
-  xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-  xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"
-  xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml"
-  mc:Ignorable="w14 w15">
-  <w:body>
-    ${parts.join('\n    ')}
-    ${sectPr}
-  </w:body>
-</w:document>`;
-
-  return body;
-}
-
-function buildNumberingXml() {
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:abstractNum w:abstractNumId="1">
-    <w:multiLevelType w:val="multilevel"/>
-    <w:lvl w:ilvl="0">
-      <w:start w:val="1"/>
-      <w:numFmt w:val="bullet"/>
-      <w:lvlText w:val="&#x2022;"/>
-      <w:lvlJc w:val="left"/>
-      <w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr>
-      <w:rPr><w:rFonts w:ascii="Symbol" w:hAnsi="Symbol"/></w:rPr>
-    </w:lvl>
-  </w:abstractNum>
-  <w:num w:numId="1">
-    <w:abstractNumId w:val="1"/>
-  </w:num>
-</w:numbering>`;
+function labelValue(label, value) {
+  return new Paragraph({
+    tabStops: [{ type: TabStopType.LEFT, position: 2200 }],
+    children: [
+      new TextRun({ text: label, bold: true, size: 20, font: 'Calibri', color: NAVY }),
+      new TextRun({ text: '\t' }),
+      new TextRun({ text: value || '—', size: 20, font: 'Calibri', color: TEXT_DARK })
+    ],
+    spacing: { before: 60, after: 60 },
+    indent: { left: 160, right: 160 }
+  });
 }
 
 export default async function handler(req, res) {
@@ -159,68 +76,182 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     const { ajdData } = req.body;
-    if (!ajdData) return res.status(400).json({ error: 'Missing ajdData' });
+    if (!ajdData) return res.status(400).json({ error: 'ajdData fehlt' });
 
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const lang = ajdData.language || 'DE';
-    const isDE = lang === 'DE';
-    const companyName = ajdData.clientCompany || '';
+    const d = ajdData;
+    const today = new Date().toLocaleDateString('de-AT', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    // ── Web research ────────────────────────────────────────────────────────
-    let companyText = ajdData.company_text || '';
-    if (companyName) {
-      try {
-        const r = await client.messages.create({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1500,
-          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-          messages: [{ role: 'user', content: `Recherchiere "${companyName}" und schreibe ein ansprechendes Unternehmensprofil in ${isDE ? 'Deutsch' : 'Englisch'} für ein Executive Search Dokument (Anonymous Job Description).
+    const doc = new Document({
+      numbering: {
+        config: [{
+          reference: 'bullets',
+          levels: [{
+            level: 0,
+            format: 'bullet',
+            text: '▪',
+            alignment: AlignmentType.LEFT,
+            style: { paragraph: { indent: { left: 560, hanging: 280 } } }
+          }]
+        }]
+      },
+      styles: {
+        default: {
+          document: { run: { font: 'Calibri', size: 20, color: TEXT_DARK } }
+        }
+      },
+      sections: [{
+        properties: {
+          page: {
+            size: { width: 11906, height: 16838 },
+            margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 }
+          }
+        },
+        headers: {
+          default: new Header({
+            children: [
+              new Paragraph({
+                tabStops: [{ type: TabStopType.RIGHT, position: PAGE_W }],
+                children: [
+                  new TextRun({ text: 'SIGNIUM', bold: true, size: 18, font: 'Gill Sans MT', color: NAVY }),
+                  new TextRun({ text: ' | Stein & Partner GmbH', size: 18, font: 'Gill Sans MT', color: TEXT_MUTED }),
+                  new TextRun({ text: '\t' }),
+                  new TextRun({ text: 'Anonymes Jobprofil', size: 16, font: 'Calibri', color: TEXT_MUTED, italics: true })
+                ],
+                border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: ORANGE, space: 1 } },
+                spacing: { after: 0 }
+              })
+            ]
+          })
+        },
+        footers: {
+          default: new Footer({
+            children: [
+              new Paragraph({
+                tabStops: [{ type: TabStopType.RIGHT, position: PAGE_W }],
+                children: [
+                  new TextRun({ text: 'Streng vertraulich — nur für interne Nutzung', size: 16, font: 'Calibri', color: TEXT_MUTED, italics: true }),
+                  new TextRun({ text: '\t' }),
+                  new TextRun({ text: today, size: 16, font: 'Calibri', color: TEXT_MUTED })
+                ],
+                border: { top: { style: BorderStyle.SINGLE, size: 4, color: MID_GRAY, space: 1 } },
+                spacing: { before: 80 }
+              })
+            ]
+          })
+        },
+        children: [
 
-Schreibe GENAU 3 Absätze getrennt durch Leerzeilen:
-- Absatz 1: Marktposition, Kerngeschäft, was das Unternehmen macht
-- Absatz 2: Größe (Mitarbeiter, Umsatz), internationale Präsenz, Standorte
-- Absatz 3: Wachstum, Strategie, warum es ein attraktiver Arbeitgeber ist
+          // ── COVER BLOCK ──
+          new Paragraph({
+            children: [new TextRun({ text: 'ANONYMES JOBPROFIL', bold: true, size: 14, font: 'Gill Sans MT', color: TEXT_MUTED, allCaps: true })],
+            spacing: { before: 0, after: 80 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: d.ajd.position, bold: true, size: 44, font: 'Petrona', color: NAVY })],
+            spacing: { before: 0, after: 120 }
+          }),
+          divider(ORANGE),
+          sp(),
 
-Anonymisiert: "unser Mandant" statt Firmenname. Kandidatenorientierter, enthusiastischer Ton.
-Antworte NUR mit den 3 Absätzen, keine Erklärungen, keine Überschriften.` }]
-        });
-        const researched = r.content.filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
-        if (researched) companyText = researched;
-      } catch(e) { console.error('Research failed:', e.message); }
-    }
+          // ── STECKBRIEF ──
+          new Table({
+            width: { size: PAGE_W, type: WidthType.DXA },
+            columnWidths: [Math.floor(PAGE_W / 2), Math.ceil(PAGE_W / 2)],
+            borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder, insideH: noBorder, insideV: noBorder },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    borders: noBorders,
+                    shading: { fill: LIGHT_GRAY, type: ShadingType.CLEAR },
+                    margins: { top: 160, bottom: 160, left: 200, right: 200 },
+                    width: { size: Math.floor(PAGE_W / 2), type: WidthType.DXA },
+                    children: [
+                      new Paragraph({ children: [new TextRun({ text: 'POSITION', size: 14, bold: true, font: 'Gill Sans MT', color: TEXT_MUTED, allCaps: true })], spacing: { after: 40 } }),
+                      new Paragraph({ children: [new TextRun({ text: d.ajd.position, size: 22, bold: true, font: 'Calibri', color: NAVY })], spacing: { after: 0 } })
+                    ]
+                  }),
+                  new TableCell({
+                    borders: noBorders,
+                    shading: { fill: LIGHT_GRAY, type: ShadingType.CLEAR },
+                    margins: { top: 160, bottom: 160, left: 200, right: 200 },
+                    width: { size: Math.ceil(PAGE_W / 2), type: WidthType.DXA },
+                    children: [
+                      new Paragraph({ children: [new TextRun({ text: 'SEKTOR / STANDORT', size: 14, bold: true, font: 'Gill Sans MT', color: TEXT_MUTED, allCaps: true })], spacing: { after: 40 } }),
+                      new Paragraph({ children: [new TextRun({ text: `${d.sector || '—'} | ${d.location || '—'}`, size: 22, bold: true, font: 'Calibri', color: NAVY })], spacing: { after: 0 } })
+                    ]
+                  })
+                ]
+              })
+            ]
+          }),
 
-    // ── Load Briefpapier template ───────────────────────────────────────────
-    const templateRes = await fetch(TEMPLATE_URL);
-    if (!templateRes.ok) throw new Error('Template fetch failed: ' + templateRes.status);
-    const templateBuf = await templateRes.arrayBuffer();
-    const zip = await JSZip.loadAsync(templateBuf);
+          sp(2),
 
-    // Extract sectPr from template (preserves headers/footers/page setup)
-    const docXml = await zip.file('word/document.xml').async('string');
-    const sectPrMatch = docXml.match(/<w:sectPr[\s\S]*?<\/w:sectPr>/);
-    let sectPr = sectPrMatch ? sectPrMatch[0] : '<w:sectPr/>';
-    // Override margins: 2.5cm left/right, 2.5cm top, 2cm bottom (standard document margins)
-    // 1cm = 567 DXA approx
-    sectPr = sectPr.replace(/<w:pgMar[^/]*\/>/,
-      '<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="850" w:footer="444" w:gutter="0"/>');
+          // ── KONTEXT ──
+          sectionHeader('Das Unternehmen'),
+          sp(0.5),
+          bodyText(d.ajd.company_context),
+          sp(0.5),
+          bodyText(d.ajd.role_context),
+          sp(),
 
-    // ── Build new document XML ──────────────────────────────────────────────
-    const finalData = { ...ajdData, company_text: companyText };
-    const newDocXml = buildDocumentXml(finalData, sectPr);
+          // ── AUFGABEN ──
+          sectionHeader('Aufgaben & Verantwortung'),
+          sp(0.5),
+          ...(d.ajd.responsibilities || []).map(r => bulletItem(r)),
+          sp(),
 
-    // ── Update zip ──────────────────────────────────────────────────────────
-    zip.file('word/document.xml', newDocXml);
-    zip.file('word/numbering.xml', buildNumberingXml());
+          // ── ANFORDERUNGEN ──
+          sectionHeader('Anforderungsprofil'),
+          sp(0.5),
+          ...(d.ajd.requirements || []).map(r => bulletItem(r)),
+          sp(),
 
-    const docxBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
-    const b64 = docxBuffer.toString('base64');
-    const filename = `AJD_${(ajdData.title || 'Position').replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,10)}.docx`;
+          // ── FÜHRUNGSPROFIL ──
+          sectionHeader('Führungsprofil & Persönlichkeit'),
+          sp(0.5),
+          bodyText(d.ajd.leadership_profile),
+          sp(),
 
-    return res.status(200).json({ docx: b64, filename });
+          // ── ANGEBOT ──
+          sectionHeader('Das Angebot'),
+          sp(0.5),
+          bodyText(d.ajd.offer),
+          sp(2),
+
+          // ── KONTAKT ──
+          divider(NAVY),
+          sp(0.5),
+          new Paragraph({
+            children: [new TextRun({ text: 'Ihr Ansprechpartner', size: 18, font: 'Gill Sans MT', color: TEXT_MUTED, bold: true })],
+            spacing: { after: 60 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: 'Sami Hamid', size: 22, bold: true, font: 'Calibri', color: NAVY })],
+            spacing: { after: 20 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: 'Managing Partner | Signium Austria – Stein & Partner GmbH', size: 20, font: 'Calibri', color: TEXT_DARK })],
+            spacing: { after: 20 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: 'E: s.hamid@signium.com  |  T: +43 1 xxx xxxx  |  signium.com', size: 18, font: 'Calibri', color: TEXT_MUTED, italics: true })],
+            spacing: { after: 0 }
+          })
+        ]
+      }]
+    });
+
+    const buffer = await Packer.toBuffer(doc);
+    const base64 = buffer.toString('base64');
+    const filename = `AJD_${(d.ajd.position || 'Position').replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().getFullYear()}.docx`;
+
+    return res.status(200).json({ success: true, docx: base64, filename });
 
   } catch (err) {
     console.error('generate-ajd error:', err);

@@ -5,61 +5,90 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const { mode, fileBase64, mediaType, notes, candidates, language } = req.body;
+  const lang = language || 'DE';
 
   try {
-    const { mode, fileBase64, mediaType, notes, mandate, candidates, language, candidateName, anonymizedProfile, candidateFiles } = req.body;
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-    // ── MODE 1: Analyze JD → LinkedIn criteria + AJD data ────────────────────
+    // ── MODE 1: JD-ANALYSE → LinkedIn-Kriterien + anonymisiertes Jobprofil ──
     if (mode === 'jd') {
       const userContent = [];
+
       if (fileBase64 && mediaType) {
-        userContent.push({ type: 'document', source: { type: 'base64', media_type: mediaType, data: fileBase64 } });
+        if (mediaType === 'application/pdf') {
+          userContent.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: fileBase64 } });
+        } else {
+          // Word doc: just include as document
+          userContent.push({ type: 'document', source: { type: 'base64', media_type: mediaType, data: fileBase64 } });
+        }
       }
 
-      const notesText = notes ? `\n\nNotizen des Beraters:\n${notes}` : '';
-      const mandateText = mandate ? `\n\nMandat aus Datenbank:\nPosition: ${mandate.position_title}\nUnternehmen: ${mandate.client_company}\nBeschreibung: ${mandate.position_description}` : '';
-      const lang = language || 'DE';
-      const isDE = lang === 'DE';
+      const notesText = notes ? `\n\nZusätzliche Berater-Notizen:\n${notes}` : '';
 
-      userContent.push({ type: 'text', text: `Analysiere dieses Jobprofil sorgfältig und erstelle folgende Outputs in ${isDE ? 'Deutsch' : 'Englisch'}:
+      userContent.push({
+        type: 'text',
+        text: `Analysiere das hochgeladene Jobprofil / Briefing-Dokument.${notesText}
 
-1. LINKEDIN SUCHKRITERIEN (copy-paste fertig für LinkedIn Recruiter)
-2. SCHRITT-FÜR-SCHRITT LINKEDIN ANLEITUNG (dummy-sicher)
-3. STRUKTURIERTE DATEN für ein anonymisiertes Jobprofil (AJD) im Signium Executive Search Stil:
-   - Positionstitel
-   - Unternehmensbeschreibung als kurze Stichworte (wird später durch Web-Recherche ergänzt)
-   - Einleitungssatz zur Position (ansprechend, kandidatenorientiert)
-   - Aufgaben als Bullet Points (${isDE ? '"Sie..." Formulierung' : '"You will..." format'})
-   - Reporting/Berichtslinie als Fließtext (extrahiert aus dem Dokument)
-   - Kandidatenprofil als Bullet Points (${isDE ? '"Sie bringen mit..." Formulierung' : '"You bring..." format'})
-   - Klientenname (für die Web-Recherche, wird NICHT im AJD angezeigt)
-${notesText}${mandateText}
+Gib mir deine Antwort als valides JSON mit exakt dieser Struktur:
 
-Antworte NUR im JSON Format:
 {
-  "jobTitles": ["..."],
-  "keywords": ["..."],
-  "seniority": "...",
-  "industries": ["..."],
-  "geography": ["..."],
-  "yearsExperience": "...",
-  "education": "...",
-  "linkedinGuide": "Schritt 1:...",
-  "ajdData": {
-    "title": "...",
-    "clientCompany": "...",
-    "company_text": "kurze Stichworte zum Unternehmen für Web-Recherche",
-    "position_intro": "ansprechender Einleitungssatz zur Position",
-    "accountabilities": ["Sie...", "Sie...", "Sie..."],
-    "reporting": "Berichtslinie als Fließtext",
-    "profile_intro": "kurzer Einleitungssatz zum Kandidatenprofil",
-    "profile_bullets": ["...", "...", "..."],
-    "date": "${new Date().toLocaleDateString(isDE ? 'de-AT' : 'en-US', {month: 'long', year: 'numeric'})}",
-    "language": "${lang}"
+  "position": "Jobtitel",
+  "company_description": "anonymisierte Unternehmensbeschreibung (kein Firmenname, nur Branche/Größe/Kontext)",
+  "sector": "Branche",
+  "location": "Standort/Region",
+  "languages_required": ["Deutsch", "Englisch"],
+  
+  "linkedin_criteria": {
+    "job_titles": ["Titel 1", "Titel 2", "Titel 3"],
+    "keywords": ["Keyword 1", "Keyword 2", "Keyword 3", "Keyword 4", "Keyword 5"],
+    "seniority": ["Director", "VP", "C-Level"],
+    "years_experience": "10+",
+    "industries": ["Branche 1", "Branche 2"],
+    "geography": ["Austria", "Germany", "Switzerland"],
+    "education": "Master's Degree"
+  },
+  
+  "linkedin_instructions": [
+    "Schritt 1: Gehe auf linkedin.com/talent und melde dich an",
+    "Schritt 2: Klicke oben auf 'Projekte' → 'Neues Projekt erstellen' → Projektname eingeben (z.B. '[Position] – [Kürzel Firma]') → 'Projekt erstellen'",
+    "Schritt 3: Klicke im Projekt auf 'Talentsuche' (oder 'Find Candidates')",
+    "Schritt 4: Im Feld 'Berufsbezeichnung' gib ein: [konkreter Titel aus job_titles] → Enter",
+    "Schritt 5: Klicke auf '+ Filter hinzufügen' → Seitenleiste öffnet sich",
+    "Schritt 6: Unter 'Keywords' gib ein: [konkrete Keywords aus linkedin_criteria] – jedes Wort einzeln bestätigen mit Enter",
+    "Schritt 7: Unter 'Standort' wähle: [konkrete Länder aus geography]",
+    "Schritt 8: Unter 'Branche' wähle: [konkrete Branchen aus industries]",
+    "Schritt 9: Unter 'Berufserfahrung' wähle: [years_experience]",
+    "Schritt 10: Klicke auf 'Suche anwenden'",
+    "Schritt 11: Gefällt dir ein Profil → klicke auf den Namen → 'In Projekt speichern'"
+  ],
+  
+  "ajd": {
+    "position": "Jobtitel",
+    "company_context": "Unternehmen ist ein führender Anbieter von [Branche] mit [X] Mitarbeitern und einem Umsatz von [EUR X Mio.]. [2-3 Sätze strategischer Kontext, kein Firmenname]",
+    "role_context": "Im Rahmen von [Wachstum/Nachfolge/Transformation] sucht unser Klient eine erfahrene Führungspersönlichkeit für die Position [Titel].",
+    "responsibilities": [
+      "Verantwortungsbereich 1",
+      "Verantwortungsbereich 2",
+      "Verantwortungsbereich 3",
+      "Verantwortungsbereich 4",
+      "Verantwortungsbereich 5"
+    ],
+    "requirements": [
+      "Anforderung 1",
+      "Anforderung 2",
+      "Anforderung 3",
+      "Anforderung 4",
+      "Anforderung 5"
+    ],
+    "leadership_profile": "Beschreibung des idealen Führungsprofils (Persönlichkeit, Führungsstil, kultureller Fit) in 2-3 Sätzen.",
+    "offer": "Attraktives Vergütungspaket bestehend aus fixem Grundgehalt und variablen Komponenten, angepasst an die Senioritätsstufe. Vollständige Managementverantwortung in einem internationalen Umfeld."
   }
-}` });
+}
+
+Wichtig beim AJD: KEIN Firmenname, keine identifizierenden Details. Der Text soll professionell und ansprechend für Top-Kandidaten sein.`
+      });
 
       const response = await client.messages.create({
         model: 'claude-sonnet-4-20250514',
@@ -68,130 +97,63 @@ Antworte NUR im JSON Format:
       });
 
       const text = response.content[0].text;
-      const clean = text.replace(/```json|```/g, '').trim();
-      const s = clean.indexOf('{'), e = clean.lastIndexOf('}');
-      const parsed = JSON.parse(clean.substring(s, e + 1));
-      return res.status(200).json(parsed);
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('Kein JSON in der Antwort');
+      const data = JSON.parse(jsonMatch[0]);
+
+      return res.status(200).json({ success: true, data });
     }
 
-    // ── MODE 2: Screen candidates via PDF ─────────────────────────────────────
-    if (mode === 'screen-pdf') {
-      const userContent = [];
-      userContent.push({ type: 'text', text: `Du bist ein erfahrener Executive Search Berater bei Signium Austria.
-
-MANDAT:
-Position: ${mandate.position_title}
-Unternehmen: ${mandate.client_company}
-Anforderungen: ${mandate.requirements || ''}
-Suchkriterien: ${mandate.search_criteria || ''}
-
-Analysiere die beigefügten LinkedIn Profile (PDF) und bewerte jeden Kandidaten gegen das Mandat.` });
-
-      for (const cf of (candidateFiles || [])) {
-        userContent.push({ type: 'text', text: `\n=== KANDIDAT: ${cf.name} ===` });
-        userContent.push({ type: 'document', source: { type: 'base64', media_type: cf.mediaType || 'application/pdf', data: cf.base64 } });
-      }
-
-      userContent.push({ type: 'text', text: `
-Für jeden Kandidaten:
-- fitScore: 0-100
-- strengths: 3 konkrete Stärken bezogen auf das Mandat
-- gaps: 2-3 Lücken
-- recommendation: "Ja" / "Bedingt" / "Nein"
-- summary: 2-3 Sätze
-
-Antworte NUR im JSON Format:
-{
-  "candidates": [{"name":"...","fitScore":0,"strengths":[],"gaps":[],"recommendation":"...","summary":"..."}],
-  "topPick": "...",
-  "rankingNote": "..."
-}` });
-
-      const response = await client.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: userContent }]
-      });
-
-      const text = response.content[0].text;
-      const clean = text.replace(/```json|```/g, '').trim();
-      const s = clean.indexOf('{'), e = clean.lastIndexOf('}');
-      const parsed = JSON.parse(clean.substring(s, e + 1));
-      return res.status(200).json(parsed);
-    }
-
-    // ── MODE 3: Screen candidates via text ────────────────────────────────────
+    // ── MODE 2: KANDIDATEN-SCREENING ──
     if (mode === 'screen') {
+      const { mandate, candidates } = req.body;
+      if (!candidates || candidates.length === 0) return res.status(400).json({ error: 'Keine Kandidaten übergeben' });
+
+      const screeningPrompt = `Du bist ein erfahrener Executive Search Berater bei Signium Austria.
+
+Suchprofil / Mandat:
+${mandate}
+
+Bewerte die folgenden Kandidaten-Profile nach ihrem Fit für dieses Mandat.
+
+Kandidaten:
+${candidates.map((c, i) => `--- Kandidat ${i + 1}: ${c.name || 'Anonym'} ---\n${c.text}`).join('\n\n')}
+
+Gib deine Antwort als JSON:
+{
+  "candidates": [
+    {
+      "name": "Name oder 'Kandidat 1'",
+      "fit_score": 85,
+      "fit_label": "Sehr guter Fit",
+      "strengths": ["Stärke 1", "Stärke 2", "Stärke 3"],
+      "gaps": ["Lücke 1", "Lücke 2"],
+      "recommendation": "Kurze Empfehlung in 2 Sätzen",
+      "inmail_de": "Persönlicher InMail-Text auf Deutsch (3-4 Sätze, mit Namen, aktueller Position, warum sie passen)",
+      "inmail_en": "Personalized InMail text in English (3-4 sentences)"
+    }
+  ],
+  "ranking_summary": "Kurzes Gesamtfazit mit Top-Empfehlung"
+}`;
+
       const response = await client.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
-        messages: [{
-          role: 'user',
-          content: `Du bist ein erfahrener Executive Search Berater bei Signium Austria.
-
-MANDAT:
-Position: ${mandate.position_title}
-Unternehmen: ${mandate.client_company}
-Anforderungen: ${mandate.requirements || ''}
-
-KANDIDATEN:
-${candidates}
-
-Bewerte jeden Kandidaten. Für jeden:
-- fitScore: 0-100
-- strengths: 3 Stärken
-- gaps: 2-3 Lücken
-- recommendation: "Ja" / "Bedingt" / "Nein"
-- summary: 2-3 Sätze
-
-Antworte NUR im JSON Format:
-{
-  "candidates": [{"name":"...","fitScore":0,"strengths":[],"gaps":[],"recommendation":"...","summary":"..."}],
-  "topPick": "...",
-  "rankingNote": "..."
-}`
-        }]
+        messages: [{ role: 'user', content: screeningPrompt }]
       });
 
       const text = response.content[0].text;
-      const clean = text.replace(/```json|```/g, '').trim();
-      const s = clean.indexOf('{'), e = clean.lastIndexOf('}');
-      const parsed = JSON.parse(clean.substring(s, e + 1));
-      return res.status(200).json(parsed);
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('Kein JSON in der Antwort');
+      const data = JSON.parse(jsonMatch[0]);
+
+      return res.status(200).json({ success: true, data });
     }
 
-    // ── MODE 4: Outreach mail ─────────────────────────────────────────────────
-    if (mode === 'outreach') {
-      const lang = language || 'DE';
-      const response = await client.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 800,
-        messages: [{
-          role: 'user',
-          content: `Schreibe eine professionelle LinkedIn Outreach-Nachricht von Dr. Sami Hamid, Managing Partner bei Signium Austria.
-
-Kandidat: ${candidateName}
-Anonymisiertes Jobprofil: ${anonymizedProfile}
-Sprache: ${lang === 'EN' ? 'Englisch' : 'Deutsch'}
-
-Die Nachricht soll:
-- Persönlich und direkt sein
-- Das anonymisierte Jobprofil kurz und präzise beschreiben ohne den Klienten zu nennen
-- Neugier wecken ohne zu viel zu verraten
-- Maximal 120 Wörter
-- Mit konkretem Call-to-Action enden (kurzes Telefonat)
-
-Nur die fertige Nachricht, keine Erklärungen.`
-        }]
-      });
-
-      return res.status(200).json({ text: response.content[0].text });
-    }
-
-    return res.status(400).json({ error: 'Unknown mode' });
+    return res.status(400).json({ error: 'Unbekannter mode' });
 
   } catch (err) {
-    console.error(err);
+    console.error('SCOUT error:', err);
     return res.status(500).json({ error: err.message });
   }
 }
