@@ -46,22 +46,18 @@ function np(text, before, after, opts) {
   return `<w:p><w:pPr>${ppr}</w:pPr>${run(text, opts)}</w:p>`;
 }
 
-// FIX: Echter Tab-Stop bei 2200 DXA statt 4x <w:tab/>
-function tabStopPpr(before, after) {
-  const b = before !== undefined ? ` w:before="${before}"` : '';
-  const a = after !== undefined ? ` w:after="${after}"` : '';
-  return `<w:tabs><w:tab w:val="left" w:pos="2200"/></w:tabs><w:spacing${b}${a}/>`;
-}
-
+// FIX: Echter Tab-Stop bei 2800 DXA + haengender Einzug fuer Folgezeilen (z.B. lange Sprachen-Zeile)
 function personalRow(label, value) {
   const labelRpr = rpr({ sz: 22, color: '414042' });
   const valueRpr = rpr({ sz: 22, color: '262626' });
   return `<w:p>
     <w:pPr>
       <w:pStyle w:val="SPTBodytext66"/>
-      ${tabStopPpr(80, 80)}
+      <w:tabs><w:tab w:val="left" w:pos="2800"/></w:tabs>
+      <w:ind w:left="2800" w:hanging="2800"/>
+      <w:spacing w:before="80" w:after="80"/>
     </w:pPr>
-    <w:r>${labelRpr}<w:t>${xe(label)}</w:t></w:r>
+    <w:r>${labelRpr}<w:t xml:space="preserve">${xe(label)}</w:t></w:r>
     <w:r><w:rPr><w:color w:val="414042"/></w:rPr><w:tab/></w:r>
     <w:r>${valueRpr}<w:t xml:space="preserve">${xe(value)}</w:t></w:r>
   </w:p>`;
@@ -102,7 +98,7 @@ function companyHeader(datePart, companyPart, before, after) {
   </w:p>`;
 }
 
-// FIX: pageBreakBefore w:val="0" explizit setzen wenn KEIN Seitenumbruch gewünscht
+// FIX: pageBreakBefore w:val="0" explizit wenn kein Break gewuenscht
 function sectionHead(text, pageBreak) {
   let ppr = `<w:pStyle w:val="berschrift2"/>`;
   if (pageBreak) {
@@ -163,8 +159,9 @@ function buildBodyXml(reportText, candidateName, position, client, datum) {
   const sections = parseReport(reportText);
   const parts = [];
 
+  // FIX: Schriftgroesse von 52 auf 40 reduziert damit laengere Namen in die Linien passen
   parts.push(`<w:p><w:pPr><w:pStyle w:val="Titleheader"/><w:spacing w:before="120" w:after="0"/></w:pPr>
-    ${run((candidateName || 'KANDIDAT').toUpperCase(), { major: true, bold: true, sz: 52, color: '414042' })}</w:p>`);
+    ${run((candidateName || 'KANDIDAT').toUpperCase(), { major: true, bold: true, sz: 40, color: '414042' })}</w:p>`);
   parts.push(`<w:p><w:pPr><w:pStyle w:val="Coverdoctitle"/><w:spacing w:before="4080" w:after="0"/></w:pPr>
     ${run('VERTRAULICHER KANDIDATENBERICHT', { sz: 32, color: '102E66' })}</w:p>`);
   if (position) parts.push(`<w:p><w:pPr><w:pStyle w:val="Coverdate"/><w:spacing w:before="720" w:after="1000"/></w:pPr>
@@ -212,10 +209,11 @@ function buildBodyXml(reportText, candidateName, position, client, datum) {
           const value = line.slice(idx + 1).trim();
           const labelRpr = rpr({ bold: true, sz: 22, color: '414042' });
           const valueRpr = rpr({ sz: 22, color: '262626' });
-          // FIX: Echter Tab-Stop statt 4x <w:tab/>
           parts.push(`<w:p>
             <w:pPr>
-              ${tabStopPpr(140, 140)}
+              <w:tabs><w:tab w:val="left" w:pos="2800"/></w:tabs>
+              <w:ind w:left="2800" w:hanging="2800"/>
+              <w:spacing w:before="140" w:after="140"/>
             </w:pPr>
             <w:r>${labelRpr}<w:t>${xe(label)}</w:t></w:r>
             <w:r><w:rPr><w:color w:val="414042"/></w:rPr><w:tab/></w:r>
