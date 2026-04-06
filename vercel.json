@@ -2,9 +2,15 @@
   "rewrites": [
     { "source": "/paul", "destination": "/paul.html" },
     { "source": "/docs", "destination": "/docs.html" },
-    { "source": "/angebot", "destination": "/angebot.html" }
+    { "source": "/angebot", "destination": "/angebot.html" },
+    { "source": "/scout", "destination": "/scout.html" }
   ],
   "crons": [
     { "path": "/api/scan", "schedule": "0 7 * * *" }
-  ]
+  ],
+  "functions": {
+    "api/*.js": {
+      "includeFiles": "template.docx"
+    }
+  }
 }
