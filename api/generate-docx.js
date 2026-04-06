@@ -159,9 +159,9 @@ function buildBodyXml(reportText, candidateName, position, client, datum) {
   const sections = parseReport(reportText);
   const parts = [];
 
-  // FIX: Schriftgroesse von 52 auf 40 reduziert damit laengere Namen in die Linien passen
+  // FIX: Schriftgroesse auf 32 reduziert damit auch laengere Namen in die Linien passen
   parts.push(`<w:p><w:pPr><w:pStyle w:val="Titleheader"/><w:spacing w:before="120" w:after="0"/></w:pPr>
-    ${run((candidateName || 'KANDIDAT').toUpperCase(), { major: true, bold: true, sz: 40, color: '414042' })}</w:p>`);
+    ${run((candidateName || 'KANDIDAT').toUpperCase(), { major: true, bold: true, sz: 36, color: '414042' })}</w:p>`);
   parts.push(`<w:p><w:pPr><w:pStyle w:val="Coverdoctitle"/><w:spacing w:before="4080" w:after="0"/></w:pPr>
     ${run('VERTRAULICHER KANDIDATENBERICHT', { sz: 32, color: '102E66' })}</w:p>`);
   if (position) parts.push(`<w:p><w:pPr><w:pStyle w:val="Coverdate"/><w:spacing w:before="720" w:after="1000"/></w:pPr>
