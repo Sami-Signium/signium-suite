@@ -509,7 +509,7 @@ async function loadAll() {
 
 async function loadCompanies() { const { data } = await db.from('companies').select('*').order('name'); if (data) { allCompanies = data; renderCompanies(); } }
 async function loadContacts() { const { data } = await db.from('contacts').select('*, companies(name)').order('full_name'); if (data) { allContacts = data; renderContacts(); } }
-async function loadTriggers() { const { data } = await db.from('triggers').select('*, companies(name)').order('created_at', { ascending: false }); if (data) { allTriggers = data; renderTriggers(); } }
+async function loadTriggers() { const { data } = await db.from('triggers').select('*').order('created_at', { ascending: false }); if (data) { allTriggers = data; renderTriggers(); } }
 async function loadOutreach() { const { data } = await db.from('outreach').select('*, companies(name)').order('created_at', { ascending: false }); if (data) { allOutreach = data; renderOutreach(); renderFollowupReminders(); } }
 async function checkDb() {
   const el = document.getElementById('db-status');
