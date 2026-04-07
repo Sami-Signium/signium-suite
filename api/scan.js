@@ -21,7 +21,7 @@ export default async function handler(req, res) {
       try {
         const params = new URLSearchParams({
           q: q.q, language: q.language, sortBy: 'publishedAt',
-          pageSize: 20, from, apiKey: NEWS_API_KEY
+          pageSize: 100, from, apiKey: NEWS_API_KEY
         });
         const r = await fetch('https://newsapi.org/v2/everything?' + params);
         const d = await r.json();
