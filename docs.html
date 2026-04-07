@@ -518,7 +518,7 @@ async function downloadWord() {
     const response = await fetch('/api/generate-docx', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: generatedText, candidateName: name, position: pos, client, datum })
+     body: JSON.stringify({ text: generatedText, candidateName: name, position: pos, client, datum, language: document.getElementById('language')?.value?.toLowerCase() || 'de' })
     });
 
     if (!response.ok) {
