@@ -47,6 +47,40 @@ export default async function handler(req, res) {
     const articleMap = {};
     unique.slice(0, 50).forEach((a, i) => { articleMap[i] = a.url; });
 
+    const prompt = `Du bist ein Analyst für Executive Search in DACH und CEE. Analysiere die folgenden Nachrichtenartikel und extrahiere ALLE relevanten Business-Ereignisse.
+
+WICHTIG: Extrahiere JEDEN Artikel der eines der folgenden Ereignisse enthält — auch wenn du dir nicht 100% sicher bist:
+
+MANAGEMENT-EREIGNISSE (höchste Priorität):
+- Neue CEO, CFO, COO, CIO, CHRO, CSO, CDO Ernennung oder Abgang
+- Neuer Geschäftsführer, Vorstandsvorsitzender, Generaldirektor
+- Neues Vorstandsmitglied, Aufsichtsratsmitglied
+- Führungswechsel, Nachfolge, Rücktritt von Führungskräften
+- "übernimmt", "wird", "ernannt", "berufen", "tritt zurück", "verlässt"
+
+FUNDING-EREIGNISSE:
+- Finanzierungsrunden (Series A, B, C etc.)
+- Venture Capital, Private Equity Investments
+- Kapitalerhöhung, Investitionsrunde
+- "erhält", "sichert", "Millionen", "Investition", "Finanzierung"
+
+M&A EREIGNISSE:
+- Fusionen, Übernahmen, Akquisitionen
+- "übernimmt", "fusioniert", "kauft", "merger", "acquisition"
+
+EXPANSION / RESTRUKTURIERUNG:
+- Neue Standorte, Markteintritte
+- Stellenabbau, Umstrukturierung
+
+Antworte NUR mit einem validen JSON Array — kein Text davor oder danach:
+[{"article_index": 0, "company": "Firmenname", "trigger_type": "CEO-Wechsel", "description": "Kurze Beschreibung auf Deutsch"}]
+
+Erlaubte trigger_type Werte:
+"CEO-Wechsel", "CFO-Wechsel", "COO-Wechsel", "CIO-Wechsel", "CHRO-Wechsel", "CSO-Wechsel", "Geschäftsführer-Wechsel", "Neuer Vorstand", "Aufsichtsrat-Bestellung", "Aufsichtsrat-Rücktritt", "M&A / Fusion", "Funding", "Restrukturierung", "DACH-Expansion", "Sonstige"
+
+Artikel:
+${summaries}`;
+
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -57,7 +91,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 4000,
-        messages: [{ role: 'user', content: 'Extract business events from these news articles for Executive Search. Relevant events: management changes, CEO/CFO/CHRO appointments, board appointments/resignations, M&A/mergers/acquisitions, funding rounds, restructuring, expansion. Focus on Austria, Germany, CEE (Poland, Romania, Hungary, Czech Republic, Slovakia). Return ONLY a JSON array, no other text: [{"article_index": 0, "company":"Company Name","trigger_type":"CEO-Wechsel","description":"What happened"}]. Use these exact trigger_type values: "CEO-Wechsel", "CFO-Wechsel", "CHRO-Wechsel", "Geschaeftsfuehrer-Wechsel", "Neuer Vorstand", "Aufsichtsrat-Bestellung", "Aufsichtsrat-Ruecktritt", "M&A / Fusion", "Funding", "Restrukturierung", "DACH-Expansion", "Sonstige". Include ALL relevant events equally. News:\n' + summaries }]
+        messages: [{ role: 'user', content: prompt }]
       })
     });
 
