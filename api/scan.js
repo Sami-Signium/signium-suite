@@ -6,12 +6,15 @@ export default async function handler(req, res) {
 
   try {
     const NEWS_API_KEY = process.env.NEWSAPI_KEY;
+    const SUPABASE_URL = 'https://ftdxhswcnghlmcagrsox.supabase.co';
+    const SUPABASE_KEY = process.env.SUPABASE_KEY;
+
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - 7);
     const from = fromDate.toISOString().split('T')[0];
 
     const queries = [
-      { q: '(Vorstand OR CEO OR CFO OR Aufsichtsrat) AND (Wien OR Austria)', language: 'de', label: 'AT' },
+      { q: '(Vorstand OR Geschaeftsfuehrer OR Aufsichtsrat OR CEO OR CFO) AND (Wien OR Oesterreich OR Austria)', language: 'de', label: 'AT' },
       { q: '(Vorstandswechsel OR "neuer Vorstandsvorsitzender" OR "neuer Geschaeftsfuehrer") AND (DAX OR MDAX OR Deutschland)', language: 'de', label: 'DE' },
       { q: '(CEO OR CFO OR "managing director" OR merger OR acquisition) AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia)', language: 'en', label: 'CEE' },
     ];
@@ -38,7 +41,7 @@ export default async function handler(req, res) {
       seen.add(a.title); return true;
     });
 
-    if (!unique.length) return res.status(200).json({ text: '[]' });
+    if (!unique.length) return res.status(200).json({ text: '[]', saved: 0 });
 
     const summaries = unique.slice(0, 50).map((a, i) =>
       `[${i}] [${a.source}] ${a.title}${a.description ? ' | ' + a.description : ''} | URL: ${a.url}`
@@ -63,7 +66,6 @@ export default async function handler(req, res) {
 
     const claudeData = await claudeRes.json();
     const raw = claudeData.content?.find(b => b.type === 'text')?.text || '[]';
-
     const s = raw.indexOf('['), e = raw.lastIndexOf(']');
     let items = [];
     try { if (s >= 0 && e > s) items = JSON.parse(raw.substring(s, e + 1)); } catch(err) {}
@@ -73,7 +75,35 @@ export default async function handler(req, res) {
       source_url: (it.article_index !== undefined && articleMap[it.article_index]) ? articleMap[it.article_index] : null
     }));
 
-    return res.status(200).json({ text: JSON.stringify(items), articleCount: unique.length });
+    // ── Save to Supabase directly (so nightly cron persists results) ──
+    let saved = 0;
+    if (SUPABASE_KEY && items.length > 0) {
+      const today = new Date().toISOString().split('T')[0];
+      const rows = items.map(it => ({
+        company: it.company || 'Unbekannt',
+        trigger_type: it.trigger_type || 'Sonstige',
+        description: it.description || '',
+        source_url: it.source_url || null,
+        scan_date: today,
+        relevance_score: 70
+      }));
+
+      try {
+        const sbRes = await fetch(`${SUPABASE_URL}/rest/v1/triggers`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify(rows)
+        });
+        if (sbRes.ok) saved = rows.length;
+      } catch(e) {}
+    }
+
+    return res.status(200).json({ text: JSON.stringify(items), articleCount: unique.length, saved });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
