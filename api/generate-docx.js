@@ -61,14 +61,14 @@ function hr() {
 }
 
 function bullet(text, before, after) {
-  const spacing = `<w:spacing w:before="${before||60}" w:after="${after||120}"/>`;
-  const r = rpr({ sz: 24, color: '262626' });
+  const spacing = `<w:spacing w:before="${before||60}" w:after="${after||60}"/>`;
+  const ind = `<w:ind w:left="400" w:hanging="200"/>`;
+  const r = rpr({ sz: 22, color: '262626' });
   return `<w:p>
     <w:pPr>
-      <w:pStyle w:val="Listenabsatz"/>
-      <w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>
+      <w:numPr><w:ilvl w:val="0"/><w:numId w:val="18"/></w:numPr>
       ${spacing}
-      ${rpr({ sz: 24, color: '262626' })}
+      ${ind}
     </w:pPr>
     <w:r>${r}<w:t xml:space="preserve">${xe(text)}</w:t></w:r>
   </w:p>`;
@@ -168,8 +168,7 @@ function buildBodyXml(reportText, candidateName, position, client, datum, lang) 
     ? 'Prepared by: Dr. Sami Hamid  |  Managing Partner  |  Signium Austria'
     : 'Vorbereitet von: Dr. Sami Hamid  |  Managing Partner  |  Signium Austria';
 
-  parts.push(`<w:p><w:pPr><w:pStyle w:val="Titleheader"/><w:spacing w:before="120" w:after="0"/></w:pPr>
-    ${run((candidateName || 'KANDIDAT').toUpperCase(), { major: true, bold: true, sz: 52, color: '414042' })}</w:p>`);
+  // Titleheader removed — name appears in page header
   parts.push(`<w:p><w:pPr><w:pStyle w:val="Coverdoctitle"/><w:spacing w:before="4080" w:after="0"/></w:pPr>
     ${run(coverTitle, { sz: 32, color: '102E66' })}</w:p>`);
   if (position) parts.push(`<w:p><w:pPr><w:pStyle w:val="Coverdate"/><w:spacing w:before="720" w:after="1000"/></w:pPr>
@@ -313,6 +312,22 @@ async function updateHeaders(zip, candidateName, position, client) {
     xml = xml.replace(/Austriacard/g, xe(client && client !== 'Vertraulich' ? client : 'Confidential'));
     xml = xml.replace(/AustriaCard Holdings[^<]*/g, xe(candidateName || ''));
     zip.file(hf, xml);
+  }
+
+  // Fix: make first-page header show same as default header
+  const docFile = zip.file('word/document.xml');
+  if (docFile) {
+    let docXml = await docFile.async('string');
+    // Find the default header rId and apply it to first page header too
+    const defaultMatch = docXml.match(/w:headerReference w:type="default" r:id="([^"]+)"/);
+    if (defaultMatch) {
+      const defaultRid = defaultMatch[1];
+      docXml = docXml.replace(
+        /w:headerReference w:type="first" r:id="[^"]+"/,
+        `w:headerReference w:type="first" r:id="${defaultRid}"`
+      );
+      zip.file('word/document.xml', docXml);
+    }
   }
 }
 
