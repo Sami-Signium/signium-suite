@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     const queries = [
       { q: '(Vorstand OR Geschaeftsfuehrer OR Aufsichtsrat OR CEO OR CFO) AND (Wien OR Oesterreich OR Austria)', language: 'de', label: 'AT' },
       { q: '(Vorstandswechsel OR "neuer Vorstandsvorsitzender" OR "neuer Geschaeftsfuehrer") AND (DAX OR MDAX OR Deutschland)', language: 'de', label: 'DE' },
-      { q: '(CEO OR CFO OR "managing director" OR merger OR acquisition) AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia)', language: 'en', label: 'CEE' },
+      { q: '(CEO OR CFO OR "managing director" OR merger OR acquisition OR appointed) AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia OR Vienna OR Austria OR Germany OR Switzerland)', language: 'en', label: 'CEE' },
     ];
 
     const allArticles = [];
@@ -40,43 +40,40 @@ export default async function handler(req, res) {
 
     if (!unique.length) return res.status(200).json({ text: '[]' });
 
-    const summaries = unique.slice(0, 50).map((a, i) =>
+    const summaries = unique.slice(0, 60).map((a, i) =>
       `[${i}] [${a.source}] ${a.title}${a.description ? ' | ' + a.description : ''} | URL: ${a.url}`
     ).join('\n');
 
     const articleMap = {};
-    unique.slice(0, 50).forEach((a, i) => { articleMap[i] = a.url; });
+    unique.slice(0, 60).forEach((a, i) => { articleMap[i] = a.url; });
 
     const prompt = `Du bist ein Analyst für Executive Search in DACH und CEE. Analysiere die folgenden Nachrichtenartikel und extrahiere ALLE relevanten Business-Ereignisse.
 
-WICHTIG: Extrahiere JEDEN Artikel der eines der folgenden Ereignisse enthält — auch wenn du dir nicht 100% sicher bist:
+WICHTIG: Extrahiere NUR Ereignisse aus folgenden Ländern: Österreich, Deutschland, Schweiz, Polen, Rumänien, Ungarn, Tschechien, Slowakei. Ignoriere alle anderen Länder.
 
 MANAGEMENT-EREIGNISSE (höchste Priorität):
 - Neue CEO, CFO, COO, CIO, CHRO, CSO, CDO Ernennung oder Abgang
 - Neuer Geschäftsführer, Vorstandsvorsitzender, Generaldirektor
 - Neues Vorstandsmitglied, Aufsichtsratsmitglied
 - Führungswechsel, Nachfolge, Rücktritt von Führungskräften
-- "übernimmt", "wird", "ernannt", "berufen", "tritt zurück", "verlässt"
+- "übernimmt", "ernannt", "berufen", "tritt zurück", "verlässt"
 
 FUNDING-EREIGNISSE:
 - Finanzierungsrunden (Series A, B, C etc.)
 - Venture Capital, Private Equity Investments
 - Kapitalerhöhung, Investitionsrunde
-- "erhält", "sichert", "Millionen", "Investition", "Finanzierung"
 
 M&A EREIGNISSE:
 - Fusionen, Übernahmen, Akquisitionen
-- "übernimmt", "fusioniert", "kauft", "merger", "acquisition"
 
 EXPANSION / RESTRUKTURIERUNG:
-- Neue Standorte, Markteintritte
-- Stellenabbau, Umstrukturierung
+- Neue Standorte, Markteintritte, Stellenabbau
+- Neue Unternehmensstrategie, strategische Neuausrichtung
 
-Antworte NUR mit einem validen JSON Array — kein Text davor oder danach:
+Antworte NUR mit einem validen JSON Array:
 [{"article_index": 0, "company": "Firmenname", "trigger_type": "CEO-Wechsel", "description": "Kurze Beschreibung auf Deutsch"}]
 
-Erlaubte trigger_type Werte:
-"CEO-Wechsel", "CFO-Wechsel", "COO-Wechsel", "CIO-Wechsel", "CHRO-Wechsel", "CSO-Wechsel", "Geschäftsführer-Wechsel", "Neuer Vorstand", "Aufsichtsrat-Bestellung", "Aufsichtsrat-Rücktritt", "M&A / Fusion", "Funding", "Restrukturierung", "DACH-Expansion", "Sonstige"
+Erlaubte trigger_type Werte: "CEO-Wechsel", "CFO-Wechsel", "COO-Wechsel", "CIO-Wechsel", "CHRO-Wechsel", "CSO-Wechsel", "Geschäftsführer-Wechsel", "Neuer Vorstand", "Aufsichtsrat-Bestellung", "Aufsichtsrat-Rücktritt", "M&A / Fusion", "Funding", "Restrukturierung", "DACH-Expansion", "Sonstige"
 
 Artikel:
 ${summaries}`;
