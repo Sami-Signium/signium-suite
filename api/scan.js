@@ -72,12 +72,12 @@ export default async function handler(req, res) {
 
     if (!unique.length) return res.status(200).json({ text: '[]' });
 
-    const summaries = unique.slice(0, 60).map((a, i) =>
+    const summaries = unique.slice(0, 40).map((a, i) =>
       `[${i}] [${a.source}] ${a.title}${a.description ? ' | ' + a.description : ''} | URL: ${a.url}`
     ).join('\n');
 
     const articleMap = {};
-    unique.slice(0, 60).forEach((a, i) => { articleMap[i] = a.url; });
+    unique.slice(0, 40).forEach((a, i) => { articleMap[i] = a.url; });
 
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -88,7 +88,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
+        max_tokens: 4000,
         messages: [{ role: 'user', content: `Extract business events from these news articles for Executive Search in DACH and CEE markets.
 
 Relevant events: management changes (CEO/CFO/COO/CIO/CHRO/CSO/Geschäftsführer appointments or resignations), board appointments/resignations, M&A/mergers/acquisitions, funding rounds, restructuring, expansion.
