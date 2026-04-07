@@ -417,7 +417,7 @@ async function generate() {
     const response = await fetch('/api/docs-generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], language: lang.toLowerCase() })
     });
 
     if (!response.ok) {
