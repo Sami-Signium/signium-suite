@@ -6,17 +6,46 @@ export default async function handler(req, res) {
 
   try {
     const NEWS_API_KEY = process.env.NEWSAPI_KEY;
-    const SUPABASE_URL = 'https://ftdxhswcnghlmcagrsox.supabase.co';
-    const SUPABASE_KEY = process.env.SUPABASE_KEY;
-
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - 7);
     const from = fromDate.toISOString().split('T')[0];
 
     const queries = [
-      { q: '(Vorstand OR Geschaeftsfuehrer OR Aufsichtsrat OR CEO OR CFO) AND (Wien OR Oesterreich OR Austria)', language: 'de', label: 'AT' },
-      { q: '(Vorstandswechsel OR "neuer Vorstandsvorsitzender" OR "neuer Geschaeftsfuehrer") AND (DAX OR MDAX OR Deutschland)', language: 'de', label: 'DE' },
-      { q: '(CEO OR CFO OR "managing director" OR merger OR acquisition) AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia)', language: 'en', label: 'CEE' },
+      // Management DACH — mit korrekten Umlauten
+      {
+        q: '(CEO OR CFO OR COO OR CIO OR CHRO OR CSO OR "Vorstandsvorsitzender" OR "Geschäftsführer" OR "Vertriebsvorstand" OR "Aufsichtsrat") AND (Wien OR Österreich OR Austria OR München OR Hamburg OR Zürich)',
+        language: 'de', label: 'MGMT-AT'
+      },
+      // Management Deutschland
+      {
+        q: '(Vorstandswechsel OR "neuer CEO" OR "neuer CFO" OR "neuer COO" OR "neuer CHRO" OR "neuer Geschäftsführer" OR "neuer Vorstandsvorsitzender" OR "Aufsichtsrat bestellt") AND (Deutschland OR DAX OR MDAX)',
+        language: 'de', label: 'MGMT-DE'
+      },
+      // Management CEE English
+      {
+        q: '(CEO OR CFO OR COO OR CHRO OR CIO OR "managing director" OR "appointed" OR "named" OR "board member") AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia OR Austria)',
+        language: 'en', label: 'MGMT-CEE'
+      },
+      // M&A DACH
+      {
+        q: '(Übernahme OR Fusion OR Akquisition OR "M&A" OR merger OR acquisition) AND (Österreich OR Austria OR Deutschland OR Schweiz)',
+        language: 'de', label: 'MA-DACH'
+      },
+      // M&A CEE
+      {
+        q: '(merger OR acquisition OR takeover OR "strategic partnership") AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia OR Austria)',
+        language: 'en', label: 'MA-CEE'
+      },
+      // Funding
+      {
+        q: '(Finanzierung OR Investment OR "Series A" OR "Series B" OR "Venture Capital" OR Investition OR Kapitalerhöhung) AND (Österreich OR Austria OR Deutschland OR CEE)',
+        language: 'de', label: 'FUNDING-DE'
+      },
+      // Funding EN
+      {
+        q: '(funding OR "venture capital" OR "series A" OR "series B" OR "raised" OR "investment round") AND (Austria OR Germany OR Poland OR Romania OR Hungary OR "Czech Republic")',
+        language: 'en', label: 'FUNDING-EN'
+      },
     ];
 
     const allArticles = [];
@@ -41,14 +70,14 @@ export default async function handler(req, res) {
       seen.add(a.title); return true;
     });
 
-    if (!unique.length) return res.status(200).json({ text: '[]', saved: 0 });
+    if (!unique.length) return res.status(200).json({ text: '[]' });
 
-    const summaries = unique.slice(0, 50).map((a, i) =>
+    const summaries = unique.slice(0, 60).map((a, i) =>
       `[${i}] [${a.source}] ${a.title}${a.description ? ' | ' + a.description : ''} | URL: ${a.url}`
     ).join('\n');
 
     const articleMap = {};
-    unique.slice(0, 50).forEach((a, i) => { articleMap[i] = a.url; });
+    unique.slice(0, 60).forEach((a, i) => { articleMap[i] = a.url; });
 
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -60,7 +89,18 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 2000,
-        messages: [{ role: 'user', content: 'Extract business events from these news articles for Executive Search. Relevant events: management changes, CEO/CFO/CHRO appointments, board appointments/resignations, M&A/mergers/acquisitions, funding rounds, restructuring, expansion. Focus on Austria, Germany, CEE (Poland, Romania, Hungary, Czech Republic, Slovakia). Return ONLY a JSON array, no other text: [{"article_index": 0, "company":"Company Name","trigger_type":"CEO-Wechsel","description":"What happened"}]. Use these exact trigger_type values: "CEO-Wechsel", "CFO-Wechsel", "CHRO-Wechsel", "Geschaeftsfuehrer-Wechsel", "Neuer Vorstand", "Aufsichtsrat-Bestellung", "Aufsichtsrat-Ruecktritt", "M&A / Fusion", "Funding", "Restrukturierung", "DACH-Expansion", "Sonstige". Include ALL relevant events equally. News:\n' + summaries }]
+        messages: [{ role: 'user', content: `Extract business events from these news articles for Executive Search in DACH and CEE markets.
+
+Relevant events: management changes (CEO/CFO/COO/CIO/CHRO/CSO/Geschäftsführer appointments or resignations), board appointments/resignations, M&A/mergers/acquisitions, funding rounds, restructuring, expansion.
+
+Return ONLY a valid JSON array, no other text:
+[{"article_index": 0, "company":"Company Name","trigger_type":"CEO-Wechsel","description":"Brief description in German"}]
+
+Use ONLY these trigger_type values:
+"CEO-Wechsel", "CFO-Wechsel", "COO-Wechsel", "CIO-Wechsel", "CHRO-Wechsel", "CSO-Wechsel", "Geschäftsführer-Wechsel", "Neuer Vorstand", "Aufsichtsrat-Bestellung", "Aufsichtsrat-Rücktritt", "M&A / Fusion", "Funding", "Restrukturierung", "DACH-Expansion", "Sonstige"
+
+News articles:
+${summaries}` }]
       })
     });
 
@@ -75,35 +115,7 @@ export default async function handler(req, res) {
       source_url: (it.article_index !== undefined && articleMap[it.article_index]) ? articleMap[it.article_index] : null
     }));
 
-    // ── Save to Supabase directly (so nightly cron persists results) ──
-    let saved = 0;
-    if (SUPABASE_KEY && items.length > 0) {
-      const today = new Date().toISOString().split('T')[0];
-      const rows = items.map(it => ({
-        company: it.company || 'Unbekannt',
-        trigger_type: it.trigger_type || 'Sonstige',
-        description: it.description || '',
-        source_url: it.source_url || null,
-        scan_date: today,
-        relevance_score: 70
-      }));
-
-      try {
-        const sbRes = await fetch(`${SUPABASE_URL}/rest/v1/triggers`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify(rows)
-        });
-        if (sbRes.ok) saved = rows.length;
-      } catch(e) {}
-    }
-
-    return res.status(200).json({ text: JSON.stringify(items), articleCount: unique.length, saved });
+    return res.status(200).json({ text: JSON.stringify(items), articleCount: unique.length });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
