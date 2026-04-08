@@ -6,61 +6,44 @@ export default async function handler(req, res) {
 
   try {
     const NEWS_API_KEY = process.env.NEWSAPI_KEY;
-    const NEWSDATA_KEY = process.env.NEWSDATA_KEY;
-
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - 7);
     const from = fromDate.toISOString().split('T')[0];
 
-    // --- NewsAPI Queries ---
-    const newsApiQueries = [
-      { q: '(Vorstand OR Geschäftsführer OR Aufsichtsrat OR CEO OR CFO OR CHRO) AND (Wien OR Österreich OR Austria)', language: 'de', label: 'AT' },
-      { q: '(Vorstandswechsel OR "neuer CEO" OR "neuer CFO" OR Restrukturierung OR Übernahme OR Fusion) AND (Deutschland OR Schweiz)', language: 'de', label: 'DE' },
-      { q: '(CEO OR CFO OR "managing director" OR merger OR acquisition OR restructuring) AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia OR Vienna)', language: 'en', label: 'CEE' },
-      { q: '(Bestellung OR Ernennung OR Wechsel OR Rücktritt) AND (Vorstandsvorsitzender OR Geschäftsführer OR Aufsichtsrat)', language: 'de', label: 'DE' },
-    ];
-
-    // --- NewsData.io Queries ---
-    const newsDataQueries = [
-      { q: 'Vorstand Wechsel Österreich CEO', language: 'de', country: 'at', label: 'AT' },
-      { q: 'CEO CFO appointment resignation Austria Germany', language: 'en', label: 'DACH' },
-      { q: 'CEO merger acquisition Poland Romania Hungary', language: 'en', label: 'CEE' },
+    // Keine Umlaute - Wien als Geo-Anker fuer AT
+    const queries = [
+      // AT Management - Wien als Anker, keine Umlaute noetig
+      { q: '(Vorstand OR CEO OR CFO OR Aufsichtsrat) AND Wien', language: 'de', label: 'AT' },
+      // AT M&A
+      { q: '(Fusion OR Übernahme OR Akquisition OR Merger) AND Wien', language: 'de', label: 'AT' },
+      // DE Management - bekannte deutsche Medien benutzen diese Begriffe
+      { q: '(Vorstandswechsel OR "neuer CEO" OR "neuer CFO") AND (Deutschland OR Berlin OR München OR Frankfurt)', language: 'de', label: 'DE' },
+      // DE M&A
+      { q: '(Übernahme OR Fusion OR Akquisition) AND (DAX OR MDAX OR Deutschland)', language: 'de', label: 'DE' },
+      // CEE English - eng gefasst
+      { q: '("new CEO" OR "new CFO" OR "appoints CEO" OR "CEO resigns") AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia OR Austria OR Vienna)', language: 'en', label: 'CEE' },
+      // CEE M&A English
+      { q: '(acquisition OR merger OR "takes over") AND (Warsaw OR Bucharest OR Budapest OR Prague OR Bratislava OR Vienna)', language: 'en', label: 'CEE' },
     ];
 
     const allArticles = [];
-
-    // Fetch NewsAPI
-    for (const q of newsApiQueries) {
+    for (const q of queries) {
       try {
         const params = new URLSearchParams({
-          q: q.q, language: q.language, sortBy: 'publishedAt',
-          pageSize: 30, from, apiKey: NEWS_API_KEY
+          q: q.q,
+          language: q.language,
+          sortBy: 'publishedAt',
+          pageSize: 25,
+          from,
+          apiKey: NEWS_API_KEY
         });
         const r = await fetch('https://newsapi.org/v2/everything?' + params);
         const d = await r.json();
         (d.articles || []).forEach(a => allArticles.push({
-          title: a.title, description: a.description || '',
-          url: a.url, source: q.label
-        }));
-      } catch(e) {}
-    }
-
-    // Fetch NewsData.io
-    for (const q of newsDataQueries) {
-      try {
-        const params = new URLSearchParams({
-          apikey: NEWSDATA_KEY,
-          q: q.q,
-          language: q.language || 'de,en',
-          ...(q.country ? { country: q.country } : {}),
-          timeframe: '7',
-          size: 20
-        });
-        const r = await fetch('https://newsdata.io/api/1/news?' + params);
-        const d = await r.json();
-        (d.results || []).forEach(a => allArticles.push({
-          title: a.title, description: a.description || a.content || '',
-          url: a.link, source: q.label
+          title: a.title,
+          description: a.description || '',
+          url: a.url,
+          source: q.label
         }));
       } catch(e) {}
     }
@@ -72,7 +55,7 @@ export default async function handler(req, res) {
       seen.add(a.title); return true;
     });
 
-    if (!unique.length) return res.status(200).json({ text: '[]' });
+    if (!unique.length) return res.status(200).json({ text: '[]', articleCount: 0 });
 
     const summaries = unique.slice(0, 100).map((a, i) =>
       `[${i}] [${a.source}] ${a.title}${a.description ? ' | ' + a.description : ''} | URL: ${a.url}`
@@ -91,7 +74,18 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 4000,
-        messages: [{ role: 'user', content: `Extract business events from these news articles for Executive Search. Relevant events: management changes, CEO/CFO/CHRO/COO appointments or resignations, board appointments/resignations, M&A/mergers/acquisitions, funding rounds, restructuring, expansion into DACH or CEE. Focus on Austria, Germany, Switzerland, CEE (Poland, Romania, Hungary, Czech Republic, Slovakia). Ignore articles about politics, sports, weather, crime unrelated to business. Return ONLY a JSON array, no other text: [{"article_index": 0, "company":"Company Name","trigger_type":"CEO-Wechsel","description":"What happened"}]. Use these exact trigger_type values: "CEO-Wechsel", "CFO-Wechsel", "CHRO-Wechsel", "COO-Wechsel", "Geschaeftsfuehrer-Wechsel", "Neuer Vorstand", "Aufsichtsrat-Bestellung", "Aufsichtsrat-Ruecktritt", "M&A / Fusion", "Funding", "Restrukturierung", "DACH-Expansion", "Sonstige". Include ALL relevant events. News:\n` + summaries }]
+        messages: [{ role: 'user', content: `Du bist Analyst bei einer Executive Search Firma. Extrahiere ALLE relevanten Business-Events aus diesen Artikeln. Sei INKLUSIV — im Zweifel aufnehmen.
+
+Relevante Events: CEO/CFO/COO/CHRO Wechsel, Vorstandswechsel, Aufsichtsrat Bestellungen/Rücktritte, M&A/Übernahmen/Fusionen, Funding, Restrukturierung, Expansion nach DACH oder CEE.
+
+Geografischer Fokus: Österreich, Deutschland, Schweiz, Polen, Rumänien, Ungarn, Tschechien, Slowakei.
+
+Gib NUR ein JSON Array zurück, kein anderer Text:
+[{"article_index": 0, "company":"Firmenname","trigger_type":"CEO-Wechsel","description":"Kurze deutsche Beschreibung"}]
+
+Erlaubte trigger_type Werte: "CEO-Wechsel", "CFO-Wechsel", "CHRO-Wechsel", "COO-Wechsel", "Geschaeftsfuehrer-Wechsel", "Neuer Vorstand", "Aufsichtsrat-Bestellung", "Aufsichtsrat-Ruecktritt", "M&A / Fusion", "Funding", "Restrukturierung", "DACH-Expansion", "Sonstige"
+
+Artikel:\n` + summaries }]
       })
     });
 
