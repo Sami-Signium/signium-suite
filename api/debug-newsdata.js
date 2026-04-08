@@ -1,37 +1,25 @@
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  const WORLD_NEWS_KEY = process.env.WORLDNEWS_KEY;
+  const KEY = process.env.WORLDNEWS_KEY;
   const results = {};
 
   const queries = [
-    { label: 'AT Personalwechsel', text: 'Vorstand CEO Geschäftsführer Wechsel', sourceCountry: 'at', language: 'de' },
-    { label: 'AT M&A', text: 'Übernahme Fusion Akquisition Österreich', sourceCountry: 'at', language: 'de' },
-    { label: 'DE Personalwechsel', text: 'Vorstandswechsel CEO CFO Wechsel Ernennung', sourceCountry: 'de', language: 'de' },
-    { label: 'CEE English', text: 'CEO appointed managing director merger acquisition', sourceCountry: 'pl,ro,hu,cz,sk', language: 'en' },
+    { label: 'AT Personalwechsel', text: 'Vorstand CEO Geschäftsführer Wechsel', country: 'at', language: 'de' },
+    { label: 'AT M&A', text: 'Übernahme Fusion Akquisition', country: 'at', language: 'de' },
+    { label: 'DE Personalwechsel', text: 'Vorstandswechsel CEO CFO Wechsel', country: 'de', language: 'de' },
+    { label: 'CEE PL', text: 'CEO appointed managing director merger', country: 'pl', language: 'en' },
+    { label: 'CEE RO', text: 'CEO appointed managing director merger', country: 'ro', language: 'en' },
   ];
 
   for (const q of queries) {
     try {
-      const params = new URLSearchParams({
-        'api-key': WORLD_NEWS_KEY,
-        text: q.text,
-        'source-country': q.sourceCountry,
-        language: q.language,
-        number: 10,
-        sort: 'publish-time',
-        'sort-direction': 'DESC'
-      });
-      const r = await fetch('https://api.worldnewsapi.com/search-news?' + params);
+      const url = `https://api.worldnewsapi.com/search-news?api-key=${KEY}&text=${encodeURIComponent(q.text)}&source-country=${q.country}&language=${q.language}&number=5&sort=publish-time&sort-direction=DESC`;
+      const r = await fetch(url);
       const d = await r.json();
       results[q.label] = {
-        totalFound: d.available,
-        titles: (d.news || []).map(a => ({
-          title: a.title,
-          source: a.source_country,
-          url: a.url,
-          date: a.publish_date
-        }))
+        total: d.available,
+        titles: (d.news || []).map(a => ({ title: a.title, date: a.publish_date, url: a.url }))
       };
     } catch(e) {
       results[q.label] = { error: e.message };
