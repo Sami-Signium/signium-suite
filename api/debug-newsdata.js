@@ -17,7 +17,6 @@ export default async function handler(req, res) {
         q: q.q,
         language: q.language,
         country: q.country,
-        timeframe: '7',
         size: 10
       });
       const r = await fetch('https://newsdata.io/api/1/news?' + params);
