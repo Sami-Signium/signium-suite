@@ -6,18 +6,22 @@ export default async function handler(req, res) {
 
   try {
     const NEWS_API_KEY = process.env.NEWSAPI_KEY;
+    const NEWSDATA_KEY = process.env.NEWSDATA_KEY;
+
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - 7);
     const from = fromDate.toISOString().split('T')[0];
 
-    const queries = [
+    const allArticles = [];
+
+    // ── NewsAPI (existing) ──────────────────────────────────────────
+    const newsApiQueries = [
       { q: '(Vorstand OR Geschaeftsfuehrer OR Aufsichtsrat OR CEO OR CFO) AND (Wien OR Oesterreich OR Austria)', language: 'de', label: 'AT' },
       { q: '(Vorstandswechsel OR "neuer Vorstandsvorsitzender" OR "neuer Geschaeftsfuehrer") AND (DAX OR MDAX OR Deutschland)', language: 'de', label: 'DE' },
       { q: '(CEO OR CFO OR "managing director" OR merger OR acquisition OR appointed) AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia OR Vienna OR Austria OR Germany OR Switzerland)', language: 'en', label: 'CEE' },
     ];
 
-    const allArticles = [];
-    for (const q of queries) {
+    for (const q of newsApiQueries) {
       try {
         const params = new URLSearchParams({
           q: q.q, language: q.language, sortBy: 'publishedAt',
@@ -27,11 +31,65 @@ export default async function handler(req, res) {
         const d = await r.json();
         (d.articles || []).forEach(a => allArticles.push({
           title: a.title, description: a.description || '',
-          url: a.url, source: q.label
+          url: a.url, source: 'NewsAPI-' + q.label
         }));
       } catch(e) {}
     }
 
+    // ── NewsData.io (new) ──────────────────────────────────────────
+    if (NEWSDATA_KEY) {
+      const newsDataQueries = [
+        // Austria + Germany — business news in German
+        {
+          params: {
+            apikey: NEWSDATA_KEY,
+            q: 'Vorstand OR Vorstandsvorsitzender OR Geschäftsführer OR Aufsichtsrat OR Führungswechsel OR Nachfolge OR "Chief Executive Officer" OR "Chief Financial Officer" OR "Chief Operating Officer" OR "Chief Technology Officer" OR "Chief Information Officer" OR "Chief Sales Officer" OR CEO OR CFO OR COO OR CTO OR CIO OR CSO OR Übernahme OR Fusion OR Finanzierung OR Investition',
+            country: 'at,de',
+            language: 'de',
+            category: 'business',
+          },
+          label: 'ND-DACH-DE'
+        },
+        // Austria + Germany — business news in English
+        {
+          params: {
+            apikey: NEWSDATA_KEY,
+            q: '"Chief Executive Officer" OR "Chief Financial Officer" OR "Chief Operating Officer" OR "Chief Technology Officer" OR "Chief Information Officer" OR "Chief Sales Officer" OR CEO OR CFO OR COO OR CTO OR CIO OR CSO OR appointed OR "managing director" OR merger OR acquisition OR funding OR "management change"',
+            country: 'at,de',
+            language: 'en',
+            category: 'business',
+          },
+          label: 'ND-DACH-EN'
+        },
+        // CEE — business news in English
+        {
+          params: {
+            apikey: NEWSDATA_KEY,
+            q: '"Chief Executive Officer" OR "Chief Financial Officer" OR "Chief Operating Officer" OR "Chief Technology Officer" OR "Chief Information Officer" OR CEO OR CFO OR COO OR CTO OR CIO OR appointed OR "managing director" OR merger OR acquisition OR funding OR "management change"',
+            country: 'pl,ro,hu,cz,sk',
+            language: 'en',
+            category: 'business',
+          },
+          label: 'ND-CEE'
+        },
+      ];
+
+      for (const q of newsDataQueries) {
+        try {
+          const params = new URLSearchParams(q.params);
+          const r = await fetch('https://newsdata.io/api/1/news?' + params);
+          const d = await r.json();
+          (d.results || []).forEach(a => allArticles.push({
+            title: a.title,
+            description: a.description || a.content || '',
+            url: a.link,
+            source: q.label
+          }));
+        } catch(e) {}
+      }
+    }
+
+    // ── Deduplicate ────────────────────────────────────────────────
     const seen = new Set();
     const unique = allArticles.filter(a => {
       if (!a.title || seen.has(a.title)) return false;
@@ -40,23 +98,22 @@ export default async function handler(req, res) {
 
     if (!unique.length) return res.status(200).json({ text: '[]' });
 
-    const summaries = unique.slice(0, 60).map((a, i) =>
+    const summaries = unique.slice(0, 80).map((a, i) =>
       `[${i}] [${a.source}] ${a.title}${a.description ? ' | ' + a.description : ''} | URL: ${a.url}`
     ).join('\n');
 
     const articleMap = {};
-    unique.slice(0, 60).forEach((a, i) => { articleMap[i] = a.url; });
+    unique.slice(0, 80).forEach((a, i) => { articleMap[i] = a.url; });
 
     const prompt = `Du bist ein Analyst für Executive Search in DACH und CEE. Analysiere die folgenden Nachrichtenartikel und extrahiere ALLE relevanten Business-Ereignisse.
 
 WICHTIG: Extrahiere NUR Ereignisse aus folgenden Ländern: Österreich, Deutschland, Schweiz, Polen, Rumänien, Ungarn, Tschechien, Slowakei. Ignoriere alle anderen Länder.
 
 MANAGEMENT-EREIGNISSE (höchste Priorität):
-- Neue CEO, CFO, COO, CIO, CHRO, CSO, CDO Ernennung oder Abgang
+- Neue CEO, CFO, COO, CIO, CTO, CHRO, CSO, CDO Ernennung oder Abgang
 - Neuer Geschäftsführer, Vorstandsvorsitzender, Generaldirektor
 - Neues Vorstandsmitglied, Aufsichtsratsmitglied
 - Führungswechsel, Nachfolge, Rücktritt von Führungskräften
-- "übernimmt", "ernannt", "berufen", "tritt zurück", "verlässt"
 
 FUNDING-EREIGNISSE:
 - Finanzierungsrunden (Series A, B, C etc.)
@@ -73,7 +130,7 @@ EXPANSION / RESTRUKTURIERUNG:
 Antworte NUR mit einem validen JSON Array:
 [{"article_index": 0, "company": "Firmenname", "trigger_type": "CEO-Wechsel", "description": "Kurze Beschreibung auf Deutsch"}]
 
-Erlaubte trigger_type Werte: "CEO-Wechsel", "CFO-Wechsel", "COO-Wechsel", "CIO-Wechsel", "CHRO-Wechsel", "CSO-Wechsel", "Geschäftsführer-Wechsel", "Neuer Vorstand", "Aufsichtsrat-Bestellung", "Aufsichtsrat-Rücktritt", "M&A / Fusion", "Funding", "Restrukturierung", "DACH-Expansion", "Sonstige"
+Erlaubte trigger_type Werte: "CEO-Wechsel", "CFO-Wechsel", "COO-Wechsel", "CIO-Wechsel", "CTO-Wechsel", "CHRO-Wechsel", "CSO-Wechsel", "Geschäftsführer-Wechsel", "Neuer Vorstand", "Aufsichtsrat-Bestellung", "Aufsichtsrat-Rücktritt", "M&A / Fusion", "Funding", "Restrukturierung", "DACH-Expansion", "Sonstige"
 
 Artikel:
 ${summaries}`;
