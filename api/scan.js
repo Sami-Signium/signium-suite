@@ -10,45 +10,38 @@ export default async function handler(req, res) {
     fromDate.setDate(fromDate.getDate() - 7);
     const from = fromDate.toISOString().split('T')[0];
 
-    // Keine Umlaute - Wien als Geo-Anker fuer AT
     const queries = [
-      // AT Management - Wien als Anker, keine Umlaute noetig
+      // AT Management - Wien als Anker
       { q: '(Vorstand OR CEO OR CFO OR Aufsichtsrat) AND Wien', language: 'de', label: 'AT' },
       // AT M&A
-      { q: '(Fusion OR Übernahme OR Akquisition OR Merger) AND Wien', language: 'de', label: 'AT' },
-      // DE Management - bekannte deutsche Medien benutzen diese Begriffe
+      { q: '(Fusion OR Übernahme OR Akquisition) AND Wien', language: 'de', label: 'AT' },
+      // DE Management
       { q: '(Vorstandswechsel OR "neuer CEO" OR "neuer CFO") AND (Deutschland OR Berlin OR München OR Frankfurt)', language: 'de', label: 'DE' },
       // DE M&A
       { q: '(Übernahme OR Fusion OR Akquisition) AND (DAX OR MDAX OR Deutschland)', language: 'de', label: 'DE' },
-      // CEE English - eng gefasst
-      { q: '("new CEO" OR "new CFO" OR "appoints CEO" OR "CEO resigns") AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia OR Austria OR Vienna)', language: 'en', label: 'CEE' },
-      // CEE M&A English
-      { q: '(acquisition OR merger OR "takes over") AND (Warsaw OR Bucharest OR Budapest OR Prague OR Bratislava OR Vienna)', language: 'en', label: 'CEE' },
+      // CEE Management - streng geografisch
+      { q: '("new CEO" OR "new CFO" OR "appoints CEO" OR "CEO appointed") AND (Warsaw OR Bucharest OR Budapest OR Prague OR Bratislava)', language: 'en', label: 'CEE' },
+      // CEE M&A - streng geografisch
+      { q: '(acquisition OR merger) AND (Warsaw OR Bucharest OR Budapest OR Prague OR Bratislava)', language: 'en', label: 'CEE' },
     ];
 
     const allArticles = [];
     for (const q of queries) {
       try {
         const params = new URLSearchParams({
-          q: q.q,
-          language: q.language,
-          sortBy: 'publishedAt',
-          pageSize: 25,
-          from,
-          apiKey: NEWS_API_KEY
+          q: q.q, language: q.language, sortBy: 'publishedAt',
+          pageSize: 25, from, apiKey: NEWS_API_KEY
         });
         const r = await fetch('https://newsapi.org/v2/everything?' + params);
         const d = await r.json();
         (d.articles || []).forEach(a => allArticles.push({
-          title: a.title,
-          description: a.description || '',
-          url: a.url,
-          source: q.label
+          title: a.title, description: a.description || '',
+          url: a.url, source: q.label
         }));
       } catch(e) {}
     }
 
-    // Deduplicate
+    // Deduplizierung nach Titel
     const seen = new Set();
     const unique = allArticles.filter(a => {
       if (!a.title || seen.has(a.title)) return false;
@@ -74,13 +67,14 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 4000,
-        messages: [{ role: 'user', content: `Du bist Analyst bei einer Executive Search Firma. Extrahiere ALLE relevanten Business-Events aus diesen Artikeln. Sei INKLUSIV — im Zweifel aufnehmen.
+        messages: [{ role: 'user', content: `Du bist Analyst bei einer Executive Search Firma. Extrahiere relevante Business-Events aus diesen Artikeln.
 
-Relevante Events: CEO/CFO/COO/CHRO Wechsel, Vorstandswechsel, Aufsichtsrat Bestellungen/Rücktritte, M&A/Übernahmen/Fusionen, Funding, Restrukturierung, Expansion nach DACH oder CEE.
+WICHTIG: Jede Firma nur EINMAL aufnehmen — auch wenn mehrere Artikel über dieselbe Firma berichten.
+Geografischer Fokus: Österreich, Deutschland, Schweiz, Polen, Rumänien, Ungarn, Tschechien, Slowakei. Internationale Firmen ohne DACH/CEE Bezug IGNORIEREN.
 
-Geografischer Fokus: Österreich, Deutschland, Schweiz, Polen, Rumänien, Ungarn, Tschechien, Slowakei.
+Relevante Events: CEO/CFO/COO/CHRO Wechsel, Vorstandswechsel, Aufsichtsrat, M&A, Funding, Restrukturierung, DACH/CEE Expansion.
 
-Gib NUR ein JSON Array zurück, kein anderer Text:
+Gib NUR ein JSON Array zurück:
 [{"article_index": 0, "company":"Firmenname","trigger_type":"CEO-Wechsel","description":"Kurze deutsche Beschreibung"}]
 
 Erlaubte trigger_type Werte: "CEO-Wechsel", "CFO-Wechsel", "CHRO-Wechsel", "COO-Wechsel", "Geschaeftsfuehrer-Wechsel", "Neuer Vorstand", "Aufsichtsrat-Bestellung", "Aufsichtsrat-Ruecktritt", "M&A / Fusion", "Funding", "Restrukturierung", "DACH-Expansion", "Sonstige"
@@ -94,6 +88,13 @@ Artikel:\n` + summaries }]
     const s = raw.indexOf('['), e = raw.lastIndexOf(']');
     let items = [];
     try { if (s >= 0 && e > s) items = JSON.parse(raw.substring(s, e + 1)); } catch(err) {}
+
+    // Deduplizierung nach Firma
+    const seenCompanies = new Set();
+    items = items.filter(it => {
+      if (!it.company || seenCompanies.has(it.company)) return false;
+      seenCompanies.add(it.company); return true;
+    });
 
     items = items.map(it => ({
       ...it,
