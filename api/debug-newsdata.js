@@ -22,11 +22,8 @@ export default async function handler(req, res) {
       });
       const r = await fetch('https://newsdata.io/api/1/news?' + params);
       const d = await r.json();
-      results[q.label] = {
-        status: d.status,
-        totalResults: d.totalResults,
-        titles: (d.results || []).map(a => ({ title: a.title, source: a.source_id, country: a.country }))
-      };
+      // Show raw response to diagnose errors
+      results[q.label] = d;
     } catch(e) {
       results[q.label] = { error: e.message };
     }
