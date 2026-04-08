@@ -89,11 +89,12 @@ Artikel:\n` + summaries }]
     let items = [];
     try { if (s >= 0 && e > s) items = JSON.parse(raw.substring(s, e + 1)); } catch(err) {}
 
-    // Deduplizierung nach Firma
+    // Deduplizierung nach Firma + trigger_type
     const seenCompanies = new Set();
     items = items.filter(it => {
-      if (!it.company || seenCompanies.has(it.company)) return false;
-      seenCompanies.add(it.company); return true;
+      const key = `${it.company}|${it.trigger_type}`;
+      if (!it.company || seenCompanies.has(key)) return false;
+      seenCompanies.add(key); return true;
     });
 
     items = items.map(it => ({
