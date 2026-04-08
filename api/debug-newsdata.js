@@ -1,28 +1,38 @@
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  const NEWSDATA_KEY = process.env.NEWSDATA_KEY;
+  const WORLD_NEWS_KEY = process.env.WORLDNEWS_KEY;
   const results = {};
 
   const queries = [
-    { label: 'AT-DE Personalwechsel', q: 'Vorstand CEO Wechsel', language: 'de', country: 'at,de' },
-    { label: 'AT-DE M&A', q: 'Übernahme Fusion Österreich Deutschland', language: 'de', country: 'at,de' },
-    { label: 'CEE English', q: 'CEO appointed managing director', language: 'en', country: 'pl,ro,hu,cz,sk' },
+    { label: 'AT Personalwechsel', text: 'Vorstand CEO Geschäftsführer Wechsel', sourceCountry: 'at', language: 'de' },
+    { label: 'AT M&A', text: 'Übernahme Fusion Akquisition Österreich', sourceCountry: 'at', language: 'de' },
+    { label: 'DE Personalwechsel', text: 'Vorstandswechsel CEO CFO Wechsel Ernennung', sourceCountry: 'de', language: 'de' },
+    { label: 'CEE English', text: 'CEO appointed managing director merger acquisition', sourceCountry: 'pl,ro,hu,cz,sk', language: 'en' },
   ];
 
   for (const q of queries) {
     try {
       const params = new URLSearchParams({
-        apikey: NEWSDATA_KEY,
-        q: q.q,
+        'api-key': WORLD_NEWS_KEY,
+        text: q.text,
+        'source-country': q.sourceCountry,
         language: q.language,
-        country: q.country,
-        size: 10
+        number: 10,
+        sort: 'publish-time',
+        'sort-direction': 'DESC'
       });
-      const r = await fetch('https://newsdata.io/api/1/news?' + params);
+      const r = await fetch('https://api.worldnewsapi.com/search-news?' + params);
       const d = await r.json();
-      // Show raw response to diagnose errors
-      results[q.label] = d;
+      results[q.label] = {
+        totalFound: d.available,
+        titles: (d.news || []).map(a => ({
+          title: a.title,
+          source: a.source_country,
+          url: a.url,
+          date: a.publish_date
+        }))
+      };
     } catch(e) {
       results[q.label] = { error: e.message };
     }
