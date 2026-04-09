@@ -112,7 +112,7 @@ tbody td { padding: 11px 16px; font-size: 12px; color: var(--text); vertical-ali
 .pitch-body { flex: 1; font-size: 12.5px; line-height: 1.85; color: var(--text); white-space: pre-wrap; }
 .pitch-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); gap: 12px; text-align: center; }
 .pitch-empty-icon { font-family: 'Petrona', Georgia, serif; font-size: 72px; font-weight: 300; color: var(--gray-200); line-height: 1; letter-spacing: -.02em; }
-.pitch-actions { display: flex; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--gray-100); }
+.pitch-actions { display: flex; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--gray-100); flex-wrap: wrap; }
 .scan-hero { background: var(--navy); border-radius: var(--radius-lg); padding: 28px 32px; margin-bottom: 20px; position: relative; overflow: hidden; }
 .scan-hero::before { content: ''; position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; background: var(--turquoise); opacity: .05; border-radius: 50%; }
 .scan-hero-title { font-family: 'Petrona', Georgia, serif; font-size: 20px; font-weight: 500; color: var(--white); margin-bottom: 6px; position: relative; }
@@ -150,9 +150,30 @@ tbody td { padding: 11px 16px; font-size: 12px; color: var(--text); vertical-ali
 .reminder-item:last-child { border-bottom: none; padding-bottom: 0; }
 .reminder-company { font-weight: 600; color: #0D1B3E; font-family: 'Petrona', Georgia, serif; }
 .reminder-date { font-size: 10px; color: #9a6a00; margin-top: 2px; }
+
+/* ── LPR KAMPAGNE STYLES ─────────────────────────────── */
+.lpr-contact-card { background: var(--white); border: 1px solid var(--gray-200); border-left: 3px solid var(--turquoise); border-radius: var(--radius); padding: 13px 16px; display: flex; align-items: center; gap: 14px; transition: all .15s; box-shadow: var(--shadow); }
+.lpr-contact-card:hover { box-shadow: var(--shadow-md); }
+.lpr-contact-card.has-draft { border-left-color: var(--orange); }
+.lpr-contact-card.is-sent { border-left-color: var(--success); }
+.lpr-contact-card.is-replied { border-left-color: var(--success); opacity: .7; }
+.lpr-contact-info { flex: 1; min-width: 0; }
+.lpr-contact-name { font-weight: 600; font-size: 13px; color: var(--navy); font-family: 'Petrona', Georgia, serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lpr-contact-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.lpr-stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.lpr-stat { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 14px 16px; text-align: center; box-shadow: var(--shadow); }
+.lpr-stat-val { font-family: 'Petrona', Georgia, serif; font-size: 26px; font-weight: 600; color: var(--navy); line-height: 1; }
+.lpr-stat-lbl { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .1em; margin-top: 4px; }
+.lpr-lang-toggle { display: flex; border: 1px solid var(--gray-200); border-radius: var(--radius); overflow: hidden; }
+.lpr-lang-btn { padding: 5px 14px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; background: var(--white); color: var(--text-muted); font-family: inherit; transition: all .15s; }
+.lpr-lang-btn.active { background: var(--navy); color: var(--white); }
+.lpr-brief-box { background: var(--off-white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 18px; font-size: 12.5px; line-height: 1.9; color: var(--text); white-space: pre-wrap; min-height: 320px; max-height: 460px; overflow-y: auto; font-family: 'Gill Sans MT', Calibri, sans-serif; }
+.lpr-brief-box[contenteditable="true"] { outline: 2px solid var(--turquoise); cursor: text; }
+.followup-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: var(--danger-bg); color: var(--danger); }
 </style>
 </head>
 <body>
+
 <aside class="sidebar">
   <div class="sidebar-logo">
     <div class="logo-wordmark"><div class="logo-paul">PAUL</div><div class="logo-dot"></div></div>
@@ -170,6 +191,7 @@ tbody td { padding: 11px 16px; font-size: 12px; color: var(--text); vertical-ali
     <div class="nav-item" onclick="showPanel('scan')"><span class="nav-icon">🔍</span> Market Scan</div>
     <div class="nav-item" onclick="showPanel('compose')"><span class="nav-icon">✦</span> Pitch erstellen</div>
     <div class="nav-item" onclick="showPanel('outreach')"><span class="nav-icon">◷</span> Outreach-Log</div>
+    <div class="nav-item" onclick="showPanel('lpr')"><span class="nav-icon">📡</span> LPR Kampagne</div>
     <div class="nav-section">Unterlagen</div>
     <div class="nav-item" onclick="showPanel('documents')"><span class="nav-icon">📄</span> Unterlagen</div>
     <div class="nav-section">System</div>
@@ -319,6 +341,46 @@ tbody td { padding: 11px 16px; font-size: 12px; color: var(--text); vertical-ali
       <div class="table-wrap"><table><thead><tr><th>Unternehmen</th><th>Kanal</th><th>Status</th><th>Erstellt</th><th>Aktionen</th></tr></thead><tbody id="outreach-tbody"></tbody></table></div>
     </div>
 
+    <!-- LPR KAMPAGNE -->
+    <div id="panel-lpr" class="panel">
+
+      <!-- Stats -->
+      <div class="lpr-stats-row">
+        <div class="lpr-stat"><div class="lpr-stat-val" id="lpr-stat-total">–</div><div class="lpr-stat-lbl">Kontakte gesamt</div></div>
+        <div class="lpr-stat"><div class="lpr-stat-val" id="lpr-stat-sent" style="color:var(--turquoise)">0</div><div class="lpr-stat-lbl">Versendet</div></div>
+        <div class="lpr-stat"><div class="lpr-stat-val" id="lpr-stat-followup" style="color:var(--orange)">0</div><div class="lpr-stat-lbl">Follow-up fällig</div></div>
+        <div class="lpr-stat"><div class="lpr-stat-val" id="lpr-stat-replied" style="color:var(--success)">0</div><div class="lpr-stat-lbl">Antworten</div></div>
+      </div>
+
+      <!-- Follow-up alerts -->
+      <div id="lpr-followup-block"></div>
+
+      <!-- Header + Filters -->
+      <div class="section-header" style="margin-bottom:12px">
+        <div><div class="brand-line"></div><div class="section-title">LPR Kampagne</div><div class="section-sub">Leadership Performance Radar · Persönliche Ansprache · Dr. Sami Hamid</div></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div class="lpr-lang-toggle">
+            <button class="lpr-lang-btn active" id="lpr-btn-de" onclick="lprSetLang('de')">DE</button>
+            <button class="lpr-lang-btn" id="lpr-btn-en" onclick="lprSetLang('en')">EN</button>
+          </div>
+          <select id="lpr-filter-status" class="form-control" onchange="lprRender()" style="width:auto;font-size:11px;padding:5px 10px">
+            <option value="">Alle Status</option>
+            <option value="draft">Entwurf</option>
+            <option value="sent">Versendet</option>
+            <option value="followup">Follow-up fällig</option>
+            <option value="replied">Antwort erhalten</option>
+          </select>
+          <input type="text" id="lpr-search" class="form-control" placeholder="Name oder Unternehmen..." oninput="lprRender()" style="width:200px;font-size:11px;padding:5px 10px">
+        </div>
+      </div>
+
+      <!-- Contact list -->
+      <div id="lpr-list" style="display:flex;flex-direction:column;gap:8px">
+        <div class="loading"><div class="spinner"></div> Kontakte laden...</div>
+      </div>
+
+    </div>
+
     <!-- DOCUMENTS -->
     <div id="panel-documents" class="panel">
       <div class="section-header">
@@ -367,7 +429,7 @@ tbody td { padding: 11px 16px; font-size: 12px; color: var(--text); vertical-ali
   </div>
 </main>
 
-<!-- MODALS -->
+<!-- MODALS (existing) -->
 <div class="modal-overlay" id="modal-trigger">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Trigger hinzufügen</div><button class="btn btn-ghost btn-sm" onclick="closeModal('modal-trigger')">✕</button></div>
@@ -409,6 +471,31 @@ tbody td { padding: 11px 16px; font-size: 12px; color: var(--text); vertical-ali
   </div>
 </div>
 
+<!-- LPR BRIEF MODAL -->
+<div class="modal-overlay" id="modal-lpr-brief">
+  <div class="modal" style="width:800px;max-width:96vw">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="lpr-modal-title">LPR Brief</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px" id="lpr-modal-sub"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="lpr-lang-toggle">
+          <button class="lpr-lang-btn active" id="modal-btn-de" onclick="lprModalLang('de')">DE</button>
+          <button class="lpr-lang-btn" id="modal-btn-en" onclick="lprModalLang('en')">EN</button>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-lpr-brief')">✕</button>
+      </div>
+    </div>
+    <div id="lpr-modal-body">
+      <!-- filled dynamically -->
+    </div>
+    <div class="pitch-actions" id="lpr-modal-actions" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--gray-100)">
+      <!-- filled dynamically -->
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -419,7 +506,6 @@ const db = createClient(SU, SK);
 
 let allCompanies = [], allContacts = [], allTriggers = [], allOutreach = [];
 let currentPitchText = '';
-
 const docUrls = {
   presentation: 'https://paul-signium.netlify.app/Signium_Presentation_CLEAN_VERSION.pdf',
   whitepaper: 'https://paul-signium.netlify.app/Signium_Whitepaper_100Tage_v3.pdf',
@@ -427,53 +513,13 @@ const docUrls = {
 };
 const docNames = { presentation: 'Signium Präsentation', whitepaper: 'Whitepaper 100 Tage', references: 'CEE Referenzliste' };
 
-function toggleDoc(key) {
-  const card = document.getElementById('doccard-' + key);
-  const status = document.getElementById('doc-' + key + '-status');
-  const checkbox = document.getElementById('doc-check-' + key);
-  const isSelected = card.classList.toggle('selected');
-  status.textContent = isSelected ? '✓ Ausgewählt' : 'Nicht ausgewählt';
-  status.style.color = isSelected ? 'var(--success)' : 'var(--gray-400)';
-  if (checkbox) checkbox.checked = isSelected;
-  updateDocInfo();
-}
+// ── LPR STATE ─────────────────────────────────────────────────
+let lprLang = 'de';
+let lprContacts = [];
+let lprOutreach = {}; // keyed by contact_id
+let lprCurrentContactId = null;
 
-function updateDocSelection() {
-  ['presentation','whitepaper','references'].forEach(key => {
-    const cb = document.getElementById('doc-check-' + key);
-    const card = document.getElementById('doccard-' + key);
-    const status = document.getElementById('doc-' + key + '-status');
-    if (cb && card) {
-      if (cb.checked) { card.classList.add('selected'); status.textContent = '✓ Ausgewählt'; status.style.color = 'var(--success)'; }
-      else { card.classList.remove('selected'); status.textContent = 'Nicht ausgewählt'; status.style.color = 'var(--gray-400)'; }
-    }
-  });
-  updateDocInfo();
-}
-
-function updateDocInfo() {
-  const selected = ['presentation','whitepaper','references'].filter(k => document.getElementById('doccard-'+k)?.classList.contains('selected'));
-  const info = document.getElementById('doc-selection-info');
-  if (!info) return;
-  if (selected.length === 0) info.textContent = 'Kein Dokument ausgewählt — Karte anklicken um Unterlagen für den nächsten Pitch auszuwählen.';
-  else info.textContent = '✓ ' + selected.map(k => docNames[k]).join(', ') + ' — wird automatisch in den nächsten Pitch-Text eingefügt.';
-}
-
-function getSelectedDocLinks() {
-  return ['presentation','whitepaper','references']
-    .filter(k => document.getElementById('doccard-'+k)?.classList.contains('selected'))
-    .map(k => docNames[k] + ': ' + docUrls[k]).join('\n');
-}
-
-const typeMap = {
-  'CEO-Wechsel':'badge-danger','CFO-Wechsel':'badge-danger','CHRO-Wechsel':'badge-warning',
-  'Geschäftsführer-Wechsel':'badge-danger','Neuer Vorstand':'badge-navy','Aufsichtsrat-Bestellung':'badge-navy',
-  'Aufsichtsrat-Rücktritt':'badge-danger','Funding':'badge-success','M&A / Fusion':'badge-warning',
-  'DACH-Expansion':'badge-info','Restrukturierung':'badge-warning','CEO Change':'badge-danger',
-  'CFO Change':'badge-danger','Board Appointment':'badge-navy','Funding Round':'badge-success',
-  'M&A':'badge-warning','Executive Change':'badge-danger','Sonstige':'badge-gray'
-};
-
+// ── PANEL NAVIGATION ──────────────────────────────────────────
 const panelTitles = {
   dashboard: ['Dashboard', 'Übersicht · Signium Austria Lead Intelligence'],
   triggers: ['Trigger-Ereignisse', 'Erkannte Anlässe für Kontaktaufnahme'],
@@ -482,6 +528,7 @@ const panelTitles = {
   contacts: ['Kontakte', 'Alle identifizierten Ansprechpartner'],
   compose: ['PAUL Pitch Generator', 'KI-gestützte Outreach-Nachrichten'],
   outreach: ['Outreach-Log', 'Alle generierten und gesendeten Pitches'],
+  lpr: ['LPR Kampagne', 'Leadership Performance Radar · Persönliche Ansprache'],
   documents: ['Unterlagen-Bibliothek', 'Dokumente für Pitches auswählen'],
   settings: ['Einstellungen', 'PAUL Konfiguration'],
 };
@@ -491,22 +538,25 @@ function showPanel(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const panel = document.getElementById('panel-' + name);
   if (panel) panel.classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n => { if (n.getAttribute('onclick')?.includes("'" + name + "'")) n.classList.add('active'); });
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick')?.includes("'" + name + "'")) n.classList.add('active');
+  });
   const t = panelTitles[name] || [name, ''];
   document.getElementById('topbar-title').textContent = t[0];
   document.getElementById('topbar-sub').textContent = t[1];
+  if (name === 'lpr') lprLoad();
 }
 
-function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show'; setTimeout(() => t.className = 'toast', 3000); }
+function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show'; setTimeout(() => t.className = 'toast', 3200); }
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.modal-overlay').forEach(o => { o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }); });
 
+// ── DATA LOADING ───────────────────────────────────────────────
 async function loadAll() {
   await Promise.all([loadCompanies(), loadContacts(), loadTriggers(), loadOutreach(), checkDb()]);
   updateStats(); renderDashboard(); renderFollowupReminders();
 }
-
 async function loadCompanies() { const { data } = await db.from('companies').select('*').order('name'); if (data) { allCompanies = data; renderCompanies(); } }
 async function loadContacts() { const { data } = await db.from('contacts').select('*, companies(name)').order('full_name'); if (data) { allContacts = data; renderContacts(); } }
 async function loadTriggers() { const { data } = await db.from('triggers').select('*').order('created_at', { ascending: false }); if (data) { allTriggers = data; renderTriggers(); } }
@@ -516,300 +566,387 @@ async function checkDb() {
   try { const { error } = await db.from('companies').select('id').limit(1); el.textContent = error ? '● Fehler' : '● Verbunden'; el.className = error ? 'badge badge-danger' : 'badge badge-success'; }
   catch { el.textContent = '● Fehler'; el.className = 'badge badge-danger'; }
 }
-
 function updateStats() {
   document.getElementById('stat-companies').textContent = allCompanies.length;
   document.getElementById('stat-contacts').textContent = allContacts.length;
   document.getElementById('stat-triggers').textContent = allTriggers.length;
   document.getElementById('stat-outreach').textContent = allOutreach.length;
 }
-
 function refreshData() { loadAll(); showToast('Aktualisiert ✓'); }
 
+// ── EXISTING RENDER FUNCTIONS (unchanged) ─────────────────────
 function renderFollowupReminders() {
-  const el = document.getElementById('followup-reminders');
-  if (!el) return;
-  const now = new Date();
-  const eightDays = 8 * 24 * 60 * 60 * 1000;
-  const due = allOutreach.filter(o => {
-    if (!o.approved_at) return false;
-    if (o.status === 'Geantwortet' || o.status === 'Gesendet') return false;
-    return (now - new Date(o.approved_at)) >= eightDays;
-  });
-  if (!due.length) { el.innerHTML = ''; return; }
-  let h = '<div class="reminder-block"><div class="reminder-title">&#9200; Follow-up fällig — ' + due.length + ' Pitch' + (due.length > 1 ? 'es' : '') + ' ohne Antwort nach 8 Tagen</div>';
-  due.forEach(o => {
-    const days = Math.floor((now - new Date(o.approved_at)) / (24*60*60*1000));
-    const company = (o.companies && o.companies.name) ? o.companies.name : 'Unbekannt';
-    const dt = new Date(o.approved_at).toLocaleDateString('de-AT');
-    const safeCompany = company.replace(/'/g, "\'");
-    const ctx = 'Follow-up zu Pitch vom ' + dt + ' - bisher keine Antwort erhalten.';
-    h += '<div class="reminder-item">'
-      + '<div><div class="reminder-company">' + company + '</div>'
-      + '<div class="reminder-date">Pitch freigegeben vor ' + days + ' Tagen</div></div>'
-      + '<button class="btn btn-sm btn-orange" onclick="showPanel(\'compose\');document.getElementById(\'pitch-company\').value=\'' + safeCompany + '\';document.getElementById(\'pitch-context\').value=\'' + ctx + '\'">&#10022; Follow-up</button>'
-      + '</div>';
-  });
-  h += '</div>';
-  el.innerHTML = h;
+  const el = document.getElementById('followup-reminders'); if (!el) return;
+  const now = new Date(); const eightDays = 8*24*60*60*1000;
+  const due = allOutreach.filter(o => { if (!o.approved_at) return false; if (o.status==='Geantwortet'||o.status==='Gesendet') return false; return (now-new Date(o.approved_at))>=eightDays; });
+  if (!due.length) { el.innerHTML=''; return; }
+  let h = '<div class="reminder-block"><div class="reminder-title">⏰ Follow-up fällig — '+due.length+' Pitch'+(due.length>1?'es':'')+' ohne Antwort nach 8 Tagen</div>';
+  due.forEach(o => { const days=Math.floor((now-new Date(o.approved_at))/(24*60*60*1000)); const company=(o.companies?.name)||'Unbekannt'; const dt=new Date(o.approved_at).toLocaleDateString('de-AT'); const sc=company.replace(/'/g,"\\'"); const ctx='Follow-up zu Pitch vom '+dt+' - bisher keine Antwort erhalten.';
+    h+='<div class="reminder-item"><div><div class="reminder-company">'+company+'</div><div class="reminder-date">Pitch freigegeben vor '+days+' Tagen</div></div><button class="btn btn-sm btn-orange" onclick="showPanel(\'compose\');document.getElementById(\'pitch-company\').value=\''+sc+'\';document.getElementById(\'pitch-context\').value=\''+ctx+'\'">✦ Follow-up</button></div>'; });
+  h+='</div>'; el.innerHTML=h;
 }
 
 function renderDashboard() {
   const el = document.getElementById('dashboard-triggers');
   const today = new Date().toDateString();
-  const todayTriggers = allTriggers.filter(t => t.created_at && new Date(t.created_at).toDateString() === today);
-  const slice = todayTriggers.slice(0, 20);
-  if (!slice.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚡</div><div class="empty-title">Heute noch keine Trigger</div><div class="empty-sub">Scan starten um Ereignisse zu erkennen.</div><br><button class="btn btn-primary btn-sm" onclick="showPanel(\'scan\')">⚡ Scan starten</button></div>';
-    return;
-  }
-  el.innerHTML = '<div class="trigger-list">' + slice.map(t => {
-    const dt = t.created_at ? new Date(t.created_at).toLocaleDateString('de-AT') : '';
-    return '<div class="trigger-card ' + ((t.relevance_score||0)>=80?'high':'') + '" onclick="showPanel(\'compose\');document.getElementById(\'pitch-company\').value=\'' + (t.companies?.name||'').replace(/'/g,"\\'") + '\';document.getElementById(\'pitch-context\').value=\'' + (t.description||'').replace(/'/g,"\\'") + '\'">'
-      + '<div class="trigger-header">'
-      + '<span class="badge ' + (typeMap[t.trigger_type]||'badge-gray') + '">' + t.trigger_type + '</span>'
-      + '<span class="trigger-company">' + (t.companies?.name||'–') + '</span>'
-      + '<span class="trigger-time">' + dt + '</span>'
-      + '<button class="btn btn-sm btn-ghost" style="margin-left:8px;color:var(--danger);padding:2px 6px" onclick="event.stopPropagation();deleteTrigger(\''+t.id+'\')">✕</button>'
-      + '</div>'
-      + '<div class="trigger-desc">' + (t.description||'') + '</div>'
-      + '</div>';
-  }).join('') + '</div>';
+  const todayTriggers = allTriggers.filter(t => t.created_at && new Date(t.created_at).toDateString()===today);
+  const slice = todayTriggers.slice(0,20);
+  if (!slice.length) { el.innerHTML='<div class="empty-state"><div class="empty-icon">⚡</div><div class="empty-title">Heute noch keine Trigger</div><div class="empty-sub">Scan starten um Ereignisse zu erkennen.</div><br><button class="btn btn-primary btn-sm" onclick="showPanel(\'scan\')">⚡ Scan starten</button></div>'; return; }
+  el.innerHTML='<div class="trigger-list">'+slice.map(t => { const dt=t.created_at?new Date(t.created_at).toLocaleDateString('de-AT'):'';
+    return '<div class="trigger-card '+((t.relevance_score||0)>=80?'high':'')+'" onclick="showPanel(\'compose\');document.getElementById(\'pitch-company\').value=\''+(t.companies?.name||'').replace(/'/g,"\\'")+'\';document.getElementById(\'pitch-context\').value=\''+(t.description||'').replace(/'/g,"\\'")+'\'">'
+    +'<div class="trigger-header"><span class="badge '+(typeMap[t.trigger_type]||'badge-gray')+'">'+t.trigger_type+'</span><span class="trigger-company">'+(t.companies?.name||'–')+'</span><span class="trigger-time">'+dt+'</span>'
+    +'<button class="btn btn-sm btn-ghost" style="margin-left:8px;color:var(--danger);padding:2px 6px" onclick="event.stopPropagation();deleteTrigger(\''+t.id+'\')">✕</button></div>'
+    +'<div class="trigger-desc">'+(t.description||'')+'</div></div>'; }).join('')+'</div>';
 }
 
-function renderTriggers() {
-  const el = document.getElementById('triggers-list');
-  if (!allTriggers.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚡</div><div class="empty-title">Noch keine Trigger</div></div>'; return; }
-  let filtered = allTriggers;
-  if (currentTriggerFilter === 'mgmt') filtered = allTriggers.filter(t => mgmtTypes.some(m => (t.trigger_type||'').toLowerCase().includes(m.toLowerCase())));
-  else if (currentTriggerFilter === 'ma') filtered = allTriggers.filter(t => maTypes.some(m => (t.trigger_type||'').toLowerCase().includes(m.toLowerCase())));
-  else if (currentTriggerFilter === 'funding') filtered = allTriggers.filter(t => fundingTypes.some(m => (t.trigger_type||'').toLowerCase().includes(m.toLowerCase())));
-  else if (currentTriggerFilter === 'other') filtered = allTriggers.filter(t => !mgmtTypes.concat(maTypes).concat(fundingTypes).some(m => (t.trigger_type||'').toLowerCase().includes(m.toLowerCase())));
-  if (!filtered.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚡</div><div class="empty-title">Keine Einträge</div></div>'; return; }
-  el.innerHTML = '<div class="trigger-list">' + filtered.map(t => {
-    const score = t.relevance_score || 0;
-    const dt = t.created_at ? new Date(t.created_at).toLocaleDateString('de-AT') : '';
-    return '<div class="trigger-card ' + (score>=80?'high':'') + '" onclick="showPanel(\'compose\');document.getElementById(\'pitch-company\').value=\'' + (t.companies?.name||'').replace(/'/g,"\\'") + '\';document.getElementById(\'pitch-context\').value=\'' + (t.description||'').replace(/'/g,"\\'") + '\'">'
-      + '<div class="trigger-header"><span class="badge ' + (typeMap[t.trigger_type]||'badge-gray') + '">' + t.trigger_type + '</span>'
-      + '<span class="trigger-company">' + (t.companies?.name||'–') + '</span><span class="trigger-time">' + dt + '</span></div>'
-      + '<div class="trigger-desc">' + (t.description||'') + '</div>'
-      + '<div style="display:flex;align-items:center;gap:8px;margin-top:10px">'
-      + '<span style="font-size:10px;color:var(--text-muted)">Score</span>'
-      + '<div class="score-bar"><div class="score-fill" style="width:' + score + '%"></div></div>'
-      + '<span style="font-size:10px;font-weight:600;color:var(--navy)">' + score + '</span>'
-      + '<button class="btn btn-orange btn-sm" style="margin-left:auto" onclick="event.stopPropagation();showPanel(\'compose\');document.getElementById(\'pitch-company\').value=\'' + (t.companies?.name||'').replace(/'/g,"\\'") + '\';document.getElementById(\'pitch-context\').value=\'' + (t.description||'').replace(/'/g,"\\'") + '\'">✦ Pitch</button>'
-      + (t.source_url ? '<a href="' + t.source_url + '" target="_blank" class="btn btn-sm" onclick="event.stopPropagation()">→ Artikel</a>' : '')
-      + '<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();deleteTrigger(\''+t.id+'\')">✕</button>'
-      + '</div></div>';
-  }).join('') + '</div>';
-}
-
-const mgmtTypes = ['CEO-Wechsel','CFO-Wechsel','CHRO-Wechsel','Vorstandswechsel','Geschäftsführer-Wechsel','Neuer Vorstand','Aufsichtsrat-Bestellung','Executive Change','Management Change','Führungswechsel'];
-const maTypes = ['M&A / Fusion','M&A','Fusion','Übernahme','DACH-Expansion','Expansion','Restrukturierung','Insolvenz'];
-const fundingTypes = ['Funding','Funding Round','Finanzierungsrunde'];
-let currentTriggerFilter = 'all';
+const typeMap = { 'CEO-Wechsel':'badge-danger','CFO-Wechsel':'badge-danger','CHRO-Wechsel':'badge-warning','Geschäftsführer-Wechsel':'badge-danger','Neuer Vorstand':'badge-navy','Aufsichtsrat-Bestellung':'badge-navy','Aufsichtsrat-Rücktritt':'badge-danger','Funding':'badge-success','M&A / Fusion':'badge-warning','DACH-Expansion':'badge-info','Restrukturierung':'badge-warning','CEO Change':'badge-danger','CFO Change':'badge-danger','Board Appointment':'badge-navy','Funding Round':'badge-success','M&A':'badge-warning','Executive Change':'badge-danger','Sonstige':'badge-gray' };
+const mgmtTypes=['CEO-Wechsel','CFO-Wechsel','CHRO-Wechsel','Vorstandswechsel','Geschäftsführer-Wechsel','Neuer Vorstand','Aufsichtsrat-Bestellung','Executive Change','Management Change','Führungswechsel'];
+const maTypes=['M&A / Fusion','M&A','Fusion','Übernahme','DACH-Expansion','Expansion','Restrukturierung','Insolvenz'];
+const fundingTypes=['Funding','Funding Round','Finanzierungsrunde'];
+let currentTriggerFilter='all';
 
 function filterTriggers(cat) {
-  currentTriggerFilter = cat;
-  ['all','mgmt','ma','funding','other'].forEach(t => {
-    const el = document.getElementById('tab-' + t);
-    if (el) { el.style.background = t === cat ? 'var(--navy)' : ''; el.style.color = t === cat ? 'white' : ''; el.style.borderColor = t === cat ? 'var(--navy)' : ''; }
-  });
+  currentTriggerFilter=cat;
+  ['all','mgmt','ma','funding','other'].forEach(t => { const el=document.getElementById('tab-'+t); if(el){el.style.background=t===cat?'var(--navy)':'';el.style.color=t===cat?'white':'';el.style.borderColor=t===cat?'var(--navy)':'';} });
   renderTriggers();
 }
 
-async function deleteTrigger(id) {
-  if (!confirm('Trigger löschen?')) return;
-  await db.from('triggers').delete().eq('id', id);
-  showToast('Gelöscht'); loadTriggers(); updateStats(); renderDashboard();
+function renderTriggers() {
+  const el=document.getElementById('triggers-list');
+  if(!allTriggers.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">⚡</div><div class="empty-title">Noch keine Trigger</div></div>';return;}
+  let filtered=allTriggers;
+  if(currentTriggerFilter==='mgmt') filtered=allTriggers.filter(t=>mgmtTypes.some(m=>(t.trigger_type||'').toLowerCase().includes(m.toLowerCase())));
+  else if(currentTriggerFilter==='ma') filtered=allTriggers.filter(t=>maTypes.some(m=>(t.trigger_type||'').toLowerCase().includes(m.toLowerCase())));
+  else if(currentTriggerFilter==='funding') filtered=allTriggers.filter(t=>fundingTypes.some(m=>(t.trigger_type||'').toLowerCase().includes(m.toLowerCase())));
+  else if(currentTriggerFilter==='other') filtered=allTriggers.filter(t=>!mgmtTypes.concat(maTypes).concat(fundingTypes).some(m=>(t.trigger_type||'').toLowerCase().includes(m.toLowerCase())));
+  if(!filtered.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">⚡</div><div class="empty-title">Keine Einträge</div></div>';return;}
+  el.innerHTML='<div class="trigger-list">'+filtered.map(t => { const score=t.relevance_score||0; const dt=t.created_at?new Date(t.created_at).toLocaleDateString('de-AT'):'';
+    return '<div class="trigger-card '+(score>=80?'high':'')+'" onclick="showPanel(\'compose\');document.getElementById(\'pitch-company\').value=\''+(t.companies?.name||'').replace(/'/g,"\\'")+'\';document.getElementById(\'pitch-context\').value=\''+(t.description||'').replace(/'/g,"\\'")+'\'">'
+    +'<div class="trigger-header"><span class="badge '+(typeMap[t.trigger_type]||'badge-gray')+'">'+t.trigger_type+'</span><span class="trigger-company">'+(t.companies?.name||'–')+'</span><span class="trigger-time">'+dt+'</span></div>'
+    +'<div class="trigger-desc">'+(t.description||'')+'</div>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-top:10px"><span style="font-size:10px;color:var(--text-muted)">Score</span><div class="score-bar"><div class="score-fill" style="width:'+score+'%"></div></div><span style="font-size:10px;font-weight:600;color:var(--navy)">'+score+'</span>'
+    +'<button class="btn btn-orange btn-sm" style="margin-left:auto" onclick="event.stopPropagation();showPanel(\'compose\');document.getElementById(\'pitch-company\').value=\''+(t.companies?.name||'').replace(/'/g,"\\'")+'\';document.getElementById(\'pitch-context\').value=\''+(t.description||'').replace(/'/g,"\\'")+'\'">✦ Pitch</button>'
+    +(t.source_url?'<a href="'+t.source_url+'" target="_blank" class="btn btn-sm" onclick="event.stopPropagation()">→ Artikel</a>':'')
+    +'<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();deleteTrigger(\''+t.id+'\')">✕</button></div></div>'; }).join('')+'</div>';
 }
 
-function priorityBadge(p) { if (!p) return '<span class="badge badge-gray">–</span>'; const m = { Hoch: 'badge-danger', Mittel: 'badge-warning', Niedrig: 'badge-success' }; return '<span class="badge ' + (m[p]||'badge-gray') + '">' + p + '</span>'; }
-function sourceBadge(s) { const m = { 'CEE HQs Austria':'badge-info','Consulting':'badge-success','Packaging':'badge-warning','Construction Materials':'badge-orange','Auto-Scan':'badge-turquoise','Manuell':'badge-gray' }; return '<span class="badge ' + (m[s]||'badge-gray') + '">' + (s||'–') + '</span>'; }
-function statusBadge(s) { const m = { Entwurf:'badge-gray',Freigegeben:'badge-info',Gesendet:'badge-navy',Geantwortet:'badge-success' }; return '<span class="badge ' + (m[s]||'badge-gray') + '">' + s + '</span>'; }
+async function deleteTrigger(id) { if(!confirm('Trigger löschen?'))return; await db.from('triggers').delete().eq('id',id); showToast('Gelöscht'); loadTriggers(); updateStats(); renderDashboard(); }
 
-const aC = ['#E6F1FB','#EAF3DE','#FAEEDA','#FBEAF0','#E1F5EE','#FCEBEB'];
-const aT = ['#0C447C','#27500A','#633806','#4B1528','#04342C','#501313'];
-function initials(n) { if (!n) return '?'; return n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+function priorityBadge(p){if(!p)return'<span class="badge badge-gray">–</span>';const m={Hoch:'badge-danger',Mittel:'badge-warning',Niedrig:'badge-success'};return'<span class="badge '+(m[p]||'badge-gray')+'">'+p+'</span>';}
+function sourceBadge(s){const m={'CEE HQs Austria':'badge-info',Consulting:'badge-success',Packaging:'badge-warning','Construction Materials':'badge-orange','Auto-Scan':'badge-turquoise',Manuell:'badge-gray'};return'<span class="badge '+(m[s]||'badge-gray')+'">'+(s||'–')+'</span>';}
+function statusBadge(s){const m={Entwurf:'badge-gray',Freigegeben:'badge-info',Gesendet:'badge-navy',Geantwortet:'badge-success'};return'<span class="badge '+(m[s]||'badge-gray')+'">'+s+'</span>';}
+const aC=['#E6F1FB','#EAF3DE','#FAEEDA','#FBEAF0','#E1F5EE','#FCEBEB'];
+const aT=['#0C447C','#27500A','#633806','#4B1528','#04342C','#501313'];
+function initials(n){if(!n)return'?';return n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();}
 
-function renderCompanies(data) {
-  const list = data || allCompanies;
-  document.getElementById('companies-sub').textContent = list.length + ' Unternehmen';
-  const tbody = document.getElementById('companies-tbody');
-  if (!list.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-title">Keine Unternehmen</div></div></td></tr>'; return; }
-  tbody.innerHTML = list.map(c => '<tr><td><strong style="font-family:\'Petrona\',Georgia,serif">' + c.name + '</strong></td>'
-    + '<td>' + (c.industry||'–') + '</td><td>' + (c.hq_region||'–') + '</td><td style="font-size:11px">' + (c.cee_countries||'–') + '</td>'
-    + '<td>' + priorityBadge(c.priority) + '</td><td>' + sourceBadge(c.source) + '</td>'
-    + '<td style="white-space:nowrap"><button class="btn btn-sm" onclick="showPanel(\'compose\');document.getElementById(\'pitch-company\').value=\'' + c.name.replace(/'/g,"\\'") + '\'">✦</button>'
-    + '<button class="btn btn-sm btn-ghost" onclick="deleteCompany(\''+c.id+'\')">✕</button></td></tr>').join('');
-}
+function renderCompanies(data){const list=data||allCompanies;document.getElementById('companies-sub').textContent=list.length+' Unternehmen';const tbody=document.getElementById('companies-tbody');if(!list.length){tbody.innerHTML='<tr><td colspan="7"><div class="empty-state"><div class="empty-title">Keine Unternehmen</div></div></td></tr>';return;}tbody.innerHTML=list.map(c=>'<tr><td><strong style="font-family:\'Petrona\',Georgia,serif">'+c.name+'</strong></td><td>'+(c.industry||'–')+'</td><td>'+(c.hq_region||'–')+'</td><td style="font-size:11px">'+(c.cee_countries||'–')+'</td><td>'+priorityBadge(c.priority)+'</td><td>'+sourceBadge(c.source)+'</td><td style="white-space:nowrap"><button class="btn btn-sm" onclick="showPanel(\'compose\');document.getElementById(\'pitch-company\').value=\''+c.name.replace(/'/g,"\\'")+'\'"">✦</button><button class="btn btn-sm btn-ghost" onclick="deleteCompany(\''+c.id+'\')">✕</button></td></tr>').join('');}
 
-function renderContacts(data) {
-  const list = data || allContacts;
-  document.getElementById('contacts-sub').textContent = list.length + ' Kontakte';
-  const tbody = document.getElementById('contacts-tbody');
-  if (!list.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-title">Keine Kontakte</div></div></td></tr>'; return; }
-  tbody.innerHTML = list.map((c,i) => { const ci = i%aC.length; return '<tr>'
-    + '<td><div style="display:flex;align-items:center;gap:9px"><div class="avatar" style="background:'+aC[ci]+';color:'+aT[ci]+'">' + initials(c.full_name) + '</div><div><div style="font-weight:500;font-family:\'Petrona\',Georgia,serif">' + c.full_name + '</div></div></div></td>'
-    + '<td>' + (c.role||'–') + '</td><td>' + (c.companies?.name||'–') + '</td>'
-    + '<td style="font-size:11px">' + (c.email ? '<a href="mailto:'+c.email+'" style="color:var(--lightblue)">'+c.email+'</a>' : '–') + '</td>'
-    + '<td><button class="btn btn-sm" onclick="showPanel(\'compose\');document.getElementById(\'pitch-contact\').value=\'' + (c.full_name+(c.role?' – '+c.role:'')).replace(/'/g,"\\'") + '\'">✦</button>'
-    + '<button class="btn btn-sm btn-ghost" onclick="deleteContact(\''+c.id+'\')">✕</button></td></tr>'; }).join('');
-}
+function renderContacts(data){const list=data||allContacts;document.getElementById('contacts-sub').textContent=list.length+' Kontakte';const tbody=document.getElementById('contacts-tbody');if(!list.length){tbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><div class="empty-title">Keine Kontakte</div></div></td></tr>';return;}tbody.innerHTML=list.map((c,i)=>{const ci=i%aC.length;return'<tr><td><div style="display:flex;align-items:center;gap:9px"><div class="avatar" style="background:'+aC[ci]+';color:'+aT[ci]+'">'+initials(c.full_name)+'</div><div><div style="font-weight:500;font-family:\'Petrona\',Georgia,serif">'+c.full_name+'</div></div></div></td><td>'+(c.role||'–')+'</td><td>'+(c.companies?.name||'–')+'</td><td style="font-size:11px">'+(c.email?'<a href="mailto:'+c.email+'" style="color:var(--lightblue)">'+c.email+'</a>':'–')+'</td><td><button class="btn btn-sm" onclick="showPanel(\'compose\');document.getElementById(\'pitch-contact\').value=\''+(c.full_name+(c.role?' – '+c.role:'')).replace(/'/g,"\\'")+'\'"">✦</button><button class="btn btn-sm btn-ghost" onclick="deleteContact(\''+c.id+'\')">✕</button></td></tr>';}).join('');}
 
-function renderOutreach() {
-  const tbody = document.getElementById('outreach-tbody');
-  if (!allOutreach.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">◷</div><div class="empty-title">Noch keine Aktivitäten</div></div></td></tr>'; return; }
-  tbody.innerHTML = allOutreach.map(o => '<tr>'
-    + '<td style="font-family:\'Petrona\',Georgia,serif;font-weight:500">' + (o.companies?.name||'–') + '</td>'
-    + '<td><span class="badge badge-gray">' + (o.channel||'Email') + '</span></td>'
-    + '<td>' + statusBadge(o.status) + '</td>'
-    + '<td style="font-size:11px;color:var(--text-muted)">' + (o.created_at ? new Date(o.created_at).toLocaleDateString('de-AT') : '–') + '</td>'
-    + '<td><button class="btn btn-sm" onclick="viewPitch(\''+o.id+'\')">Ansehen</button></td></tr>').join('');
-}
+function renderOutreach(){const tbody=document.getElementById('outreach-tbody');if(!allOutreach.length){tbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">◷</div><div class="empty-title">Noch keine Aktivitäten</div></div></td></tr>';return;}tbody.innerHTML=allOutreach.map(o=>'<tr><td style="font-family:\'Petrona\',Georgia,serif;font-weight:500">'+(o.companies?.name||'–')+'</td><td><span class="badge badge-gray">'+(o.channel||'Email')+'</span></td><td>'+statusBadge(o.status)+'</td><td style="font-size:11px;color:var(--text-muted)">'+(o.created_at?new Date(o.created_at).toLocaleDateString('de-AT'):'–')+'</td><td><button class="btn btn-sm" onclick="viewPitch(\''+o.id+'\')">Ansehen</button></td></tr>').join('');}
 
-function filterCompanies() {
-  const q = document.getElementById('company-search').value.toLowerCase();
-  const src = document.getElementById('company-source-filter').value;
-  renderCompanies(allCompanies.filter(c => (!q||c.name?.toLowerCase().includes(q)||c.industry?.toLowerCase().includes(q))&&(!src||c.source===src)));
-}
+function filterCompanies(){const q=document.getElementById('company-search').value.toLowerCase();const src=document.getElementById('company-source-filter').value;renderCompanies(allCompanies.filter(c=>(!q||c.name?.toLowerCase().includes(q)||c.industry?.toLowerCase().includes(q))&&(!src||c.source===src)));}
+function filterContacts(){const q=document.getElementById('contact-search').value.toLowerCase();renderContacts(allContacts.filter(c=>!q||c.full_name?.toLowerCase().includes(q)||c.role?.toLowerCase().includes(q)));}
 
-function filterContacts() {
-  const q = document.getElementById('contact-search').value.toLowerCase();
-  renderContacts(allContacts.filter(c => !q||c.full_name?.toLowerCase().includes(q)||c.role?.toLowerCase().includes(q)));
-}
-
-function setScanMsg(txt, cls) { const el = document.getElementById('scan-msg'); el.textContent = txt; el.className = 'scan-msg ' + cls; el.style.display = 'block'; }
+function setScanMsg(txt,cls){const el=document.getElementById('scan-msg');el.textContent=txt;el.className='scan-msg '+cls;el.style.display='block';}
 
 async function startScan() {
-  const btn = document.getElementById('scan-btn-main');
-  btn.disabled = true; btn.textContent = '⚡ Scannt...';
-  setScanMsg('Scan läuft — bitte warten (ca. 30 Sekunden)...', 'info');
+  const btn=document.getElementById('scan-btn-main'); btn.disabled=true; btn.textContent='⚡ Scannt...';
+  setScanMsg('Scan läuft — bitte warten (ca. 30 Sekunden)...','info');
   try {
-    const r = await fetch('/api/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
-    const d = await r.json();
-    if (d.error) { setScanMsg('Fehler: ' + d.error, 'err'); btn.disabled = false; btn.textContent = '⚡ Jetzt scannen'; return; }
-    let items = [];
-    try { const clean = (d.text||'').replace(/```json|```/g,'').trim(); const s=clean.indexOf('['),e=clean.lastIndexOf(']'); if(s>=0&&e>s) items=JSON.parse(clean.substring(s,e+1)); } catch(e) {}
-    if (!items.length) { setScanMsg('Scan abgeschlossen — keine Ereignisse gefunden.', 'ok'); btn.disabled=false; btn.textContent='⚡ Jetzt scannen'; return; }
-    const cr = await fetch(SU+'/rest/v1/companies?select=id,name', { headers: { apikey: SK, Authorization: 'Bearer '+SK } });
-    const companies = await cr.json();
-    const found = [];
-    for (const it of items) {
-      if (!it.company) continue;
-      let comp = companies.find(c => c.name.toLowerCase().includes(it.company.toLowerCase())||it.company.toLowerCase().includes(c.name.toLowerCase()));
-      if (!comp) {
-        const nr = await fetch(SU+'/rest/v1/companies', { method:'POST', headers:{apikey:SK,Authorization:'Bearer '+SK,'Content-Type':'application/json',Prefer:'return=representation'}, body:JSON.stringify({name:it.company,source:'Auto-Scan'}) });
-        const nd = await nr.json(); if(nd&&nd[0]){comp=nd[0];companies.push(comp);}
-      }
-      if (comp) {
-        await fetch(SU+'/rest/v1/triggers', {method:'POST',headers:{apikey:SK,Authorization:'Bearer '+SK,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({company_id:comp.id,trigger_type:it.trigger_type||'Sonstige',description:it.description||'',source_url:it.source_url||null,relevance_score:80})});
-        found.push({company:it.company,trigger_type:it.trigger_type,description:it.description||'',source_url:it.source_url||null});
-      }
+    const r=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
+    const d=await r.json();
+    if(d.error){setScanMsg('Fehler: '+d.error,'err');btn.disabled=false;btn.textContent='⚡ Jetzt scannen';return;}
+    let items=[];
+    try{const clean=(d.text||'').replace(/```json|```/g,'').trim();const s=clean.indexOf('['),e=clean.lastIndexOf(']');if(s>=0&&e>s)items=JSON.parse(clean.substring(s,e+1));}catch(e){}
+    if(!items.length){setScanMsg('Scan abgeschlossen — keine Ereignisse gefunden.','ok');btn.disabled=false;btn.textContent='⚡ Jetzt scannen';return;}
+    const cr=await fetch(SU+'/rest/v1/companies?select=id,name',{headers:{apikey:SK,Authorization:'Bearer '+SK}});
+    const companies=await cr.json(); const found=[];
+    for(const it of items){
+      if(!it.company)continue;
+      let comp=companies.find(c=>c.name.toLowerCase().includes(it.company.toLowerCase())||it.company.toLowerCase().includes(c.name.toLowerCase()));
+      if(!comp){const nr=await fetch(SU+'/rest/v1/companies',{method:'POST',headers:{apikey:SK,Authorization:'Bearer '+SK,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({name:it.company,source:'Auto-Scan'})});const nd=await nr.json();if(nd&&nd[0]){comp=nd[0];companies.push(comp);}}
+      if(comp){await fetch(SU+'/rest/v1/triggers',{method:'POST',headers:{apikey:SK,Authorization:'Bearer '+SK,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({company_id:comp.id,trigger_type:it.trigger_type||'Sonstige',description:it.description||'',source_url:it.source_url||null,relevance_score:80})});found.push({company:it.company,trigger_type:it.trigger_type,description:it.description||'',source_url:it.source_url||null});}
     }
-    if (found.length) {
-      setScanMsg('✓ ' + found.length + ' Trigger gespeichert.', 'ok');
-      document.getElementById('scan-results').innerHTML = '<div class="trigger-list">' + found.map(f => '<div class="trigger-card high"><div class="trigger-header"><span class="badge '+(typeMap[f.trigger_type]||'badge-gray')+'">'+f.trigger_type+'</span><span class="trigger-company">'+f.company+'</span></div><div class="trigger-desc">'+f.description+'</div></div>').join('') + '</div>';
-      loadTriggers(); updateStats(); renderDashboard();
-    } else { setScanMsg('Scan abgeschlossen — keine Matches.', 'ok'); }
-  } catch(e) { setScanMsg('Fehler: ' + e.message, 'err'); }
-  btn.disabled=false; btn.textContent='⚡ Jetzt scannen';
+    if(found.length){setScanMsg('✓ '+found.length+' Trigger gespeichert.','ok');document.getElementById('scan-results').innerHTML='<div class="trigger-list">'+found.map(f=>'<div class="trigger-card high"><div class="trigger-header"><span class="badge '+(typeMap[f.trigger_type]||'badge-gray')+'">'+f.trigger_type+'</span><span class="trigger-company">'+f.company+'</span></div><div class="trigger-desc">'+f.description+'</div></div>').join('')+'</div>';loadTriggers();updateStats();renderDashboard();}
+    else setScanMsg('Scan abgeschlossen — keine Matches.','ok');
+  } catch(e){setScanMsg('Fehler: '+e.message,'err');}
+  btn.disabled=false;btn.textContent='⚡ Jetzt scannen';
 }
+
+function toggleDoc(key){const card=document.getElementById('doccard-'+key);const status=document.getElementById('doc-'+key+'-status');const checkbox=document.getElementById('doc-check-'+key);const isSelected=card.classList.toggle('selected');status.textContent=isSelected?'✓ Ausgewählt':'Nicht ausgewählt';status.style.color=isSelected?'var(--success)':'var(--gray-400)';if(checkbox)checkbox.checked=isSelected;updateDocInfo();}
+function updateDocSelection(){['presentation','whitepaper','references'].forEach(key=>{const cb=document.getElementById('doc-check-'+key);const card=document.getElementById('doccard-'+key);const status=document.getElementById('doc-'+key+'-status');if(cb&&card){if(cb.checked){card.classList.add('selected');status.textContent='✓ Ausgewählt';status.style.color='var(--success)';}else{card.classList.remove('selected');status.textContent='Nicht ausgewählt';status.style.color='var(--gray-400)';}}});updateDocInfo();}
+function updateDocInfo(){const selected=['presentation','whitepaper','references'].filter(k=>document.getElementById('doccard-'+k)?.classList.contains('selected'));const info=document.getElementById('doc-selection-info');if(!info)return;if(selected.length===0)info.textContent='Kein Dokument ausgewählt — Karte anklicken um Unterlagen für den nächsten Pitch auszuwählen.';else info.textContent='✓ '+selected.map(k=>docNames[k]).join(', ')+' — wird automatisch in den nächsten Pitch-Text eingefügt.';}
+function getSelectedDocLinks(){return['presentation','whitepaper','references'].filter(k=>document.getElementById('doccard-'+k)?.classList.contains('selected')).map(k=>docNames[k]+': '+docUrls[k]).join('\n');}
 
 async function generatePitch() {
-  const trigger = document.getElementById('pitch-trigger').value;
-  const company = document.getElementById('pitch-company').value || 'das Zielunternehmen';
-  const contact = document.getElementById('pitch-contact').value || '';
-  const context = document.getElementById('pitch-context').value || '';
-  const lang = document.getElementById('pitch-lang').value;
-  const labels = { ceo:'CEO-Nachfolge',gf:'Geschäftsführer-Wechsel',cfo:'CFO-Wechsel',vorstand:'Neuer Vorstand',ar:'Aufsichtsrat-Bestellung',funding:'Funding-Runde',merger:'M&A / Fusion',expansion:'DACH-Expansion',reorg:'Restrukturierung' };
-  const selectedDocLinks = getSelectedDocLinks();
-  const pitchBody = document.getElementById('pitch-body');
-  const pitchActions = document.getElementById('pitch-actions');
-  pitchBody.innerHTML = '<div class="loading"><div class="spinner"></div> PAUL generiert Pitch...</div>';
-  pitchActions.style.display = 'none';
-  const anlass = context || labels[trigger];
-  const prompt = 'FAKTEN FUER DEN SALESBRIEF:\nUnternehmen: ' + company
-    + (contact ? '\nAnsprechpartner: ' + contact : '')
-    + '\nKONKRETER ANLASS (genau diesen Inhalt verwenden): ' + anlass
-    + '\nSprache: ' + (lang === 'de' ? 'Deutsch' : 'Englisch')
-    + (selectedDocLinks ? '\nUnterlagen am Ende einfuegen:\n' + selectedDocLinks : '')
-    + '\n\nSchreibe den Salesbrief jetzt.';
+  const trigger=document.getElementById('pitch-trigger').value;const company=document.getElementById('pitch-company').value||'das Zielunternehmen';const contact=document.getElementById('pitch-contact').value||'';const context=document.getElementById('pitch-context').value||'';const lang=document.getElementById('pitch-lang').value;
+  const labels={ceo:'CEO-Nachfolge',gf:'Geschäftsführer-Wechsel',cfo:'CFO-Wechsel',vorstand:'Neuer Vorstand',ar:'Aufsichtsrat-Bestellung',funding:'Funding-Runde',merger:'M&A / Fusion',expansion:'DACH-Expansion',reorg:'Restrukturierung'};
+  const selectedDocLinks=getSelectedDocLinks();const pitchBody=document.getElementById('pitch-body');const pitchActions=document.getElementById('pitch-actions');
+  pitchBody.innerHTML='<div class="loading"><div class="spinner"></div> PAUL generiert Pitch...</div>';pitchActions.style.display='none';
+  const anlass=context||labels[trigger];
+  const prompt='FAKTEN FUER DEN SALESBRIEF:\nUnternehmen: '+company+(contact?'\nAnsprechpartner: '+contact:'')+'\nKONKRETER ANLASS (genau diesen Inhalt verwenden): '+anlass+'\nSprache: '+(lang==='de'?'Deutsch':'Englisch')+(selectedDocLinks?'\nUnterlagen am Ende einfuegen:\n'+selectedDocLinks:'')+'\n\nSchreibe den Salesbrief jetzt.';
   try {
-    const response = await fetch('/api/pitch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
-    const data = await response.json();
-    const text = data.text;
-    if (text) {
-      currentPitchText = text;
-      const linkedText = text.replace(/(https?:\/\/\S+)/g, '<a href="$1" target="_blank" style="color:var(--lightblue)">$1</a>');
-      pitchBody.innerHTML = '<div style="white-space:pre-wrap;font-size:12.5px;line-height:1.85">' + linkedText + '</div>';
-      pitchActions.style.display = 'flex';
-      document.getElementById('pitch-meta').textContent = anlass.substring(0,50) + ' · ' + company + ' · ' + new Date().toLocaleDateString('de-AT');
-    } else throw new Error('Keine Antwort');
-  } catch(e) { pitchBody.innerHTML = '<div style="color:var(--danger);padding:20px;font-size:12px">Fehler: ' + e.message + '</div>'; }
+    const response=await fetch('/api/pitch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
+    const data=await response.json();const text=data.text;
+    if(text){currentPitchText=text;const linkedText=text.replace(/(https?:\/\/\S+)/g,'<a href="$1" target="_blank" style="color:var(--lightblue)">$1</a>');pitchBody.innerHTML='<div style="white-space:pre-wrap;font-size:12.5px;line-height:1.85">'+linkedText+'</div>';pitchActions.style.display='flex';document.getElementById('pitch-meta').textContent=anlass.substring(0,50)+' · '+company+' · '+new Date().toLocaleDateString('de-AT');}
+    else throw new Error('Keine Antwort');
+  } catch(e){pitchBody.innerHTML='<div style="color:var(--danger);padding:20px;font-size:12px">Fehler: '+e.message+'</div>';}
 }
 
-function openOutlook() {
-  const body = document.getElementById('pitch-body').innerText;
-  const company = document.getElementById('pitch-company').value || '';
-  const contact = document.getElementById('pitch-contact').value || '';
-  const emailMatch = contact.match(/[\w.\-]+@[\w.\-]+\.\w+/);
-  const email = emailMatch ? emailMatch[0] : '';
-  window.location.href = 'mailto:' + email + '?subject=' + encodeURIComponent('Signium Austria – ' + company) + '&body=' + encodeURIComponent(body);
+function openOutlook(){const body=document.getElementById('pitch-body').innerText;const company=document.getElementById('pitch-company').value||'';const contact=document.getElementById('pitch-contact').value||'';const emailMatch=contact.match(/[\w.\-]+@[\w.\-]+\.\w+/);const email=emailMatch?emailMatch[0]:'';window.location.href='mailto:'+email+'?subject='+encodeURIComponent('Signium Austria – '+company)+'&body='+encodeURIComponent(body);}
+function printBrief(){if(!currentPitchText){showToast('Bitte zuerst Pitch generieren');return;}window.open('/brief_template.html?text='+encodeURIComponent(currentPitchText),'_blank');}
+function copyPitch(){navigator.clipboard.writeText(currentPitchText).then(()=>showToast('Kopiert ✓'));}
+function savePitch(){showToast('Als Entwurf gespeichert ✓');}
+async function approvePitch(){if(!currentPitchText)return;const company=document.getElementById('pitch-company').value;const comp=allCompanies.find(c=>c.name.toLowerCase()===company.toLowerCase());const{error}=await db.from('outreach').insert({company_id:comp?.id||null,channel:'Email',body:currentPitchText,generated_by:'PAUL',status:'Freigegeben',approved_by:'Sami Hamid',approved_at:new Date().toISOString()});if(!error){showToast('Pitch freigegeben ✓');loadOutreach();}}
+function viewPitch(id){const o=allOutreach.find(x=>x.id===id);if(!o)return;currentPitchText=o.body;showPanel('compose');document.getElementById('pitch-body').innerHTML='<div style="white-space:pre-wrap;font-size:12.5px;line-height:1.85">'+o.body+'</div>';document.getElementById('pitch-actions').style.display='flex';}
+
+async function saveTrigger(){const compName=document.getElementById('t-company').value.trim();if(!compName)return;let compId=null;const match=allCompanies.find(c=>c.name.toLowerCase()===compName.toLowerCase());if(match){compId=match.id;}else{const{data}=await db.from('companies').insert({name:compName,source:'Manuell'}).select().single();if(data){compId=data.id;allCompanies.push(data);}}const{error}=await db.from('triggers').insert({company_id:compId,trigger_type:document.getElementById('t-type').value,description:document.getElementById('t-desc').value,relevance_score:parseInt(document.getElementById('t-score').value)||75});if(!error){showToast('Trigger gespeichert ✓');closeModal('modal-trigger');loadTriggers();updateStats();}}
+async function saveCompany(){const name=document.getElementById('c-name').value.trim();if(!name)return;const{error}=await db.from('companies').insert({name,industry:document.getElementById('c-industry').value,hq_region:document.getElementById('c-hq').value,cee_countries:document.getElementById('c-cee').value,priority:document.getElementById('c-priority').value||null,source:document.getElementById('c-source').value});if(!error){showToast('Gespeichert ✓');closeModal('modal-company');loadCompanies();}else showToast('Fehler: '+error.message);}
+async function saveContact(){const name=document.getElementById('ct-name').value.trim();if(!name)return;const{error}=await db.from('contacts').insert({full_name:name,role:document.getElementById('ct-role').value,email:document.getElementById('ct-email').value,linkedin_url:document.getElementById('ct-linkedin').value,source:'manual'});if(!error){showToast('Gespeichert ✓');closeModal('modal-contact');loadContacts();}}
+async function deleteCompany(id){if(!confirm('Unternehmen löschen?'))return;await db.from('companies').delete().eq('id',id);showToast('Gelöscht');loadCompanies();}
+async function deleteContact(id){if(!confirm('Kontakt löschen?'))return;await db.from('contacts').delete().eq('id',id);showToast('Gelöscht');loadContacts();}
+
+// ══════════════════════════════════════════════════════════════
+// LPR KAMPAGNE
+// ══════════════════════════════════════════════════════════════
+
+function lprSetLang(lang) {
+  lprLang = lang;
+  document.getElementById('lpr-btn-de').classList.toggle('active', lang === 'de');
+  document.getElementById('lpr-btn-en').classList.toggle('active', lang === 'en');
 }
 
-function printBrief() {
-  if (!currentPitchText) { showToast('Bitte zuerst Pitch generieren'); return; }
-  window.open('/brief_template.html?text=' + encodeURIComponent(currentPitchText), '_blank');
-}
-function copyPitch() { navigator.clipboard.writeText(currentPitchText).then(() => showToast('Kopiert ✓')); }
-function savePitch() { showToast('Als Entwurf gespeichert ✓'); }
-
-async function approvePitch() {
-  if (!currentPitchText) return;
-  const company = document.getElementById('pitch-company').value;
-  const comp = allCompanies.find(c => c.name.toLowerCase() === company.toLowerCase());
-  const { error } = await db.from('outreach').insert({ company_id: comp?.id||null, channel: 'Email', body: currentPitchText, generated_by: 'PAUL', status: 'Freigegeben', approved_by: 'Sami Hamid', approved_at: new Date().toISOString() });
-  if (!error) { showToast('Pitch freigegeben ✓'); loadOutreach(); }
+function lprModalLang(lang) {
+  lprLang = lang;
+  document.getElementById('modal-btn-de').classList.toggle('active', lang === 'de');
+  document.getElementById('modal-btn-en').classList.toggle('active', lang === 'en');
 }
 
-function viewPitch(id) {
-  const o = allOutreach.find(x => x.id === id);
-  if (!o) return;
-  currentPitchText = o.body;
-  showPanel('compose');
-  document.getElementById('pitch-body').innerHTML = '<div style="white-space:pre-wrap;font-size:12.5px;line-height:1.85">' + o.body + '</div>';
-  document.getElementById('pitch-actions').style.display = 'flex';
+async function lprLoad() {
+  document.getElementById('lpr-list').innerHTML = '<div class="loading"><div class="spinner"></div> Kontakte laden...</div>';
+  try {
+    const { data: contacts } = await db.from('contacts').select('*, companies(name)').order('full_name');
+    lprContacts = contacts || [];
+
+    // Load outreach records
+    const { data: rows } = await db.from('lpr_outreach').select('*');
+    lprOutreach = {};
+    (rows || []).forEach(r => { if (r.contact_id) lprOutreach[r.contact_id] = r; });
+
+    lprUpdateStats();
+    lprRenderFollowups();
+    lprRender();
+  } catch(e) {
+    document.getElementById('lpr-list').innerHTML = '<div style="padding:20px;color:var(--danger)">Fehler beim Laden: ' + e.message + '<br><small>Hinweis: Bitte zuerst die Tabelle lpr_outreach in Supabase anlegen.</small></div>';
+  }
 }
 
-async function saveTrigger() {
-  const compName = document.getElementById('t-company').value.trim();
-  if (!compName) return;
-  let compId = null;
-  const match = allCompanies.find(c => c.name.toLowerCase() === compName.toLowerCase());
-  if (match) { compId = match.id; }
-  else { const { data } = await db.from('companies').insert({ name: compName, source: 'Manuell' }).select().single(); if (data) { compId = data.id; allCompanies.push(data); } }
-  const { error } = await db.from('triggers').insert({ company_id: compId, trigger_type: document.getElementById('t-type').value, description: document.getElementById('t-desc').value, relevance_score: parseInt(document.getElementById('t-score').value)||75 });
-  if (!error) { showToast('Trigger gespeichert ✓'); closeModal('modal-trigger'); loadTriggers(); updateStats(); }
+function lprUpdateStats() {
+  const rows = Object.values(lprOutreach);
+  document.getElementById('lpr-stat-total').textContent = lprContacts.length;
+  document.getElementById('lpr-stat-sent').textContent = rows.filter(r => ['sent','followup','replied'].includes(r.status)).length;
+  document.getElementById('lpr-stat-followup').textContent = rows.filter(r => r.status === 'followup' && new Date(r.follow_up_due) <= new Date()).length;
+  document.getElementById('lpr-stat-replied').textContent = rows.filter(r => r.status === 'replied').length;
 }
 
-async function saveCompany() {
-  const name = document.getElementById('c-name').value.trim();
-  if (!name) return;
-  const { error } = await db.from('companies').insert({ name, industry: document.getElementById('c-industry').value, hq_region: document.getElementById('c-hq').value, cee_countries: document.getElementById('c-cee').value, priority: document.getElementById('c-priority').value||null, source: document.getElementById('c-source').value });
-  if (!error) { showToast('Gespeichert ✓'); closeModal('modal-company'); loadCompanies(); } else showToast('Fehler: ' + error.message);
+function lprRenderFollowups() {
+  const now = new Date();
+  const due = Object.values(lprOutreach).filter(r => r.status === 'followup' && r.follow_up_due && new Date(r.follow_up_due) <= now);
+  const el = document.getElementById('lpr-followup-block');
+  if (!due.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="reminder-block" style="margin-bottom:16px"><div class="reminder-title">⚡ Follow-up fällig (' + due.length + ')</div>'
+    + due.map(r => '<div class="reminder-item"><div><div class="reminder-company">' + r.name + ' · ' + r.company + '</div><div class="reminder-date">Fällig seit ' + new Date(r.follow_up_due).toLocaleDateString('de-AT') + '</div></div><button class="btn btn-sm btn-orange" onclick="lprOpenModal(\'' + r.contact_id + '\')">Brief ansehen →</button></div>').join('')
+    + '</div>';
 }
 
-async function saveContact() {
-  const name = document.getElementById('ct-name').value.trim();
-  if (!name) return;
-  const { error } = await db.from('contacts').insert({ full_name: name, role: document.getElementById('ct-role').value, email: document.getElementById('ct-email').value, linkedin_url: document.getElementById('ct-linkedin').value, source: 'manual' });
-  if (!error) { showToast('Gespeichert ✓'); closeModal('modal-contact'); loadContacts(); }
+function lprRender() {
+  const search = (document.getElementById('lpr-search')?.value || '').toLowerCase();
+  const filterStatus = document.getElementById('lpr-filter-status')?.value || '';
+  const container = document.getElementById('lpr-list');
+
+  let list = lprContacts;
+  if (search) list = list.filter(c => (c.full_name||'').toLowerCase().includes(search) || (c.companies?.name||'').toLowerCase().includes(search) || (c.role||'').toLowerCase().includes(search));
+  if (filterStatus) list = list.filter(c => (lprOutreach[c.id]?.status || 'new') === filterStatus);
+
+  if (!list.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">◎</div><div class="empty-title">Keine Kontakte gefunden</div></div>';
+    return;
+  }
+
+  const statusLabel = { new: '<span class="badge badge-gray">Neu</span>', draft: '<span class="badge badge-info">Entwurf</span>', sent: '<span class="badge badge-turquoise">Versendet</span>', followup: '<span class="followup-badge">⚡ Follow-up</span>', replied: '<span class="badge badge-success">Antwort</span>' };
+
+  container.innerHTML = list.map(c => {
+    const rec = lprOutreach[c.id];
+    const status = rec?.status || 'new';
+    const cardClass = status === 'draft' ? 'has-draft' : (status === 'sent' || status === 'followup') ? 'is-sent' : status === 'replied' ? 'is-replied' : '';
+    const sentInfo = rec?.sent_at ? ' · Versendet ' + new Date(rec.sent_at).toLocaleDateString('de-AT') : '';
+    const ci = lprContacts.indexOf(c) % aC.length;
+
+    return '<div class="lpr-contact-card ' + cardClass + '">'
+      + '<div class="avatar" style="background:' + aC[ci] + ';color:' + aT[ci] + ';font-size:11px">' + initials(c.full_name) + '</div>'
+      + '<div class="lpr-contact-info">'
+      + '<div class="lpr-contact-name">' + (c.full_name||'–') + '</div>'
+      + '<div class="lpr-contact-meta">' + (c.role||'CEO') + ' · ' + (c.companies?.name||'–') + sentInfo + '</div>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:10px">'
+      + (statusLabel[status] || '')
+      + '<div style="display:flex;gap:6px">'
+      + (status === 'new' || status === 'draft'
+          ? '<button class="btn btn-sm btn-orange" onclick="lprOpenModal(\'' + c.id + '\')">✦ Brief erstellen</button>'
+          : '<button class="btn btn-sm" onclick="lprOpenModal(\'' + c.id + '\')">Brief ansehen</button>')
+      + (status === 'sent' || status === 'followup' ? '<button class="btn btn-sm btn-primary" onclick="lprMarkReplied(\'' + c.id + '\')">✓ Antwort</button>' : '')
+      + '</div></div></div>';
+  }).join('');
 }
 
-async function deleteCompany(id) { if (!confirm('Unternehmen löschen?')) return; await db.from('companies').delete().eq('id', id); showToast('Gelöscht'); loadCompanies(); }
-async function deleteContact(id) { if (!confirm('Kontakt löschen?')) return; await db.from('contacts').delete().eq('id', id); showToast('Gelöscht'); loadContacts(); }
+async function lprOpenModal(contactId) {
+  lprCurrentContactId = contactId;
+  const contact = lprContacts.find(c => c.id === contactId);
+  if (!contact) return;
+  const rec = lprOutreach[contactId];
 
+  document.getElementById('lpr-modal-title').textContent = 'LPR Brief · ' + contact.full_name;
+  document.getElementById('lpr-modal-sub').textContent = (contact.role || 'CEO') + ' · ' + (contact.companies?.name || '–') + (contact.email ? ' · ' + contact.email : '');
+
+  // Sync lang buttons
+  document.getElementById('modal-btn-de').classList.toggle('active', lprLang === 'de');
+  document.getElementById('modal-btn-en').classList.toggle('active', lprLang === 'en');
+
+  const bodyEl = document.getElementById('lpr-modal-body');
+  const actionsEl = document.getElementById('lpr-modal-actions');
+
+  if (rec?.brief_draft) {
+    bodyEl.innerHTML = '<div class="lpr-brief-box" id="lpr-brief-edit" contenteditable="true">' + rec.brief_draft.replace(/\n/g, '<br>') + '</div>';
+    lprRenderModalActions(contact, rec);
+  } else {
+    bodyEl.innerHTML = '<div style="text-align:center;padding:32px 20px">'
+      + '<div style="font-size:36px;margin-bottom:12px">✦</div>'
+      + '<div style="font-family:\'Petrona\',Georgia,serif;font-size:14px;color:var(--navy);margin-bottom:6px">Brief generieren</div>'
+      + '<div style="font-size:11px;color:var(--text-muted);margin-bottom:18px">Claude analysiert die Unternehmenssituation und schreibt einen personalisierten LPR-Brief.</div>'
+      + '<textarea id="lpr-ctx-input" class="form-control" rows="2" placeholder="Optionaler Kontext (aktuelle Situation, bekannte Themen...)" style="margin-bottom:14px;font-size:12px"></textarea>'
+      + '<button class="btn btn-orange" onclick="lprGenerate(\'' + contactId + '\')">✦ Brief generieren</button>'
+      + '</div>';
+    actionsEl.innerHTML = '';
+  }
+
+  openModal('modal-lpr-brief');
+}
+
+function lprRenderModalActions(contact, rec) {
+  const actionsEl = document.getElementById('lpr-modal-actions');
+  const isSent = rec?.status === 'sent' || rec?.status === 'followup' || rec?.status === 'replied';
+  actionsEl.innerHTML = ''
+    + '<button class="btn btn-sm" onclick="lprRegenerate(\'' + contact.id + '\')">↻ Neu generieren</button>'
+    + '<button class="btn btn-sm" onclick="lprCopy()">Kopieren</button>'
+    + (contact.email ? '<button class="btn btn-sm" onclick="lprOutlook(\'' + contact.email + '\')">📧 In Outlook</button>' : '')
+    + '<button class="btn btn-sm btn-primary" onclick="lprSaveDraft(\'' + contact.id + '\')">Entwurf speichern</button>'
+    + (!isSent ? '<button class="btn btn-sm btn-orange" onclick="lprMarkSent(\'' + contact.id + '\')">✓ Als versendet markieren</button>'
+               : '<span class="badge badge-success" style="align-self:center">✓ Versendet ' + (rec?.sent_at ? new Date(rec.sent_at).toLocaleDateString('de-AT') : '') + '</span>');
+}
+
+async function lprGenerate(contactId) {
+  const contact = lprContacts.find(c => c.id === contactId);
+  if (!contact) return;
+  const context = document.getElementById('lpr-ctx-input')?.value || '';
+  const bodyEl = document.getElementById('lpr-modal-body');
+  bodyEl.innerHTML = '<div class="loading" style="padding:40px"><div class="spinner"></div> Claude analysiert Unternehmenssituation und schreibt Brief...</div>';
+  document.getElementById('lpr-modal-actions').innerHTML = '';
+
+  try {
+    const res = await fetch('/api/lpr-brief', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: contact.full_name, role: contact.role || 'CEO', company: contact.companies?.name || '', email: contact.email || '', language: lprLang, context })
+    });
+    const data = await res.json();
+    if (!data.brief) throw new Error('Kein Brief generiert');
+
+    bodyEl.innerHTML = '<div class="lpr-brief-box" id="lpr-brief-edit" contenteditable="true">' + data.brief.replace(/\n/g, '<br>') + '</div>';
+
+    // Save to Supabase
+    await lprSaveToDb(contactId, contact, data.brief, 'draft');
+    lprRenderModalActions(contact, lprOutreach[contactId]);
+    lprRender();
+    lprUpdateStats();
+  } catch(e) {
+    bodyEl.innerHTML = '<div style="padding:20px;color:var(--danger);background:var(--danger-bg);border-radius:var(--radius)">Fehler: ' + e.message + '</div>';
+  }
+}
+
+async function lprRegenerate(contactId) {
+  const bodyEl = document.getElementById('lpr-modal-body');
+  bodyEl.innerHTML = '<div style="text-align:center;padding:24px">'
+    + '<textarea id="lpr-ctx-input" class="form-control" rows="2" placeholder="Optionaler Kontext..." style="margin-bottom:12px;font-size:12px"></textarea>'
+    + '<button class="btn btn-orange" onclick="lprGenerate(\'' + contactId + '\')">✦ Neu generieren</button></div>';
+  document.getElementById('lpr-modal-actions').innerHTML = '';
+}
+
+async function lprSaveToDb(contactId, contact, brief, status) {
+  const existing = lprOutreach[contactId];
+  if (existing?.id) {
+    await db.from('lpr_outreach').update({ brief_draft: brief, status, language: lprLang, updated_at: new Date().toISOString() }).eq('id', existing.id);
+    lprOutreach[contactId] = { ...existing, brief_draft: brief, status };
+  } else {
+    const { data } = await db.from('lpr_outreach').insert({ contact_id: contactId, name: contact.full_name, role: contact.role || 'CEO', company: contact.companies?.name || '', email: contact.email || '', language: lprLang, brief_draft: brief, status }).select().single();
+    if (data) lprOutreach[contactId] = data;
+  }
+}
+
+async function lprSaveDraft(contactId) {
+  const contact = lprContacts.find(c => c.id === contactId);
+  const el = document.getElementById('lpr-brief-edit');
+  if (!el || !contact) return;
+  const brief = el.innerText;
+  await lprSaveToDb(contactId, contact, brief, 'draft');
+  showToast('Entwurf gespeichert ✓');
+}
+
+async function lprMarkSent(contactId) {
+  const contact = lprContacts.find(c => c.id === contactId);
+  const el = document.getElementById('lpr-brief-edit');
+  const brief = el?.innerText || lprOutreach[contactId]?.brief_draft || '';
+  const sentAt = new Date().toISOString();
+  const followUpDue = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
+
+  await lprSaveToDb(contactId, contact, brief, 'followup');
+  const existing = lprOutreach[contactId];
+  if (existing?.id) {
+    await db.from('lpr_outreach').update({ sent_at: sentAt, follow_up_due: followUpDue }).eq('id', existing.id);
+    lprOutreach[contactId] = { ...existing, status: 'followup', sent_at: sentAt, follow_up_due: followUpDue };
+  }
+
+  closeModal('modal-lpr-brief');
+  lprUpdateStats();
+  lprRenderFollowups();
+  lprRender();
+  showToast('✓ Versendet · Follow-up-Erinnerung in 10 Tagen');
+}
+
+async function lprMarkReplied(contactId) {
+  const existing = lprOutreach[contactId];
+  if (!existing?.id) return;
+  await db.from('lpr_outreach').update({ status: 'replied', updated_at: new Date().toISOString() }).eq('id', existing.id);
+  lprOutreach[contactId] = { ...existing, status: 'replied' };
+  lprUpdateStats();
+  lprRender();
+  showToast('✓ Antwort vermerkt');
+}
+
+function lprCopy() {
+  const el = document.getElementById('lpr-brief-edit');
+  if (!el) return;
+  navigator.clipboard.writeText(el.innerText).then(() => showToast('Brief kopiert ✓'));
+}
+
+function lprOutlook(email) {
+  const el = document.getElementById('lpr-brief-edit');
+  const text = el?.innerText || '';
+  const subject = lprLang === 'de' ? 'Leadership Performance Radar (LPR) – Signium Austria' : 'Leadership Performance Radar (LPR) – Signium Austria';
+  window.location.href = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
+}
+
+// ── INIT ───────────────────────────────────────────────────────
 loadAll();
 </script>
 </body>
