@@ -944,4 +944,11 @@ function lprOutlook(email) {
   const el = document.getElementById('lpr-brief-edit');
   const text = el?.innerText || '';
   const subject = lprLang === 'de' ? 'Leadership Performance Radar (LPR) – Signium Austria' : 'Leadership Performance Radar (LPR) – Signium Austria';
-  window.location.href = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURICompo
+  window.location.href = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
+}
+
+// ── INIT ───────────────────────────────────────────────────────
+loadAll();
+</script>
+</body>
+</html>
