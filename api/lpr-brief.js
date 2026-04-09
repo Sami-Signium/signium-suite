@@ -10,19 +10,50 @@ export default async function handler(req, res) {
     const name = body.name || body.full_name || '';
     const company = body.company || '';
     const role = body.role || 'CEO';
-    const email = body.email || '';
     const language = body.language || 'de';
     const context = body.context || '';
 
     const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
     if (!ANTHROPIC_KEY) return res.status(500).json({ error: 'API key missing' });
-    if (!name) return res.status(400).json({ error: 'name required', received: JSON.stringify(body) });
+    if (!name) return res.status(400).json({ error: 'name required' });
 
     const isDE = language === 'de';
 
+    const folderUrl = isDE
+      ? 'signium-suite.vercel.app/lpr-de'
+      : 'signium-suite.vercel.app/lpr-en';
+
+    const folderSentence = isDE
+      ? `Weitere Informationen zum Leadership Performance Radar (LPR) von Signium erhalten Sie unter: ${folderUrl}`
+      : `For more information about the Signium Leadership Performance Radar (LPR), please visit: ${folderUrl}`;
+
     const systemPrompt = isDE
-      ? `Du bist Dr. Sami Hamid, Managing Partner bei Signium Austria. Schreibe einen prägnanten, professionellen Akquisitionsbrief (max. 200 Wörter) um den Leadership Performance Radar (LPR) vorzustellen. Der LPR misst wie stark die Führungskultur des CEO durch die Organisation wirkt — auf C-1 und C-2 Ebene. Stil: direkt, keine Floskeln, McKinsey-Niveau. Beginne direkt mit der Anrede. Schließe mit vollständiger Signatur: Dr. Sami Hamid, Managing Partner, Signium Austria, sami.hamid@signium.com, +43 1 2256354 52`
-      : `You are Dr. Sami Hamid, Managing Partner at Signium Austria. Write a concise, professional acquisition letter (max. 200 words) introducing the Leadership Performance Radar (LPR). The LPR measures how effectively the CEO's leadership culture flows through the organisation at C-1 and C-2 level. Style: direct, no platitudes, McKinsey level. Start directly with the salutation. Close with full signature: Dr. Sami Hamid, Managing Partner, Signium Austria, sami.hamid@signium.com, +43 1 2256354 52`;
+      ? `Du bist Dr. Sami Hamid, Managing Partner bei Signium Austria. Schreibe einen prägnanten, professionellen Akquisitionsbrief (max. 200 Wörter) um den Leadership Performance Radar (LPR) vorzustellen. Der LPR misst wie stark die Führungskultur des CEO durch die Organisation wirkt — auf C-1 und C-2 Ebene. Bevor die Zahlen es zeigen — der LPR.
+
+Stil: direkt, keine Floskeln, McKinsey-Niveau. NUR Plain Text — absolut keine Markdown-Zeichen wie **, ##, *, Bindestriche als Aufzählungszeichen.
+
+Beginne direkt mit der Anrede. Füge vor der Signatur folgenden Satz ein:
+"${folderSentence}"
+
+Schließe mit vollständiger Signatur:
+Dr. Sami Hamid
+Managing Partner
+Signium Austria
+sami.hamid@signium.com
++43 1 2256354 52`
+      : `You are Dr. Sami Hamid, Managing Partner at Signium Austria. Write a concise, professional acquisition letter (max. 200 words) introducing the Leadership Performance Radar (LPR). The LPR measures how effectively the CEO's leadership culture flows through the organisation at C-1 and C-2 level. Before the numbers reveal it — the LPR.
+
+Style: direct, no platitudes, McKinsey level. Plain text ONLY — no markdown like **, ##, *, bullet hyphens.
+
+Start directly with the salutation. Before the signature include:
+"${folderSentence}"
+
+Close with full signature:
+Dr. Sami Hamid
+Managing Partner
+Signium Austria
+sami.hamid@signium.com
++43 1 2256354 52`;
 
     const userPrompt = isDE
       ? `Schreibe einen LPR-Brief an ${name}, ${role} bei ${company}.${context ? ' Kontext: ' + context : ''}`
@@ -44,8 +75,16 @@ export default async function handler(req, res) {
     });
 
     const data = await claudeRes.json();
-    const brief = data.content?.[0]?.text || '';
-    if (!brief) return res.status(500).json({ error: 'No brief generated', claudeResponse: data });
+    let brief = data.content?.[0]?.text || '';
+    if (!brief) return res.status(500).json({ error: 'No brief generated' });
+
+    // Strip markdown
+    brief = brief
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/#{1,6}\s/g, '')
+      .replace(/^- /gm, '')
+      .replace(/^• /gm, '');
 
     res.status(200).json({ brief, language });
 
