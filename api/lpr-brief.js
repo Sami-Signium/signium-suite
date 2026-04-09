@@ -6,7 +6,8 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { name, role, company, email, language = 'de', context = '' } = req.body;
+    const { name: _name, full_name, role, company, email, language = 'de', context = '' } = req.body;
+    const name = _name || full_name || '';
     if (!name || !company) return res.status(400).json({ error: 'name and company required' });
 
     const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
