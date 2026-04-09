@@ -6,183 +6,381 @@
 <title>Leadership Performance Radar – Signium Austria</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Segoe UI', Arial, sans-serif; background: #F5F4F0; color: #0D1B3E; }
-.header { background: #081D4D; padding: 32px 48px; display: flex; align-items: center; justify-content: space-between; }
-.header-logo { font-size: 28px; font-weight: 700; color: white; letter-spacing: .08em; }
-.header-logo span { color: #6BCBC2; }
-.header-sub { font-size: 11px; color: rgba(255,255,255,.5); letter-spacing: .15em; text-transform: uppercase; margin-top: 4px; }
-.hero { background: #081D4D; padding: 64px 48px 80px; position: relative; overflow: hidden; }
-.hero::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #FF6A42, #6BCBC2); }
-.hero-tag { font-size: 10px; font-weight: 600; color: #6BCBC2; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 20px; }
-.hero-title { font-size: 52px; font-weight: 700; color: white; line-height: 1.1; margin-bottom: 24px; }
-.hero-title span { color: #FF6A42; }
-.hero-sub { font-size: 16px; color: rgba(255,255,255,.6); max-width: 560px; line-height: 1.7; }
-.hero-claim { font-size: 20px; color: #6BCBC2; margin-top: 32px; font-style: italic; }
-.content { max-width: 900px; margin: 0 auto; padding: 64px 48px; }
-.section { margin-bottom: 56px; }
-.section-title { font-size: 13px; font-weight: 700; color: #FF6A42; letter-spacing: .15em; text-transform: uppercase; margin-bottom: 16px; }
-.section-heading { font-size: 28px; font-weight: 700; color: #081D4D; margin-bottom: 20px; line-height: 1.3; }
-.section-text { font-size: 15px; color: #4A5568; line-height: 1.8; margin-bottom: 16px; }
-.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 32px; }
-.card { background: white; border-radius: 8px; padding: 28px; border-top: 3px solid #6BCBC2; box-shadow: 0 2px 12px rgba(8,29,77,.08); }
-.card-num { font-size: 32px; font-weight: 700; color: #6BCBC2; line-height: 1; margin-bottom: 12px; }
-.card-title { font-size: 14px; font-weight: 700; color: #081D4D; margin-bottom: 10px; }
-.card-text { font-size: 13px; color: #6B6860; line-height: 1.6; }
-.dims { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 24px; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #F5F4F0; color: #0D1B3E; line-height: 1.6; }
+.header { background: #081D4D; padding: 28px 48px; display: flex; align-items: center; justify-content: space-between; }
+.logo { font-size: 26px; font-weight: 700; color: white; letter-spacing: .08em; }
+.logo span { color: #6BCBC2; }
+.logo-sub { font-size: 10px; color: rgba(255,255,255,.4); letter-spacing: .15em; text-transform: uppercase; margin-top: 3px; }
+.hero { background: #081D4D; padding: 72px 48px 80px; border-bottom: 4px solid #FF6A42; }
+.hero-tag { font-size: 10px; font-weight: 700; color: #6BCBC2; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 20px; }
+.hero-title { font-size: 56px; font-weight: 700; color: white; line-height: 1.08; margin-bottom: 24px; }
+.hero-divider { width: 56px; height: 3px; background: #FF6A42; margin-bottom: 20px; }
+.hero-claim { font-size: 19px; color: #6BCBC2; }
+.hero-claim2 { font-size: 19px; color: rgba(255,255,255,.55); margin-top: 4px; }
+.hero-footer { margin-top: 36px; font-size: 12px; color: rgba(255,255,255,.3); }
+.content { max-width: 960px; margin: 0 auto; padding: 64px 48px; }
+.section { margin-bottom: 72px; padding-bottom: 72px; border-bottom: 1px solid #D5D3CC; }
+.section:last-child { border-bottom: none; margin-bottom: 0; }
+.s-label { font-size: 10px; font-weight: 700; color: #FF6A42; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 14px; }
+.s-title { font-size: 30px; font-weight: 700; color: #081D4D; line-height: 1.2; margin-bottom: 8px; }
+.s-sub { font-size: 14px; color: #6B6860; margin-bottom: 28px; line-height: 1.6; }
+.infobox { background: #081D4D; border-left: 4px solid #FF6A42; border-radius: 8px; padding: 22px 28px; margin-bottom: 28px; }
+.infobox p { font-size: 14px; color: rgba(255,255,255,.8); line-height: 1.75; }
+.cards3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.card { background: white; border-radius: 8px; padding: 26px; border-top: 3px solid #6BCBC2; box-shadow: 0 2px 10px rgba(8,29,77,.07); }
+.card-title { font-size: 13px; font-weight: 700; color: #081D4D; margin-bottom: 10px; }
+.card-text { font-size: 12.5px; color: #6B6860; line-height: 1.65; }
+.split { display: grid; grid-template-columns: 1fr 1.5fr; gap: 40px; align-items: start; }
+.split-navy { background: #081D4D; border-radius: 10px; padding: 36px; }
+.split-quote { font-size: 38px; font-weight: 700; color: white; line-height: 1.1; margin-bottom: 20px; }
+.split-quote span { color: #FF6A42; }
+.split-divider { width: 48px; height: 2px; background: #FF6A42; margin-bottom: 16px; }
+.split-caption { font-size: 13px; color: #6BCBC2; line-height: 1.7; margin-bottom: 20px; }
+.split-note { font-size: 11.5px; color: rgba(255,255,255,.4); line-height: 1.6; }
+.features { display: flex; flex-direction: column; gap: 0; }
+.feature { padding: 20px 0; border-bottom: 1px solid #E2E6EC; }
+.feature:last-child { border-bottom: none; }
+.feature-bar { width: 5px; height: 100%; background: #FF6A42; border-radius: 3px; flex-shrink: 0; }
+.feature-wrap { display: flex; gap: 18px; }
+.feature-accent { width: 4px; background: #6BCBC2; border-radius: 2px; flex-shrink: 0; margin-top: 3px; }
+.feature-title { font-size: 14px; font-weight: 700; color: #081D4D; margin-bottom: 6px; }
+.feature-text { font-size: 13px; color: #6B6860; line-height: 1.65; }
+.dims { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 .dim { background: white; border-radius: 8px; padding: 22px; border-left: 4px solid #081D4D; box-shadow: 0 2px 8px rgba(8,29,77,.06); }
-.dim-num { font-size: 11px; font-weight: 700; color: #FF6A42; letter-spacing: .1em; margin-bottom: 8px; }
+.dim.orange { border-left-color: #FF6A42; }
+.dim.teal { border-left-color: #6BCBC2; }
+.dim.full { grid-column: span 2; border-left-color: #FF6A42; }
+.dim-num { font-size: 22px; font-weight: 700; color: #6BCBC2; margin-bottom: 8px; }
 .dim-title { font-size: 15px; font-weight: 700; color: #081D4D; margin-bottom: 8px; }
-.dim-text { font-size: 13px; color: #6B6860; line-height: 1.5; }
-.process { display: flex; gap: 0; margin-top: 32px; }
-.step { flex: 1; text-align: center; position: relative; }
-.step::after { content: '→'; position: absolute; right: -10px; top: 18px; color: #6BCBC2; font-size: 18px; }
+.dim-text { font-size: 13px; color: #6B6860; line-height: 1.6; }
+.situations { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+.sit { background: white; border-radius: 8px; padding: 26px; box-shadow: 0 2px 10px rgba(8,29,77,.07); }
+.sit.left { border-left: 4px solid #FF6A42; }
+.sit.right { border-left: 4px solid #6BCBC2; }
+.sit-title { font-size: 14px; font-weight: 700; color: #081D4D; margin-bottom: 10px; }
+.sit-text { font-size: 13px; color: #6B6860; line-height: 1.65; }
+.steps { display: flex; gap: 0; margin-top: 8px; }
+.step { flex: 1; text-align: center; padding: 0 8px; position: relative; }
+.step::after { content: '→'; position: absolute; right: -6px; top: 14px; color: #6BCBC2; font-size: 16px; }
 .step:last-child::after { display: none; }
-.step-num { width: 44px; height: 44px; background: #081D4D; border-radius: 50%; color: white; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+.step-num { width: 42px; height: 42px; border-radius: 50%; color: white; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; background: #6BCBC2; }
 .step:first-child .step-num { background: #FF6A42; }
-.step-title { font-size: 12px; font-weight: 700; color: #081D4D; margin-bottom: 4px; }
+.step-title { font-size: 11.5px; font-weight: 700; color: #081D4D; margin-bottom: 3px; }
 .step-time { font-size: 10px; color: #6BCBC2; font-weight: 600; margin-bottom: 8px; }
 .step-text { font-size: 11px; color: #6B6860; line-height: 1.5; }
-.deliverables { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 24px; }
-.deliv { background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(8,29,77,.06); }
-.deliv-icon { font-size: 28px; margin-bottom: 12px; }
-.deliv-title { font-size: 14px; font-weight: 700; color: #081D4D; margin-bottom: 8px; }
-.deliv-sub { font-size: 11px; color: #FF6A42; font-weight: 600; margin-bottom: 10px; }
-.deliv-text { font-size: 12px; color: #6B6860; line-height: 1.6; }
-.cta-block { background: #081D4D; border-radius: 12px; padding: 48px; text-align: center; margin-top: 48px; }
-.cta-title { font-size: 32px; font-weight: 700; color: white; margin-bottom: 16px; }
-.cta-sub { font-size: 15px; color: rgba(255,255,255,.6); margin-bottom: 32px; }
-.cta-contact { font-size: 16px; color: #6BCBC2; margin-bottom: 8px; }
-.cta-name { font-size: 22px; font-weight: 700; color: white; margin-bottom: 4px; }
-.cta-role { font-size: 13px; color: rgba(255,255,255,.5); margin-bottom: 20px; }
-.cta-details { font-size: 13px; color: rgba(255,255,255,.6); line-height: 1.8; }
-.footer { background: #06153A; padding: 24px 48px; text-align: center; font-size: 11px; color: rgba(255,255,255,.3); }
+.step-note { font-size: 10px; color: #081D4D; font-style: italic; }
+.delivs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.deliv { background: white; border-radius: 8px; padding: 26px; box-shadow: 0 2px 10px rgba(8,29,77,.07); }
+.deliv-num { font-size: 28px; font-weight: 700; color: #081D4D; margin-bottom: 10px; }
+.deliv-title { font-size: 15px; font-weight: 700; color: #081D4D; margin-bottom: 4px; }
+.deliv-stat { font-size: 12px; font-weight: 700; color: #FF6A42; margin-bottom: 14px; }
+.deliv-item { font-size: 12px; color: #6B6860; line-height: 1.8; }
+.deliv-item::before { content: '– '; }
+.framework { display: grid; grid-template-columns: 1fr 60px 1fr; gap: 0; align-items: center; margin-top: 24px; }
+.fw-box { background: white; border-radius: 8px; padding: 28px; box-shadow: 0 2px 10px rgba(8,29,77,.07); }
+.fw-box.left { border-top: 4px solid #FF6A42; }
+.fw-box.right { border-top: 4px solid #6BCBC2; }
+.fw-arrow { text-align: center; font-size: 28px; color: #6BCBC2; }
+.fw-num { font-size: 20px; font-weight: 700; color: #FF6A42; margin-bottom: 6px; }
+.fw-box.right .fw-num { color: #6BCBC2; }
+.fw-title { font-size: 16px; font-weight: 700; color: #081D4D; margin-bottom: 4px; }
+.fw-sub { font-size: 12px; font-weight: 700; color: #6B6860; margin-bottom: 14px; }
+.fw-text { font-size: 13px; color: #6B6860; line-height: 1.65; }
+.fw-note { margin-top: 20px; padding: 14px 20px; background: #F5F4F0; border-radius: 6px; font-size: 12px; color: #6B6860; font-style: italic; border-left: 3px solid #6BCBC2; }
+.closing { background: #081D4D; border-radius: 12px; padding: 56px 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+.closing-left .big { font-size: 40px; font-weight: 700; color: white; line-height: 1.15; margin-bottom: 28px; }
+.closing-left .big span { color: #FF6A42; }
+.closing-left .cta-text { font-size: 14px; color: rgba(255,255,255,.6); line-height: 1.75; margin-bottom: 28px; }
+.cta-btn { display: inline-block; background: #FF6A42; color: white; font-weight: 700; font-size: 13px; padding: 13px 28px; border-radius: 6px; text-decoration: none; }
+.closing-right { background: rgba(255,255,255,.06); border-radius: 8px; padding: 32px; border-top: 3px solid #6BCBC2; }
+.cr-label { font-size: 10px; color: #6BCBC2; letter-spacing: .15em; text-transform: uppercase; margin-bottom: 16px; }
+.cr-name { font-size: 22px; font-weight: 700; color: white; margin-bottom: 4px; }
+.cr-role { font-size: 13px; color: rgba(255,255,255,.5); margin-bottom: 20px; }
+.cr-divider { height: 1px; background: rgba(255,255,255,.1); margin-bottom: 16px; }
+.cr-detail { font-size: 13px; color: rgba(255,255,255,.55); line-height: 1.9; }
+.footer { background: #06153A; padding: 22px 48px; text-align: center; font-size: 11px; color: rgba(255,255,255,.25); line-height: 1.7; }
 </style>
 </head>
 <body>
 
+<!-- HEADER -->
 <div class="header">
-  <div>
-    <div class="header-logo">SIGNI<span>UM</span></div>
-    <div class="header-sub">Leadership Advisory</div>
-  </div>
-  <div style="font-size:12px;color:rgba(255,255,255,.4)">signium.com</div>
+  <div><div class="logo">SIGNI<span>UM</span></div><div class="logo-sub">Leadership Advisory</div></div>
+  <div style="font-size:11px;color:rgba(255,255,255,.3)">signium.com</div>
 </div>
 
+<!-- SLIDE 1: COVER -->
 <div class="hero">
   <div class="hero-tag">Signium Leadership Advisory</div>
-  <div class="hero-title">Leadership<br>Performance<br><span>Radar</span></div>
-  <div class="hero-sub">Ein Diagnostik-Instrument das misst, wie stark Ihre Führungskultur durch die Organisation wirkt — bevor die Kennzahlen es zeigen.</div>
-  <div class="hero-claim">Führung ist eine Entscheidung. Wie sie wirkt, ist die Frage.</div>
+  <div class="hero-title">Leadership<br>Performance<br>Radar</div>
+  <div class="hero-divider"></div>
+  <div class="hero-claim">Führung ist eine Entscheidung</div>
+  <div class="hero-claim2">Wie sie wirkt, ist die Frage.</div>
+  <div class="hero-footer">signium.com &nbsp;|&nbsp; Weltweit tätig mit über 40 Büros</div>
 </div>
 
 <div class="content">
 
-  <div class="section">
-    <div class="section-title">Das Problem</div>
-    <div class="section-heading">Was Kennzahlen (noch) nicht zeigen</div>
-    <div class="section-text">Führungskultur entsteht an der Spitze. Was auf dem Weg durch die Hierarchie davon verloren geht, weiß kaum jemand — weil es niemand misst.</div>
-    <div class="cards">
-      <div class="card">
-        <div class="card-num">01</div>
-        <div class="card-title">Die Transmission versagt</div>
-        <div class="card-text">Ob strategische Impulse vom C-Level in C-1 und C-2 ankommen — konsistent, verstanden, gelebt — bleibt in den meisten Unternehmen strukturell ungeklärt.</div>
+<!-- SLIDE 2: WAS KENNZAHLEN NICHT ZEIGEN -->
+<div class="section">
+  <div class="s-label">Das Problem</div>
+  <div class="s-title">Was Kennzahlen (noch) nicht zeigen</div>
+  <div class="infobox">
+    <p>Führungskultur entsteht an der Spitze. Was auf dem Weg durch die Hierarchie davon verloren geht, weiß kaum jemand — weil es niemand misst.</p>
+  </div>
+  <div class="cards3">
+    <div class="card">
+      <div class="card-title">Die Transmission versagt</div>
+      <div class="card-text">Führungskultur ist kein Selbstläufer. Ob strategische Impulse vom C-Level in C-1 und C-2 ankommen — konsistent, verstanden, gelebt — bleibt in den meisten Unternehmen strukturell ungeklärt.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Lagging Indicators täuschen</div>
+      <div class="card-text">Fluktuation, Produktivitätsverlust, Entscheidungsschwäche im mittleren Management sind Symptome. Wenn sie messbar werden, hat das zugrundeliegende Führungsproblem meist schon System.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Ein strukturelles Messdefizit</div>
+      <div class="card-text">Mitarbeiterbefragungen messen Stimmung. Assessments messen Potenzial. Kein Standardinstrument misst, wie stark Leadership tatsächlich durch alle Ebenen einer Organisation wirkt.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: NICHT DIE ABSICHT. DIE WIRKUNG. -->
+<div class="section">
+  <div class="split">
+    <div class="split-navy">
+      <div class="split-quote">Nicht die<br>Absicht.<br><span>Die Wirkung.</span></div>
+      <div class="split-divider"></div>
+      <div class="split-caption">Der LPR analysiert, wie Führungsimpulse durch die Hierarchie fließen — und wo sie an Kraft verlieren.</div>
+      <div class="split-note">Ein eigenständiges Diagnostik-Instrument. Entwickelt von Signium auf Basis von über 70 Jahren Executive Search und Leadership Advisory — weltweit.</div>
+    </div>
+    <div class="features">
+      <div class="feature">
+        <div class="feature-wrap">
+          <div class="feature-accent"></div>
+          <div>
+            <div class="feature-title">Führungswirkung über alle Ebenen</div>
+            <div class="feature-text">C-Level, C-1, C-2 — der LPR zeigt, wie Führungsimpulse durch die Hierarchie fließen, wo sie verstärkt und wo sie absorbiert werden.</div>
+          </div>
+        </div>
       </div>
-      <div class="card">
-        <div class="card-num">02</div>
-        <div class="card-title">Lagging Indicators täuschen</div>
-        <div class="card-text">Fluktuation, Produktivitätsverlust, Entscheidungsschwäche im mittleren Management sind Symptome. Wenn sie messbar werden, hat das zugrundeliegende Problem meist schon System.</div>
+      <div class="feature">
+        <div class="feature-wrap">
+          <div class="feature-accent"></div>
+          <div>
+            <div class="feature-title">Frühindikatoren statt Lagging Metrics</div>
+            <div class="feature-text">Verhaltens- und Entscheidungsmuster werden sichtbar, bevor sie das Unternehmensergebnis beeinflussen. Das ist der strategische Vorteil des Instruments.</div>
+          </div>
+        </div>
       </div>
-      <div class="card">
-        <div class="card-num">03</div>
-        <div class="card-title">Ein Messdefizit</div>
-        <div class="card-text">Mitarbeiterbefragungen messen Stimmung. Assessments messen Potenzial. Kein Standardinstrument misst, wie stark Leadership tatsächlich durch alle Ebenen wirkt.</div>
+      <div class="feature">
+        <div class="feature-wrap">
+          <div class="feature-accent"></div>
+          <div>
+            <div class="feature-title">Externe Objektivität ohne Agenda</div>
+            <div class="feature-text">Kein interner Beobachter kann diesen Befund liefern. Signium bringt den Außenblick — und kein finanzielles Interesse an einem bestimmten Ergebnis.</div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Die 5 Wirkungsebenen</div>
-    <div class="section-heading">Was der LPR misst</div>
-    <div class="dims">
-      <div class="dim"><div class="dim-num">01 — KOHÄRENZ</div><div class="dim-title">Strategische Konsistenz</div><div class="dim-text">Wird die strategische Führungsvision auf allen Ebenen konsistent interpretiert — oder übersetzt jede Ebene sie nach eigenem Ermessen?</div></div>
-      <div class="dim"><div class="dim-num">02 — AGILITÄT</div><div class="dim-title">Reaktionsfähigkeit</div><div class="dim-text">Reagiert das Führungsteam auf Markt- und Umfeldveränderungen mit Entschlossenheit — oder mit institutioneller Trägheit?</div></div>
-      <div class="dim"><div class="dim-num">03 — TALENTWIRKUNG</div><div class="dim-title">Talent-Attraktion</div><div class="dim-text">Zieht das mittlere Management Leistungsträger an, entwickelt es sie — oder verliert es sie still an den Wettbewerb?</div></div>
-      <div class="dim"><div class="dim-num">04 — ENTSCHEIDUNGSKRAFT</div><div class="dim-title">Entscheidungsqualität</div><div class="dim-text">Werden Entscheidungen auf der richtigen Ebene getroffen — oder migrieren sie nach oben, weil Verantwortung nicht gelebt wird?</div></div>
-      <div class="dim" style="grid-column: span 2; border-left-color: #FF6A42;"><div class="dim-num">05 — VERANTWORTUNGSKULTUR</div><div class="dim-title">Accountability</div><div class="dim-text">Ist Accountability ein gemeinsamer Standard — oder ein Anspruch, der nur für andere gilt?</div></div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Der Ablauf</div>
-    <div class="section-heading">4 Wochen. Präzise.</div>
-    <div class="process">
-      <div class="step"><div class="step-num">01</div><div class="step-title">Kick-off</div><div class="step-time">Tag 1–2</div><div class="step-text">Briefing mit CEO. Ziele, Scope und Fokusebenen.</div></div>
-      <div class="step"><div class="step-num">02</div><div class="step-title">Erhebung</div><div class="step-time">Woche 1–2</div><div class="step-text">Strukturierte Einzelgespräche und Fragebogen.</div></div>
-      <div class="step"><div class="step-num">03</div><div class="step-title">Analyse</div><div class="step-time">Woche 2–3</div><div class="step-text">Auswertung: Wo wirkt Führung? Wo verliert sie Kraft?</div></div>
-      <div class="step"><div class="step-num">04</div><div class="step-title">Dashboard</div><div class="step-time">Woche 3</div><div class="step-text">Leadership Dashboard — Ampelsystem auf einen Blick.</div></div>
-      <div class="step"><div class="step-num">05</div><div class="step-title">Briefing</div><div class="step-time">Woche 4</div><div class="step-text">Vertrauliche Präsentation mit Aktionsplan.</div></div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Deliverables</div>
-    <div class="section-heading">Ein Befund. Kein Gefälligkeitsgutachten.</div>
-    <div class="deliverables">
-      <div class="deliv"><div class="deliv-icon">◈</div><div class="deliv-title">Leadership Dashboard</div><div class="deliv-sub">Auf einen Blick</div><div class="deliv-text">Ampelsystem: grün, gelb, rot. Ebenenanalyse C-Level, C-1, C-2. DACH/CEE Benchmarking.</div></div>
-      <div class="deliv"><div class="deliv-icon">◎</div><div class="deliv-title">Executive Briefing</div><div class="deliv-sub">90 Minuten</div><div class="deliv-text">Senior Partner, persönlich, vertraulich. Interpretation der Befunde. Priorisierte Handlungsfelder.</div></div>
-      <div class="deliv"><div class="deliv-icon">◉</div><div class="deliv-title">Aktionsplan</div><div class="deliv-sub">3 Fokusfelder</div><div class="deliv-text">Konkrete Interventionen, umsetzbar. Quick Wins und mittelfristige Agenda. Klare Verantwortlichkeiten.</div></div>
-    </div>
-  </div>
-
-
-  <div class="section">
-    <div class="section-title">Relevanz</div>
-    <div class="section-heading">Wann ist der LPR relevant?</div>
-    <div class="dims">
-      <div class="dim" style="border-left-color:#FF6A42"><div class="dim-num">SITUATION 01</div><div class="dim-title">Performance und Potenzial fallen auseinander</div><div class="dim-text">Ergebnisse bleiben hinter den Erwartungen. Das Fuehrungsteam ist formal besetzt — aber die Wirkung fehlt. Der LPR liefert den strukturierten Befund, den kein internes Gespraech ersetzen kann.</div></div>
-      <div class="dim" style="border-left-color:#6BCBC2"><div class="dim-num">SITUATION 02</div><div class="dim-title">Vor einer strategischen Transformation</div><div class="dim-text">Restrukturierung, Expansion, kultureller Wandel: Ob die Fuehrungsarchitektur das traegt, was strategisch geplant ist, entscheidet sich nicht im Boardroom — sondern zwei Ebenen darunter.</div></div>
-      <div class="dim" style="border-left-color:#FF6A42"><div class="dim-num">SITUATION 03</div><div class="dim-title">Nach einem Fuehrungswechsel</div><div class="dim-text">Ein neuer CEO, ein neues C-Level. Wie tief ist die Fuehrungskultur institutionalisiert — oder haengt sie an Personen? Der LPR gibt Antwort, bevor die Frage teuer wird.</div></div>
-      <div class="dim" style="border-left-color:#6BCBC2"><div class="dim-num">SITUATION 04</div><div class="dim-title">Als strategisches Steuerungsinstrument</div><div class="dim-text">Leadership-Qualitaet nicht als Soft Fact, sondern als messbare Fuehrungsgroesse. Unternehmen, die das verstehen, nutzen den LPR nicht einmalig — sondern periodisch.</div></div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">The Framework</div>
-    <div class="section-heading">Leadership-Qualitaet als kontinuierliche Fuehrungsgroesse</div>
-    <div class="section-text">Fuehrungsqualitaet veraendert sich — mit Marktdruck, mit Personalwechseln, mit strategischen Richtungsentscheidungen. Der LPR macht diese Veraenderung sichtbar. Periodisch. Vergleichbar. Handlungsrelevant.</div>
-    <div class="dims" style="margin-top:24px">
-      <div class="dim" style="border-left-color:#FF6A42;padding:28px">
-        <div class="dim-num">01 — ERSTERHEBUNG</div>
-        <div class="dim-title">Die Baseline</div>
-        <div class="dim-text" style="margin-top:12px">Strukturierte Einzelgespraeche und Frageboegen an alle Teilnehmer. Signium analysiert: Wo wirkt Fuehrung — und wo nicht. Das Ergebnis ist das Leadership Dashboard: ein klares Bild des Status quo, nach Ebenen, Dimensionen und Handlungsbedarf.</div>
-      </div>
-      <div class="dim" style="border-left-color:#6BCBC2;padding:28px">
-        <div class="dim-num">02 — JAEHRLICHER LEADERSHIP REVIEW</div>
-        <div class="dim-title">Die Entwicklung</div>
-        <div class="dim-text" style="margin-top:12px">Ein systematischer Abgleich mit der Ersterhebung: Was hat sich veraendert? Wo wurde Handlungsbedarf adressiert — und mit welchem Ergebnis? Wo entstehen neue Risiken? Fuehrungsqualitaet wird damit zur messbaren, steuerbaren Groesse im Managementsystem.</div>
+      <div class="feature">
+        <div class="feature-wrap">
+          <div class="feature-accent"></div>
+          <div>
+            <div class="feature-title">Handlungsrelevanz als Designprinzip</div>
+            <div class="feature-text">Jeder Befund ist mit einer Implikation verknüpft. Der LPR ist keine Bestandsaufnahme — er ist eine Entscheidungsgrundlage.</div>
+          </div>
+        </div>
       </div>
     </div>
-    <div style="margin-top:16px;padding:14px 20px;background:white;border-radius:8px;font-size:13px;color:#6B6860;font-style:italic;border-left:3px solid #6BCBC2;">Auf Wunsch ergaenzt durch begleitende Advisory zwischen den Review-Zyklen.</div>
   </div>
+</div>
 
-  <div class="cta-block">
-    <div class="cta-title">Bevor die Zahlen es zeigen — der LPR.</div>
-    <div class="cta-sub">Vereinbaren Sie ein unverbindliches Erstgespräch. Wir zeigen Ihnen, wie der LPR für Ihr Unternehmen konkret aussehen würde.</div>
-    <div class="cta-contact">Ihr Ansprechpartner</div>
-    <div class="cta-name">Dr. Sami Hamid</div>
-    <div class="cta-role">Managing Partner · Signium Austria</div>
-    <div class="cta-details">
-      sami.hamid@signium.com<br>
-      +43 1 225 635 452<br>
-      www.signium.com
+<!-- SLIDE 4: DIE 5 WIRKUNGSEBENEN -->
+<div class="section">
+  <div class="s-label">Was der LPR misst</div>
+  <div class="s-title">Die 5 Wirkungsebenen</div>
+  <div class="s-sub">Was der LPR misst — und welche Fragen er beantwortet</div>
+  <div class="dims">
+    <div class="dim teal">
+      <div class="dim-num">01</div>
+      <div class="dim-title">Kohärenz</div>
+      <div class="dim-text">Wird die strategische Führungsvision auf allen Ebenen konsistent interpretiert — oder übersetzt jede Ebene sie nach eigenem Ermessen?</div>
+    </div>
+    <div class="dim teal">
+      <div class="dim-num">02</div>
+      <div class="dim-title">Agilität</div>
+      <div class="dim-text">Reagiert das Führungsteam auf Markt- und Umfeldveränderungen mit Entschlossenheit — oder mit institutioneller Trägheit?</div>
+    </div>
+    <div class="dim teal">
+      <div class="dim-num">03</div>
+      <div class="dim-title">Talentwirkung</div>
+      <div class="dim-text">Zieht das mittlere Management Leistungsträger an, entwickelt es sie — oder verliert es sie still an den Wettbewerb?</div>
+    </div>
+    <div class="dim orange">
+      <div class="dim-num">04</div>
+      <div class="dim-title">Entscheidungskraft</div>
+      <div class="dim-text">Werden Entscheidungen auf der richtigen Ebene getroffen — oder migrieren sie nach oben, weil Verantwortung nicht gelebt wird?</div>
+    </div>
+    <div class="dim full orange">
+      <div class="dim-num">05</div>
+      <div class="dim-title">Verantwortungskultur</div>
+      <div class="dim-text">Ist Accountability ein gemeinsamer Standard — oder ein Anspruch, der nur für andere gilt?</div>
     </div>
   </div>
+</div>
+
+<!-- SLIDE 5: WANN IST DER LPR RELEVANT -->
+<div class="section">
+  <div class="s-label">Einsatz</div>
+  <div class="s-title">Wann ist der LPR relevant?</div>
+  <div class="situations">
+    <div class="sit left">
+      <div class="sit-title">Performance und Potenzial fallen auseinander</div>
+      <div class="sit-text">Ergebnisse bleiben hinter den Erwartungen. Das Führungsteam ist formal besetzt — aber die Wirkung fehlt. Der LPR liefert den strukturierten Befund, den kein internes Gespräch ersetzen kann.</div>
+    </div>
+    <div class="sit right">
+      <div class="sit-title">Vor einer strategischen Transformation</div>
+      <div class="sit-text">Restrukturierung, Expansion, kultureller Wandel: Ob die Führungsarchitektur das trägt, was strategisch geplant ist, entscheidet sich nicht im Boardroom — sondern zwei Ebenen darunter.</div>
+    </div>
+    <div class="sit left">
+      <div class="sit-title">Nach einem Führungswechsel</div>
+      <div class="sit-text">Ein neuer CEO, ein neues C-Level. Wie tief ist die Führungskultur institutionalisiert — oder hängt sie an Personen? Der LPR gibt Antwort, bevor die Frage teuer wird.</div>
+    </div>
+    <div class="sit right">
+      <div class="sit-title">Als strategisches Steuerungsinstrument</div>
+      <div class="sit-text">Leadership-Qualität nicht als Soft Fact, sondern als messbare Führungsgröße. Unternehmen, die das verstehen, nutzen den LPR nicht einmalig — sondern periodisch.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6: DER ABLAUF -->
+<div class="section">
+  <div class="s-label">Prozess</div>
+  <div class="s-title">Der Ablauf</div>
+  <div class="s-sub">4 Wochen. Ein kurzer Prozess — aber präzise.</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-title">Kick-off</div>
+      <div class="step-time">Tag 1–2</div>
+      <div class="step-text">Briefing mit CEO und Board. Ziele, Scope und Fokusebenen werden gemeinsam definiert.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-title">Erhebung</div>
+      <div class="step-time">Woche 1–2</div>
+      <div class="step-text">Strukturierte Einzelgespräche mit ausgewählten Führungskräften. LPR-Fragebogen an alle Teilnehmer.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-title">Analyse</div>
+      <div class="step-time">Woche 2–3</div>
+      <div class="step-text">Auswertung der Fragebögen und Interviews: Wo wirkt Führung? Wo verliert sie an Kraft? Wo besteht Handlungsbedarf?</div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-title">Leadership Dashboard</div>
+      <div class="step-time">Woche 3</div>
+      <div class="step-text">Ergebnis ist das Leadership Dashboard — Ampelsystem auf einen Blick, präzise und vergleichbar.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">05</div>
+      <div class="step-title">Executive Briefing</div>
+      <div class="step-time">Woche 4</div>
+      <div class="step-text">Vertrauliche Präsentation des Leadership Performance Radars samt Bericht.</div>
+    </div>
+  </div>
+  <div style="margin-top:24px;padding:12px 20px;background:white;border-radius:6px;font-size:12px;color:#6B6860;font-style:italic;border-left:3px solid #6BCBC2;">Der LPR ist ein eigenständiges Instrument — unabhängig von jeder weiteren Zusammenarbeit mit Signium.</div>
+</div>
+
+<!-- SLIDE 7: DELIVERABLES -->
+<div class="section">
+  <div class="s-label">Ergebnis</div>
+  <div class="s-title">Deliverables</div>
+  <div class="s-sub">Ein Befund. Kein Gefälligkeitsgutachten.</div>
+  <div class="delivs">
+    <div class="deliv">
+      <div class="deliv-num">1</div>
+      <div class="deliv-title">Leadership Dashboard</div>
+      <div class="deliv-stat">Auf einen Blick</div>
+      <div class="deliv-item">Ampelsystem: grün, gelb, rot — sofort lesbar</div>
+      <div class="deliv-item">Handlungsbedarf klar priorisiert</div>
+      <div class="deliv-item">Ebenenanalyse C-Level, C-1, C-2</div>
+      <div class="deliv-item">Benchmarking DACH/CEE Peer-Gruppe</div>
+    </div>
+    <div class="deliv">
+      <div class="deliv-num">2</div>
+      <div class="deliv-title">Executive Briefing</div>
+      <div class="deliv-stat">90 Minuten</div>
+      <div class="deliv-item">Senior Partner, persönlich, vertraulich</div>
+      <div class="deliv-item">Interpretation der Befunde</div>
+      <div class="deliv-item">Priorisierte Handlungsfelder</div>
+      <div class="deliv-item">Kein Bericht zum Ablegen</div>
+    </div>
+    <div class="deliv">
+      <div class="deliv-num">3</div>
+      <div class="deliv-title">Aktionsplan</div>
+      <div class="deliv-stat">3 Fokusfelder</div>
+      <div class="deliv-item">Konkrete Interventionen, umsetzbar</div>
+      <div class="deliv-item">Quick Wins und mittelfristige Agenda</div>
+      <div class="deliv-item">Klare Verantwortlichkeiten</div>
+      <div class="deliv-item">Optional: begleitende Advisory</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8: THE FRAMEWORK -->
+<div class="section">
+  <div class="s-label">The Framework</div>
+  <div class="s-title">Leadership-Qualität als kontinuierliche Führungsgröße — nicht als einmaliges Projekt.</div>
+  <div class="infobox" style="margin-top:20px">
+    <p>Führungsqualität verändert sich — mit Marktdruck, mit Personalwechseln, mit strategischen Richtungsentscheidungen. Der LPR macht diese Veränderung sichtbar. Periodisch. Vergleichbar. Handlungsrelevant.</p>
+  </div>
+  <div class="framework">
+    <div class="fw-box left">
+      <div class="fw-num">01</div>
+      <div class="fw-title">Ersterhebung</div>
+      <div class="fw-sub">Die Baseline</div>
+      <div class="fw-text">Strukturierte Einzelgespräche und Fragebögen an alle Teilnehmer. Signium analysiert: Wo wirkt Führung — und wo nicht. Das Ergebnis ist das Leadership Dashboard: ein klares Bild des Status quo, nach Ebenen, Dimensionen und Handlungsbedarf.</div>
+    </div>
+    <div class="fw-arrow">→</div>
+    <div class="fw-box right">
+      <div class="fw-num">02</div>
+      <div class="fw-title">Jährlicher Leadership Review</div>
+      <div class="fw-sub">Die Entwicklung</div>
+      <div class="fw-text">Ein systematischer Abgleich mit der Ersterhebung: Was hat sich verändert? Wo wurde Handlungsbedarf adressiert — und mit welchem Ergebnis? Wo entstehen neue Risiken? Führungsqualität wird damit zur messbaren, steuerbaren Größe im Managementsystem.</div>
+    </div>
+  </div>
+  <div class="fw-note">Auf Wunsch ergänzt durch begleitende Advisory zwischen den Review-Zyklen.</div>
+</div>
+
+<!-- SLIDE 9: CLOSING -->
+<div class="section">
+  <div class="closing">
+    <div class="closing-left">
+      <div class="big">Bevor die Zahlen<br>es zeigen —<br><span>der LPR.</span></div>
+      <div class="cta-text">Vereinbaren Sie ein unverbindliches Erstgespräch. Wir zeigen Ihnen, wie der LPR für Ihr Unternehmen konkret aussehen würde.</div>
+      <a href="mailto:sami.hamid@signium.com?subject=LPR Erstgespräch" class="cta-btn">Gespräch vereinbaren →</a>
+    </div>
+    <div class="closing-right">
+      <div class="cr-label">Ihr Ansprechpartner</div>
+      <div class="cr-name">Dr. Sami Hamid</div>
+      <div class="cr-role">Managing Partner · Signium Austria</div>
+      <div class="cr-divider"></div>
+      <div class="cr-detail">
+        sami.hamid@signium.com<br>
+        +43 1 225 635 452<br>
+        +43 664 456 88 62<br>
+        signium.com
+      </div>
+    </div>
+  </div>
+</div>
 
 </div>
 
 <div class="footer">
-  Signium Austria – Stein & Partner GmbH · Rathausstraße 21, 1010 Vienna · signium.com<br>
-  Signium Austria is part of the global network of independently owned and managed firms authorized to use the Signium™ name.
+  Signium Austria – Stein &amp; Partner GmbH &nbsp;·&nbsp; Rathausstraße 21, 1010 Vienna, Austria &nbsp;·&nbsp; signium.com<br>
+  Signium Austria is part of the global network of independently owned and managed firms authorized to use the Signium™ name. Signium™ and Signium International® are service marks or registered service marks of Signium International, Inc. Confidentiality Notice: This e-mail message, including any attachments, is for the sole use of the intended recipient(s) and may contain confidential and privileged information.
 </div>
 
 </body>
