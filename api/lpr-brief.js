@@ -32,7 +32,7 @@ export default async function handler(req, res) {
 
 Stil: direkt, keine Floskeln, McKinsey-Niveau. NUR Plain Text — absolut keine Markdown-Zeichen wie **, ##, *, Bindestriche als Aufzählungszeichen.
 
-Beginne direkt mit der Anrede. Füge vor der Signatur folgenden Satz ein:
+Beginne direkt mit der Anrede. Baue einen klaren Call-to-Action ein: Bitte den Empfänger konkret um ein 30-minütiges Gespräch. Füge dann vor der Signatur folgenden Satz ein:
 "${folderSentence}"
 
 Schließe mit vollständiger Signatur:
@@ -45,7 +45,7 @@ sami.hamid@signium.com
 
 Style: direct, no platitudes, McKinsey level. Plain text ONLY — no markdown like **, ##, *, bullet hyphens.
 
-Start directly with the salutation. Before the signature include:
+Start directly with the salutation. Include a clear call-to-action: ask the recipient specifically for a 30-minute conversation. Then before the signature include:
 "${folderSentence}"
 
 Close with full signature:
