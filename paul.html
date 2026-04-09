@@ -419,7 +419,7 @@ tbody td { padding: 11px 16px; font-size: 12px; color: var(--text); vertical-ali
       <div style="background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius-lg);padding:24px;max-width:580px;box-shadow:var(--shadow)">
         <div class="brand-line"></div>
         <div class="section-title" style="margin-bottom:18px">PAUL Konfiguration</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-100)"><span style="font-size:12px;font-weight:500">Absender</span><span style="font-size:11px;color:var(--text-muted)">sami.hamid@signium.com</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-100)"><span style="font-size:12px;font-weight:500">Absender</span><span style="font-size:11px;color:var(--text-muted)"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ddaebcb0b4f3b5bcb0b4b99daeb4bab3b4a8b0f3beb2b0">[email&#160;protected]</a></span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-100)"><span style="font-size:12px;font-weight:500">Datenbank</span><span class="badge" id="db-status">● Verbinden...</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-100)"><span style="font-size:12px;font-weight:500">Scan Engine</span><span style="font-size:11px;color:var(--text-muted)">NewsAPI · tägl. 08:00</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0"><span style="font-size:12px;font-weight:500">Unterlagen</span><span style="font-size:11px;color:var(--text-muted)">3 Dokumente verfügbar</span></div>
@@ -498,7 +498,7 @@ tbody td { padding: 11px 16px; font-size: 12px; color: var(--text); vertical-ali
 
 <div class="toast" id="toast"></div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 const SU = 'https://ftdxhswcnghlmcagrsox.supabase.co';
 const SK = 'sb_publishable_c8YygosML2xrImmWCpI1rw_6j_pvCRA';
 const { createClient } = supabase;
@@ -558,7 +558,7 @@ async function loadAll() {
   updateStats(); renderDashboard(); renderFollowupReminders();
 }
 async function loadCompanies() { const { data } = await db.from('companies').select('*').order('name'); if (data) { allCompanies = data; renderCompanies(); } }
-async function loadContacts() { const { data } = await db.from('contacts').select('*, companies(name)').order('full_name'); if (data) { allContacts = data; renderContacts(); } }
+async function loadContacts() { const { data } = await db.from('contacts').select('*, companies(name)').order('companies(name)', {referencedTable: 'companies', ascending: true}); if (data) { allContacts = data; renderContacts(); } }
 async function loadTriggers() { const { data } = await db.from('triggers').select('*').order('created_at', { ascending: false }); if (data) { allTriggers = data; renderTriggers(); } }
 async function loadOutreach() { const { data } = await db.from('outreach').select('*, companies(name)').order('created_at', { ascending: false }); if (data) { allOutreach = data; renderOutreach(); renderFollowupReminders(); } }
 async function checkDb() {
@@ -726,7 +726,7 @@ function lprModalLang(lang) {
 async function lprLoad() {
   document.getElementById('lpr-list').innerHTML = '<div class="loading"><div class="spinner"></div> Kontakte laden...</div>';
   try {
-    const { data: contacts } = await db.from('contacts').select('*, companies(name)').order('full_name');
+    const { data: contacts } = await db.from('contacts').select('*, companies(name)').order('companies(name)', {referencedTable: 'companies', ascending: true});
     lprContacts = contacts || [];
 
     // Load outreach records
@@ -765,8 +765,8 @@ function lprRender() {
   const filterStatus = document.getElementById('lpr-filter-status')?.value || '';
   const container = document.getElementById('lpr-list');
 
-  let list = lprContacts;
-  if (search) list = list.filter(c => (c.full_name||'').toLowerCase().includes(search) || (c.companies?.name||'').toLowerCase().includes(search) || (c.role||'').toLowerCase().includes(search));
+  let list = [...lprContacts].sort((a,b) => (a.companies?.name||'').localeCompare(b.companies?.name||''));
+  if (search) list = list.filter(c => (c.companies?.name||'').toLowerCase().includes(search) || (c.full_name||'').toLowerCase().includes(search) || (c.role||'').toLowerCase().includes(search));
   if (filterStatus) list = list.filter(c => (lprOutreach[c.id]?.status || 'new') === filterStatus);
 
   if (!list.length) {
@@ -783,11 +783,12 @@ function lprRender() {
     const sentInfo = rec?.sent_at ? ' · Versendet ' + new Date(rec.sent_at).toLocaleDateString('de-AT') : '';
     const ci = lprContacts.indexOf(c) % aC.length;
 
+    const companyName = c.companies?.name || '–';
     return '<div class="lpr-contact-card ' + cardClass + '">'
-      + '<div class="avatar" style="background:' + aC[ci] + ';color:' + aT[ci] + ';font-size:11px">' + initials(c.full_name) + '</div>'
+      + '<div class="avatar" style="background:' + aC[ci] + ';color:' + aT[ci] + ';font-size:11px">' + initials(companyName) + '</div>'
       + '<div class="lpr-contact-info">'
-      + '<div class="lpr-contact-name">' + (c.full_name||'–') + '</div>'
-      + '<div class="lpr-contact-meta">' + (c.role||'CEO') + ' · ' + (c.companies?.name||'–') + sentInfo + '</div>'
+      + '<div class="lpr-contact-name">' + companyName + '</div>'
+      + '<div class="lpr-contact-meta">' + (c.full_name||'–') + ' · ' + (c.role||'CEO') + sentInfo + '</div>'
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:10px">'
       + (statusLabel[status] || '')
@@ -943,11 +944,4 @@ function lprOutlook(email) {
   const el = document.getElementById('lpr-brief-edit');
   const text = el?.innerText || '';
   const subject = lprLang === 'de' ? 'Leadership Performance Radar (LPR) – Signium Austria' : 'Leadership Performance Radar (LPR) – Signium Austria';
-  window.location.href = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
-}
-
-// ── INIT ───────────────────────────────────────────────────────
-loadAll();
-</script>
-</body>
-</html>
+  window.location.href = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURICompo
