@@ -503,6 +503,10 @@ const SU = 'https://ftdxhswcnghlmcagrsox.supabase.co';
 const SK = 'sb_publishable_c8YygosML2xrImmWCpI1rw_6j_pvCRA';
 const { createClient } = supabase;
 const db = createClient(SU, SK);
+// LPR Outreach is in Signium-Radar project
+const SU_LPR = 'https://yipevhfddofchlupqmzi.supabase.co';
+const SK_LPR = 'sb_publishable_33D93AcK5v2rgCKjGGiULw_4ThzR6E7';
+const dbLPR = createClient(SU_LPR, SK_LPR);
 
 let allCompanies = [], allContacts = [], allTriggers = [], allOutreach = [];
 let currentPitchText = '';
@@ -558,7 +562,7 @@ async function loadAll() {
   updateStats(); renderDashboard(); renderFollowupReminders();
 }
 async function loadCompanies() { const { data } = await db.from('companies').select('*').order('name'); if (data) { allCompanies = data; renderCompanies(); } }
-async function loadContacts() { const { data } = await db.from('contacts').select('*, companies(name)').order('companies(name)', {referencedTable: 'companies', ascending: true}); if (data) { allContacts = data; renderContacts(); } }
+async function loadContacts() { const { data } = await db.from('contacts').select('id, full_name, role, email, company_id').order('full_name', {ascending: true}); if (data) { allContacts = data; renderContacts(); } }
 async function loadTriggers() { const { data } = await db.from('triggers').select('*').order('created_at', { ascending: false }); if (data) { allTriggers = data; renderTriggers(); } }
 async function loadOutreach() { const { data } = await db.from('outreach').select('*, companies(name)').order('created_at', { ascending: false }); if (data) { allOutreach = data; renderOutreach(); renderFollowupReminders(); } }
 async function checkDb() {
@@ -726,11 +730,11 @@ function lprModalLang(lang) {
 async function lprLoad() {
   document.getElementById('lpr-list').innerHTML = '<div class="loading"><div class="spinner"></div> Kontakte laden...</div>';
   try {
-    const { data: contacts } = await db.from('contacts').select('*, companies(name)').order('companies(name)', {referencedTable: 'companies', ascending: true});
+    const { data: contacts } = await db.from('contacts').select('id, full_name, role, email, company_id').order('full_name', {ascending: true});
     lprContacts = contacts || [];
 
     // Load outreach records
-    const { data: rows } = await db.from('lpr_outreach').select('*');
+    const { data: rows } = await dbLPR.from('lpr_outreach').select('*');
     lprOutreach = {};
     (rows || []).forEach(r => { if (r.contact_id) lprOutreach[r.contact_id] = r; });
 
@@ -765,7 +769,7 @@ function lprRender() {
   const filterStatus = document.getElementById('lpr-filter-status')?.value || '';
   const container = document.getElementById('lpr-list');
 
-  let list = [...lprContacts].sort((a,b) => (a.companies?.name||'').localeCompare(b.companies?.name||''));
+  let list = [...lprContacts].sort((a,b) => { const ca = allCompanies.find(co=>co.id===a.company_id)?.name||''; const cb = allCompanies.find(co=>co.id===b.company_id)?.name||''; return ca.localeCompare(cb); });
   if (search) list = list.filter(c => (c.companies?.name||'').toLowerCase().includes(search) || (c.full_name||'').toLowerCase().includes(search) || (c.role||'').toLowerCase().includes(search));
   if (filterStatus) list = list.filter(c => (lprOutreach[c.id]?.status || 'new') === filterStatus);
 
@@ -783,7 +787,7 @@ function lprRender() {
     const sentInfo = rec?.sent_at ? ' · Versendet ' + new Date(rec.sent_at).toLocaleDateString('de-AT') : '';
     const ci = lprContacts.indexOf(c) % aC.length;
 
-    const companyName = c.companies?.name || '–';
+    const companyName = allCompanies.find(co => co.id === c.company_id)?.name || '–';
     return '<div class="lpr-contact-card ' + cardClass + '">'
       + '<div class="avatar" style="background:' + aC[ci] + ';color:' + aT[ci] + ';font-size:11px">' + initials(companyName) + '</div>'
       + '<div class="lpr-contact-info">'
@@ -886,10 +890,10 @@ async function lprRegenerate(contactId) {
 async function lprSaveToDb(contactId, contact, brief, status) {
   const existing = lprOutreach[contactId];
   if (existing?.id) {
-    await db.from('lpr_outreach').update({ brief_draft: brief, status, language: lprLang, updated_at: new Date().toISOString() }).eq('id', existing.id);
+    await dbLPR.from('lpr_outreach').update({ brief_draft: brief, status, language: lprLang, updated_at: new Date().toISOString() }).eq('id', existing.id);
     lprOutreach[contactId] = { ...existing, brief_draft: brief, status };
   } else {
-    const { data } = await db.from('lpr_outreach').insert({ contact_id: contactId, name: contact.full_name, role: contact.role || 'CEO', company: contact.companies?.name || '', email: contact.email || '', language: lprLang, brief_draft: brief, status }).select().single();
+    const { data } = await dbLPR.from('lpr_outreach').insert({ contact_id: contactId, name: contact.full_name, role: contact.role || 'CEO', company: contact.companies?.name || '', email: contact.email || '', language: lprLang, brief_draft: brief, status }).select().single();
     if (data) lprOutreach[contactId] = data;
   }
 }
@@ -913,7 +917,7 @@ async function lprMarkSent(contactId) {
   await lprSaveToDb(contactId, contact, brief, 'followup');
   const existing = lprOutreach[contactId];
   if (existing?.id) {
-    await db.from('lpr_outreach').update({ sent_at: sentAt, follow_up_due: followUpDue }).eq('id', existing.id);
+    await dbLPR.from('lpr_outreach').update({ sent_at: sentAt, follow_up_due: followUpDue }).eq('id', existing.id);
     lprOutreach[contactId] = { ...existing, status: 'followup', sent_at: sentAt, follow_up_due: followUpDue };
   }
 
@@ -927,7 +931,7 @@ async function lprMarkSent(contactId) {
 async function lprMarkReplied(contactId) {
   const existing = lprOutreach[contactId];
   if (!existing?.id) return;
-  await db.from('lpr_outreach').update({ status: 'replied', updated_at: new Date().toISOString() }).eq('id', existing.id);
+  await dbLPR.from('lpr_outreach').update({ status: 'replied', updated_at: new Date().toISOString() }).eq('id', existing.id);
   lprOutreach[contactId] = { ...existing, status: 'replied' };
   lprUpdateStats();
   lprRender();
