@@ -871,7 +871,7 @@ async function lprGenerate(contactId) {
     const res = await fetch('/api/lpr-brief', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: contact.full_name, role: contact.role || 'CEO', company: contact._company || '', email: contact.email || '', language: lprLang, context })
+      body: JSON.stringify({ name: contact.full_name, role: contact.role || 'CEO', company: contact._company || contact.companies?.name || '', email: contact.email || '', language: lprLang, context })
     });
     const data = await res.json();
     if (!data.brief) throw new Error('Kein Brief generiert');
@@ -902,7 +902,7 @@ async function lprSaveToDb(contactId, contact, brief, status) {
     await dbLPR.from('lpr_outreach').update({ brief_draft: brief, status, language: lprLang, updated_at: new Date().toISOString() }).eq('id', existing.id);
     lprOutreach[contactId] = { ...existing, brief_draft: brief, status };
   } else {
-    const { data } = await dbLPR.from('lpr_outreach').insert({ contact_id: contactId, name: contact.full_name, role: contact.role || 'CEO', company: contact._company || '', email: contact.email || '', language: lprLang, brief_draft: brief, status }).select().single();
+    const { data } = await dbLPR.from('lpr_outreach').insert({ contact_id: contactId, name: contact.full_name, role: contact.role || 'CEO', company: contact._company || contact.companies?.name || '', email: contact.email || '', language: lprLang, brief_draft: brief, status }).select().single();
     if (data) lprOutreach[contactId] = data;
   }
 }
