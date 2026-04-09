@@ -769,8 +769,17 @@ function lprRender() {
   const filterStatus = document.getElementById('lpr-filter-status')?.value || '';
   const container = document.getElementById('lpr-list');
 
-  let list = [...lprContacts].sort((a,b) => { const ca = a.companies?.name || allCompanies.find(co=>co.id===a.company_id)?.name||'zzz'; const cb = b.companies?.name || allCompanies.find(co=>co.id===b.company_id)?.name||'zzz'; return ca.localeCompare(cb,'de'); });
-  if (search) list = list.filter(c => (c.companies?.name||'').toLowerCase().includes(search) || (c.full_name||'').toLowerCase().includes(search) || (c.role||'').toLowerCase().includes(search));
+  // Build full contact list with resolved company names
+  let list = [...lprContacts].map(c => {
+    const compName = c.companies?.name || allCompanies.find(co => co.id === c.company_id)?.name || '';
+    return { ...c, _company: compName };
+  }).sort((a, b) => {
+    const ca = a._company || 'ZZZZZ';
+    const cb = b._company || 'ZZZZZ';
+    if (ca !== cb) return ca.localeCompare(cb, 'de');
+    return (a.full_name||'').localeCompare(b.full_name||'', 'de');
+  });
+  if (search) list = list.filter(c => (c._company||'').toLowerCase().includes(search) || (c.full_name||'').toLowerCase().includes(search) || (c.role||'').toLowerCase().includes(search));
   if (filterStatus) list = list.filter(c => (lprOutreach[c.id]?.status || 'new') === filterStatus);
 
   if (!list.length) {
@@ -787,7 +796,7 @@ function lprRender() {
     const sentInfo = rec?.sent_at ? ' · Versendet ' + new Date(rec.sent_at).toLocaleDateString('de-AT') : '';
     const ci = lprContacts.indexOf(c) % aC.length;
 
-    const companyName = c.companies?.name || allCompanies.find(co => co.id === c.company_id)?.name || '–';
+    const companyName = c._company || '–';
     return '<div class="lpr-contact-card ' + cardClass + '">'
       + '<div class="avatar" style="background:' + aC[ci] + ';color:' + aT[ci] + ';font-size:11px">' + initials(companyName) + '</div>'
       + '<div class="lpr-contact-info">'
@@ -862,7 +871,7 @@ async function lprGenerate(contactId) {
     const res = await fetch('/api/lpr-brief', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: contact.full_name, role: contact.role || 'CEO', company: contact.companies?.name || '', email: contact.email || '', language: lprLang, context })
+      body: JSON.stringify({ name: contact.full_name, role: contact.role || 'CEO', company: contact._company || '', email: contact.email || '', language: lprLang, context })
     });
     const data = await res.json();
     if (!data.brief) throw new Error('Kein Brief generiert');
@@ -893,7 +902,7 @@ async function lprSaveToDb(contactId, contact, brief, status) {
     await dbLPR.from('lpr_outreach').update({ brief_draft: brief, status, language: lprLang, updated_at: new Date().toISOString() }).eq('id', existing.id);
     lprOutreach[contactId] = { ...existing, brief_draft: brief, status };
   } else {
-    const { data } = await dbLPR.from('lpr_outreach').insert({ contact_id: contactId, name: contact.full_name, role: contact.role || 'CEO', company: contact.companies?.name || '', email: contact.email || '', language: lprLang, brief_draft: brief, status }).select().single();
+    const { data } = await dbLPR.from('lpr_outreach').insert({ contact_id: contactId, name: contact.full_name, role: contact.role || 'CEO', company: contact._company || '', email: contact.email || '', language: lprLang, brief_draft: brief, status }).select().single();
     if (data) lprOutreach[contactId] = data;
   }
 }
