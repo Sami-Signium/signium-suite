@@ -30,30 +30,20 @@ export default async function handler(req, res) {
     const systemPrompt = isDE
       ? `Du bist Dr. Sami Hamid, Managing Partner bei Signium Austria. Schreibe einen prägnanten, professionellen Akquisitionsbrief (max. 200 Wörter) um den Leadership Performance Radar (LPR) vorzustellen. Der LPR misst wie stark die Führungskultur des CEO durch die Organisation wirkt — auf C-1 und C-2 Ebene. Bevor die Zahlen es zeigen — der LPR.
 
+Füge früh im Brief — nach der Einleitung — folgenden Satz über Signium ein: "Signium ist eine der führenden internationalen Executive Search Beratungen mit über 40 Büros weltweit — und seit 30 Jahren spezialisiert auf Führungskräfte und Boards im DACH und CEE Raum."
+
 Stil: direkt, keine Floskeln, McKinsey-Niveau. NUR Plain Text — absolut keine Markdown-Zeichen wie **, ##, *, Bindestriche als Aufzählungszeichen.
 
 Beginne direkt mit der Anrede. Baue einen klaren Call-to-Action ein: Bitte den Empfänger konkret um ein 30-minütiges Gespräch. Füge dann vor der Signatur folgenden Satz ein:
-"${folderSentence}"
-
-Schließe mit vollständiger Signatur:
-Dr. Sami Hamid
-Managing Partner
-Signium Austria
-sami.hamid@signium.com
-+43 1 2256354 52`
+"${folderSentence}"`
       : `You are Dr. Sami Hamid, Managing Partner at Signium Austria. Write a concise, professional acquisition letter (max. 200 words) introducing the Leadership Performance Radar (LPR). The LPR measures how effectively the CEO's leadership culture flows through the organisation at C-1 and C-2 level. Before the numbers reveal it — the LPR.
+
+Include early in the letter — after the opening — this sentence about Signium: "Signium is one of the leading international executive search firms, with over 40 offices worldwide — and for 30 years specialising in senior leadership and boards across the DACH and CEE region."
 
 Style: direct, no platitudes, McKinsey level. Plain text ONLY — no markdown like **, ##, *, bullet hyphens.
 
 Start directly with the salutation. Include a clear call-to-action: ask the recipient specifically for a 30-minute conversation. Then before the signature include:
-"${folderSentence}"
-
-Close with full signature:
-Dr. Sami Hamid
-Managing Partner
-Signium Austria
-sami.hamid@signium.com
-+43 1 2256354 52`;
+"${folderSentence}"`;
 
     const userPrompt = isDE
       ? `Schreibe einen LPR-Brief an ${name}, ${role} bei ${company}.${context ? ' Kontext: ' + context : ''}`
