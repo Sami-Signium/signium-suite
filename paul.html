@@ -730,7 +730,7 @@ function lprModalLang(lang) {
 async function lprLoad() {
   document.getElementById('lpr-list').innerHTML = '<div class="loading"><div class="spinner"></div> Kontakte laden...</div>';
   try {
-    const { data: contacts } = await db.from('contacts').select('id, full_name, role, email, company_id').order('full_name', {ascending: true});
+    const { data: contacts } = await db.from('contacts').select('id, full_name, role, email, company_id, companies(name)').order('full_name', {ascending: true});
     lprContacts = contacts || [];
 
     // Load outreach records
@@ -769,7 +769,7 @@ function lprRender() {
   const filterStatus = document.getElementById('lpr-filter-status')?.value || '';
   const container = document.getElementById('lpr-list');
 
-  let list = [...lprContacts].sort((a,b) => { const ca = allCompanies.find(co=>co.id===a.company_id)?.name||''; const cb = allCompanies.find(co=>co.id===b.company_id)?.name||''; return ca.localeCompare(cb); });
+  let list = [...lprContacts].sort((a,b) => { const ca = a.companies?.name || allCompanies.find(co=>co.id===a.company_id)?.name||'zzz'; const cb = b.companies?.name || allCompanies.find(co=>co.id===b.company_id)?.name||'zzz'; return ca.localeCompare(cb,'de'); });
   if (search) list = list.filter(c => (c.companies?.name||'').toLowerCase().includes(search) || (c.full_name||'').toLowerCase().includes(search) || (c.role||'').toLowerCase().includes(search));
   if (filterStatus) list = list.filter(c => (lprOutreach[c.id]?.status || 'new') === filterStatus);
 
@@ -787,7 +787,7 @@ function lprRender() {
     const sentInfo = rec?.sent_at ? ' · Versendet ' + new Date(rec.sent_at).toLocaleDateString('de-AT') : '';
     const ci = lprContacts.indexOf(c) % aC.length;
 
-    const companyName = allCompanies.find(co => co.id === c.company_id)?.name || '–';
+    const companyName = c.companies?.name || allCompanies.find(co => co.id === c.company_id)?.name || '–';
     return '<div class="lpr-contact-card ' + cardClass + '">'
       + '<div class="avatar" style="background:' + aC[ci] + ';color:' + aT[ci] + ';font-size:11px">' + initials(companyName) + '</div>'
       + '<div class="lpr-contact-info">'
