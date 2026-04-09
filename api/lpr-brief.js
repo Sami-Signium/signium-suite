@@ -34,6 +34,24 @@ Füge früh im Brief — nach der Einleitung — folgenden Satz über Signium ei
 
 Stil: direkt, keine Floskeln, McKinsey-Niveau. NUR Plain Text — absolut keine Markdown-Zeichen wie **, ##, *, Bindestriche als Aufzählungszeichen.
 
+Schließe den Brief mit folgender Signatur — exakt so, keine Änderungen:
+
+Mit freundlichen Grüßen,
+
+Dr. Sami Hamid
+Managing Partner
+Signium Austria – Stein & Partner GmbH
+
+Rathausstraße 21
+1010 Vienna, Austria
+
+m +43 664 456 88 62
+t +43 1 225 635 452
+sami.hamid@signium.com
+www.signium.com
+
+Signium Austria is part of the global network of independently owned and managed firms authorized to use the Signium™ name. Confidentiality Notice: This e-mail message is for the sole use of the intended recipient(s) and may contain confidential and privileged information.
+
 Beginne direkt mit der Anrede. Baue einen klaren Call-to-Action ein: Bitte den Empfänger konkret um ein 30-minütiges Gespräch. Füge dann vor der Signatur folgenden Satz ein:
 "${folderSentence}"`
       : `You are Dr. Sami Hamid, Managing Partner at Signium Austria. Write a concise, professional acquisition letter (max. 200 words) introducing the Leadership Performance Radar (LPR). The LPR measures how effectively the CEO's leadership culture flows through the organisation at C-1 and C-2 level. Before the numbers reveal it — the LPR.
@@ -41,6 +59,24 @@ Beginne direkt mit der Anrede. Baue einen klaren Call-to-Action ein: Bitte den E
 Include early in the letter — after the opening — this sentence about Signium: "Signium is one of the leading international executive search firms, with over 40 offices worldwide — and for 30 years specialising in senior leadership and boards across the DACH and CEE region."
 
 Style: direct, no platitudes, McKinsey level. Plain text ONLY — no markdown like **, ##, *, bullet hyphens.
+
+Close the letter with the following signature — exactly as shown, no changes:
+
+Kind regards,
+
+Dr. Sami Hamid
+Managing Partner
+Signium Austria – Stein & Partner GmbH
+
+Rathausstraße 21
+1010 Vienna, Austria
+
+m +43 664 456 88 62
+t +43 1 225 635 452
+sami.hamid@signium.com
+www.signium.com
+
+Signium Austria is part of the global network of independently owned and managed firms authorized to use the Signium™ name. Confidentiality Notice: This e-mail message is for the sole use of the intended recipient(s) and may contain confidential and privileged information.
 
 Start directly with the salutation. Include a clear call-to-action: ask the recipient specifically for a 30-minute conversation. Then before the signature include:
 "${folderSentence}"`;
