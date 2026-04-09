@@ -20,8 +20,8 @@ export default async function handler(req, res) {
     const isDE = language === 'de';
 
     const folderUrl = isDE
-      ? 'signium-suite.vercel.app/lpr-de'
-      : 'signium-suite.vercel.app/lpr-en';
+      ? 'https://signium-suite.vercel.app/lpr-de'
+      : 'https://signium-suite.vercel.app/lpr-en';
 
     const folderSentence = isDE
       ? `Weitere Informationen zum Leadership Performance Radar (LPR) von Signium erhalten Sie unter: ${folderUrl}`
