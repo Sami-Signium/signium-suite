@@ -284,7 +284,7 @@ tbody td { padding: 11px 16px; font-size: 12px; color: var(--text); vertical-ali
         <button class="btn btn-primary btn-sm" onclick="openModal('modal-contact')">+ Hinzufügen</button>
       </div>
       <div class="filter-bar"><input type="text" id="contact-search" placeholder="Suche nach Name, Rolle..." oninput="filterContacts()"></div>
-      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Rolle</th><th>Unternehmen</th><th>E-Mail</th><th>Aktionen</th></tr></thead><tbody id="contacts-tbody"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Rolle</th><th>Unternehmen</th><th>E-Mail</th><th>LPR Brief</th><th>Aktionen</th></tr></thead><tbody id="contacts-tbody"></tbody></table></div>
     </div>
 
     <!-- COMPOSE -->
@@ -521,7 +521,7 @@ const docNames = { presentation: 'Signium Präsentation', whitepaper: 'Whitepape
 let lprLang = 'de';
 let lprContacts = [];
 let lprOutreach = {}; // keyed by contact_id
-let lprCurrentContactId = null;
+let lprCurrentContactId = null; let allLprSentMap = {};
 
 // ── PANEL NAVIGATION ──────────────────────────────────────────
 const panelTitles = {
@@ -562,7 +562,7 @@ async function loadAll() {
   updateStats(); renderDashboard(); renderFollowupReminders();
 }
 async function loadCompanies() { const { data } = await db.from('companies').select('*').order('name'); if (data) { allCompanies = data; renderCompanies(); } }
-async function loadContacts() { const { data } = await db.from('contacts').select('id, full_name, role, email, company_id').order('full_name', {ascending: true}); if (data) { allContacts = data; renderContacts(); } }
+async function loadContacts() { const [{ data }, { data: lprRows }] = await Promise.all([db.from('contacts').select('id, full_name, role, email, company_id').order('full_name', {ascending: true}), dbLPR.from('lpr_outreach').select('contact_id, sent_at, status')]); if (data) { allContacts = data; } allLprSentMap = {}; (lprRows||[]).forEach(r => { if(r.contact_id) allLprSentMap[r.contact_id] = r; }); renderContacts(); }
 async function loadTriggers() { const { data } = await db.from('triggers').select('*').order('created_at', { ascending: false }); if (data) { allTriggers = data; renderTriggers(); } }
 async function loadOutreach() { const { data } = await db.from('outreach').select('*, companies(name)').order('created_at', { ascending: false }); if (data) { allOutreach = data; renderOutreach(); renderFollowupReminders(); } }
 async function checkDb() {
