@@ -35,7 +35,8 @@ export default async function handler(req, res) {
             title: a.TITEL,
             description: a.LEAD || '',
             url: a.WEBLINK,
-            source: 'AT-OTS'
+            source: 'AT-OTS',
+            published_at: a.DATUM || null
           }));
         }
       } catch(e) {}
@@ -61,7 +62,8 @@ export default async function handler(req, res) {
         const d = await r.json();
         (d.articles || []).forEach(a => allArticles.push({
           title: a.title, description: a.description || '',
-          url: a.url, source: q.label
+          url: a.url, source: q.label,
+          published_at: a.publishedAt ? a.publishedAt.split('T')[0] : null
         }));
       } catch(e) {}
     }
@@ -80,7 +82,9 @@ export default async function handler(req, res) {
     ).join('\n');
 
     const articleMap = {};
-    unique.slice(0, 200).forEach((a, i) => { articleMap[i] = a.url; });
+    unique.slice(0, 200).forEach((a, i) => { 
+      articleMap[i] = { url: a.url, published_at: a.published_at };
+    });
 
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -132,7 +136,8 @@ Artikel:\n` + summaries }]
 
     items = items.map(it => ({
       ...it,
-      source_url: (it.article_index !== undefined && articleMap[it.article_index]) ? articleMap[it.article_index] : null
+      source_url: (it.article_index !== undefined && articleMap[it.article_index]) ? articleMap[it.article_index].url : null,
+      published_at: (it.article_index !== undefined && articleMap[it.article_index]) ? articleMap[it.article_index].published_at : null
     }));
 
     return res.status(200).json({ text: JSON.stringify(items), articleCount: unique.length });
