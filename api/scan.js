@@ -8,13 +8,15 @@ export default async function handler(req, res) {
     const NEWS_API_KEY = process.env.NEWSAPI_KEY;
     const OTS_KEY = process.env.OTS_KEY;
 
+    // 7 Tage zurück
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - 7);
     const from = fromDate.toISOString().split('T')[0];
+    const fromUnix = Math.floor(fromDate.getTime() / 1000);
 
     const allArticles = [];
 
-    // --- APA-OTS: Primäre AT-Quelle ---
+    // --- APA-OTS: Primäre AT-Quelle mit Zeitfilter ---
     const otsQueries = [
       'Vorstandsvorsitzender',
       'Gesch%C3%A4ftsf%C3%BChrer+Wechsel',
@@ -27,7 +29,8 @@ export default async function handler(req, res) {
 
     for (const q of otsQueries) {
       try {
-        const url = `https://www.ots.at/api/liste?app=${OTS_KEY}&query=${q}&inhalt=alle&anz=20&sourcetype=OTS&format=json`;
+        // von=Unix-Timestamp begrenzt auf letzte 7 Tage
+        const url = `https://www.ots.at/api/liste?app=${OTS_KEY}&query=${q}&inhalt=alle&anz=20&sourcetype=OTS&format=json&von=${fromUnix}`;
         const r = await fetch(url);
         if (r.ok) {
           const d = await r.json();
@@ -82,7 +85,7 @@ export default async function handler(req, res) {
     ).join('\n');
 
     const articleMap = {};
-    unique.slice(0, 200).forEach((a, i) => { 
+    unique.slice(0, 200).forEach((a, i) => {
       articleMap[i] = { url: a.url, published_at: a.published_at };
     });
 
