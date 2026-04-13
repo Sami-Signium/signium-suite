@@ -6,31 +6,52 @@ export default async function handler(req, res) {
 
   try {
     const NEWS_API_KEY = process.env.NEWSAPI_KEY;
+    const OTS_KEY = process.env.OTS_KEY;
+
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - 7);
     const from = fromDate.toISOString().split('T')[0];
 
-    const queries = [
-      // AT Management DE - ohne Wien-Zwang, österreichische Begriffe
-      { q: '(Vorstand OR Geschäftsführer OR Aufsichtsrat OR CEO OR CFO OR CHRO OR COO) AND (Österreich OR Austria OR OMV OR Verbund OR Erste OR Raiffeisen OR Voestalpine OR Telekom OR AMS OR Wien)', language: 'de', label: 'AT' },
-      // AT Management EN - internationale Medien berichten auf Englisch
-      { q: '(CEO OR CFO OR "chief executive" OR "managing director" OR "board") AND (Austria OR Vienna OR OMV OR Verbund OR Voestalpine OR Raiffeisen OR "Erste Group")', language: 'en', label: 'AT' },
-      // AT M&A DE
-      { q: '(Fusion OR Übernahme OR Akquisition OR Beteiligung) AND (Österreich OR Austria OR Wien)', language: 'de', label: 'AT' },
-      // AT M&A EN
-      { q: '(acquisition OR merger OR takeover) AND (Austria OR Vienna OR Austrian)', language: 'en', label: 'AT' },
-      // DE Management
-      { q: '(Vorstandswechsel OR "neuer Vorstandsvorsitzender" OR "neuer CEO" OR "neuer CFO" OR "neuer CHRO" OR Aufsichtsratsvorsitzender) AND (DAX OR MDAX OR Deutschland OR Germany)', language: 'de', label: 'DE' },
-      // DE M&A
+    const allArticles = [];
+
+    // --- APA-OTS: Primäre AT-Quelle ---
+    const otsQueries = [
+      'Vorstandsvorsitzender',
+      'Gesch%C3%A4ftsf%C3%BChrer+Wechsel',
+      'CEO+bestellt',
+      'CFO+bestellt',
+      'Aufsichtsrat+Bestellung',
+      '%C3%9Cbernahme+Akquisition',
+      'Fusion+Merger',
+    ];
+
+    for (const q of otsQueries) {
+      try {
+        const url = `https://www.ots.at/api/liste?app=${OTS_KEY}&query=${q}&inhalt=alle&anz=20&sourcetype=OTS&format=json`;
+        const r = await fetch(url);
+        if (r.ok) {
+          const d = await r.json();
+          (d.ergebnisse || []).forEach(a => allArticles.push({
+            title: a.TITEL,
+            description: a.LEAD || '',
+            url: a.WEBLINK,
+            source: 'AT-OTS'
+          }));
+        }
+      } catch(e) {}
+    }
+
+    // --- NewsAPI: DE und CEE ---
+    const newsQueries = [
+      { q: '(Vorstandswechsel OR "neuer Vorstandsvorsitzender" OR "neuer CEO" OR "neuer CFO" OR "neuer CHRO") AND (DAX OR MDAX OR Deutschland)', language: 'de', label: 'DE' },
       { q: '(Übernahme OR Fusion OR Akquisition) AND (DAX OR MDAX OR Deutschland)', language: 'de', label: 'DE' },
-      // CEE Management EN
-      { q: '("new CEO" OR "new CFO" OR "appoints CEO" OR "CEO appointed" OR "new managing director") AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia OR Warsaw OR Bucharest OR Budapest OR Prague)', language: 'en', label: 'CEE' },
-      // CEE M&A EN
+      { q: '(CEO OR CFO OR "chief executive" OR "managing director") AND (Austria OR Vienna OR OMV OR Verbund OR Voestalpine OR Raiffeisen OR "Erste Group")', language: 'en', label: 'AT-EN' },
+      { q: '(acquisition OR merger OR takeover) AND (Austria OR Vienna OR Austrian)', language: 'en', label: 'AT-EN' },
+      { q: '("new CEO" OR "new CFO" OR "appoints CEO" OR "CEO appointed") AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia OR Warsaw OR Bucharest OR Budapest OR Prague)', language: 'en', label: 'CEE' },
       { q: '(acquisition OR merger OR takeover) AND (Poland OR Romania OR Hungary OR "Czech Republic" OR Slovakia)', language: 'en', label: 'CEE' },
     ];
 
-    const allArticles = [];
-    for (const q of queries) {
+    for (const q of newsQueries) {
       try {
         const params = new URLSearchParams({
           q: q.q, language: q.language, sortBy: 'publishedAt',
@@ -54,12 +75,12 @@ export default async function handler(req, res) {
 
     if (!unique.length) return res.status(200).json({ text: '[]', articleCount: 0 });
 
-    const summaries = unique.slice(0, 150).map((a, i) =>
+    const summaries = unique.slice(0, 200).map((a, i) =>
       `[${i}] [${a.source}] ${a.title}${a.description ? ' | ' + a.description : ''} | URL: ${a.url}`
     ).join('\n');
 
     const articleMap = {};
-    unique.slice(0, 150).forEach((a, i) => { articleMap[i] = a.url; });
+    unique.slice(0, 200).forEach((a, i) => { articleMap[i] = a.url; });
 
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
