@@ -10,7 +10,7 @@ export default async function handler(req, res) {
 
     // 7 Tage zurück
     const fromDate = new Date();
-    fromDate.setDate(fromDate.getDate() - 7);
+    fromDate.setDate(fromDate.getDate() - 30);
     const from = fromDate.toISOString().split('T')[0];
     const fromUnix = Math.floor(fromDate.getTime() / 1000);
 
