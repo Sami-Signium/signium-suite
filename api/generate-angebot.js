@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     }
 
     // Fixed replacements
-    newParas[0] = removePara(newParas[0]);
+   
     newParas[3]   = replacePara(newParas[3],   d.positionTitle || '');
     newParas[8]   = replacePara(newParas[8],   d.clientCompany || '');
     newParas[13] = replacePara(newParas[13], d.date || '');    for (let i = 14; i <= 36; i++) { newParas[i] = replacePara(newParas[i], ''); }newParas[37] = replacePara(newParas[37], '');
@@ -130,6 +130,7 @@ export default async function handler(req, res) {
       newXml += newParas[i] + (parts[i+1] || '');
     }
 
+    newXml = newXml.replace(/w:top="2693"/, 'w:top="1200"');
     zip.file('word/document.xml', newXml);
     const outputBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 6 } });
     const safeName = `Signium_Angebot_${(d.clientCompany||'Klient').replace(/\s+/g,'_')}_${(d.positionTitle||'Position').replace(/\s+/g,'_')}`;
