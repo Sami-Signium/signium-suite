@@ -4,9 +4,6 @@
   "type": "module",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
-    "pdf-parse": "^1.1.1",
-    "mammoth": "^1.6.0",
-    "jszip": "^3.10.1",
-    "docx": "^9.5.3"
+    "jszip": "^3.10.1"
   }
 }
