@@ -18,8 +18,8 @@ function replacePara(paraXml, newText) {
     return '<w:t></w:t>';
   });
   return result;
-}function setSpacing(paraXml, before) {
-  return paraXml.replace(/w:before="[^"]*"/, `w:before="${before}"`);
+function removePara(paraXml) {
+  return paraXml.replace(/<w:pStyle[^\/]*\/>/g, '').replace(/w:before="[^"]*"/g, 'w:before="0"').replace(/w:after="[^"]*"/g, 'w:after="0"').replace(/w:line="[^"]*"/g, 'w:line="240"');
 }
 
 function removeHighlights(paraXml) {
