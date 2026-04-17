@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     // Fixed replacements
     newParas[3]   = replacePara(newParas[3],   d.positionTitle || '');
     newParas[8]   = replacePara(newParas[8],   d.clientCompany || '');
-    newParas[37]  = replacePara(newParas[37],  d.date || '');
+    newParas[13] = replacePara(newParas[13], d.date || '');
     newParas[41]  = replacePara(newParas[41],  d.clientContactName || '');
     newParas[42]  = replacePara(newParas[42],  d.clientSignatoryTitle || '');
     newParas[43]  = replacePara(newParas[43],  d.clientAddress || '');
