@@ -7,26 +7,31 @@ export default async function handler(req, res) {
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
   if (mode === 'extract') {
-    const { fileBase64, mediaType } = body;
+    const { fileBase64, mediaType, docxText } = body;
     const system = isDE
-      ? `Du bist ein Executive Search Berater bei Signium Austria. Analysiere das hochgeladene Dokument und extrahiere alle relevanten Informationen. Antworte NUR mit einem JSON-Objekt, kein Text davor oder danach, keine Markdown-Backticks. JSON-Struktur: {"positionTitle":"","clientCompany":"","clientContactName":"","clientContactLastName":"","clientSalutation":"","clientAddress":"","clientCity":"","clientEmail":"","companyProfile":"Professioneller Fliesstext 200-300 Woerter","positionDescription":"Professioneller Fliesstext 150-250 Woerter","functionalTargets":[],"industryTargets":[],"geoTargets":[]}`
-      : `You are an Executive Search consultant at Signium Austria. Analyse the uploaded document and extract all relevant information. Respond ONLY with a JSON object, no text before or after, no markdown backticks. JSON structure: {"positionTitle":"","clientCompany":"","clientContactName":"","clientContactLastName":"","clientSalutation":"","clientAddress":"","clientCity":"","clientEmail":"","companyProfile":"Professional prose 200-300 words","positionDescription":"Professional prose 150-250 words","functionalTargets":[],"industryTargets":[],"geoTargets":[]}`;
-    const userMsg = isDE ? 'Analysiere dieses Dokument und extrahiere alle Felder als JSON.' : 'Analyse this document and extract all fields as JSON.';
+      ? `Du bist ein Executive Search Berater bei Signium Austria. Analysiere das Dokument und extrahiere alle relevanten Informationen. Antworte NUR mit einem JSON-Objekt, keine Markdown-Backticks. JSON-Struktur: {"positionTitle":"","clientCompany":"","clientContactName":"","clientContactLastName":"","clientSalutation":"","clientAddress":"","clientCity":"","clientEmail":"","companyProfile":"Professioneller Fliesstext 200-300 Woerter","positionDescription":"Professioneller Fliesstext 150-250 Woerter","functionalTargets":[],"industryTargets":[],"geoTargets":[]}`
+      : `You are an Executive Search consultant at Signium Austria. Analyse the document and extract all relevant information. Respond ONLY with a JSON object, no markdown backticks. JSON structure: {"positionTitle":"","clientCompany":"","clientContactName":"","clientContactLastName":"","clientSalutation":"","clientAddress":"","clientCity":"","clientEmail":"","companyProfile":"Professional prose 200-300 words","positionDescription":"Professional prose 150-250 words","functionalTargets":[],"industryTargets":[],"geoTargets":[]}`;
     try {
+      let messages;
+      if (docxText) {
+        // DOCX already extracted to text in browser
+        messages = [{ role: 'user', content: (isDE ? 'Analysiere dieses Dokument und extrahiere alle Felder als JSON:\n\n' : 'Analyse this document and extract all fields as JSON:\n\n') + docxText }];
+      } else {
+        // PDF as base64 document
+        messages = [{ role: 'user', content: [
+          { type: 'document', source: { type: 'base64', media_type: mediaType, data: fileBase64 } },
+          { type: 'text', text: isDE ? 'Analysiere dieses Dokument und extrahiere alle Felder als JSON.' : 'Analyse this document and extract all fields as JSON.' }
+        ]}];
+      }
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 2048,
-          system,
-          messages: [{ role: 'user', content: [
-            { type: 'document', source: { type: 'base64', media_type: mediaType, data: fileBase64 } },
-            { type: 'text', text: userMsg }
-          ]}],
-        }),
+        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 2048, system, messages }),
       });
-      if (!response.ok) throw new Error(`API ${response.status}`);
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`API ${response.status}: ${errText}`);
+      }
       const data = await response.json();
       const raw = data.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
       const clean = raw.replace(/^```json\s*/i,'').replace(/^```/,'').replace(/```$/,'').trim();
@@ -36,7 +41,6 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: err.message });
     }
   }
-
   if (mode === 'company') {
     const { company } = body;
     const system = isDE
