@@ -18,6 +18,8 @@ function replacePara(paraXml, newText) {
     return '<w:t></w:t>';
   });
   return result;
+}function setSpacing(paraXml, before) {
+  return paraXml.replace(/w:before="[^"]*"/, `w:before="${before}"`);
 }
 
 function removeHighlights(paraXml) {
