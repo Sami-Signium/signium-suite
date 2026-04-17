@@ -19,7 +19,7 @@ function replacePara(paraXml, newText) {
   });
   return result;
 function removePara(paraXml) {
-  return paraXml.replace(/<w:pStyle[^\/]*\/>/g, '').replace(/w:before="[^"]*"/g, 'w:before="0"').replace(/w:after="[^"]*"/g, 'w:after="0"').replace(/w:line="[^"]*"/g, 'w:line="240"');
+  return paraXml.replace(/w:before="[^"]*"/g, 'w:before="0"').replace(/w:after="[^"]*"/g, 'w:after="0"');
 }
 
 function removeHighlights(paraXml) {
