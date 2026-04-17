@@ -1201,28 +1201,35 @@ async function handleBriefingUpload(event) {
   loading.style.display = 'flex';
 
   try {
-    // Read file as base64
-    const base64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result.split(',')[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
+    // Read file — DOCX via mammoth.js (browser), PDF as base64
     const isPdf = file.name.toLowerCase().endsWith('.pdf');
-    const mediaType = isPdf ? 'application/pdf'
-      : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-
+    let fetchBody;
+    if (isPdf) {
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      fetchBody = { mode: 'extract', fileBase64: base64, mediaType: 'application/pdf', fileName: file.name, language: currentLang };
+    } else {
+      // DOCX: extract text in browser with mammoth
+      if (!window.mammoth) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+          s.onload = resolve; s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await window.mammoth.extractRawText({ arrayBuffer });
+      fetchBody = { mode: 'extract', docxText: result.value, fileName: file.name, language: currentLang };
+    }
     const res = await fetch('/api/ai-research-angebot', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mode: 'extract',
-        fileBase64: base64,
-        mediaType,
-        fileName: file.name,
-        language: currentLang
-      })
+      body: JSON.stringify(fetchBody)
     });
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
