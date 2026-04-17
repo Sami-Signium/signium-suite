@@ -17,7 +17,7 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-5',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 2048,
           system,
           messages: [{ role: 'user', content: [
@@ -50,7 +50,7 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'anthropic-beta': 'web-search-2025-03-05' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-5',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 1024,
           system,
           messages: [{ role: 'user', content: userMsg }],
@@ -79,7 +79,7 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-5',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 1024,
           system,
           messages: [{ role: 'user', content: userMsg }],
