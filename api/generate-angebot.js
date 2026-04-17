@@ -64,6 +64,7 @@ export default async function handler(req, res) {
     }
 
     // Fixed replacements
+    newParas[0] = setSpacing(newParas[0], '8000');
     newParas[3]   = replacePara(newParas[3],   d.positionTitle || '');
     newParas[8]   = replacePara(newParas[8],   d.clientCompany || '');
     newParas[13] = replacePara(newParas[13], d.date || '');    for (let i = 14; i <= 36; i++) { newParas[i] = replacePara(newParas[i], ''); }newParas[37] = replacePara(newParas[37], '');
