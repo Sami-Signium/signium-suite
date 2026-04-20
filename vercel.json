@@ -3,15 +3,16 @@
     { "source": "/paul", "destination": "/paul.html" },
     { "source": "/docs", "destination": "/docs.html" },
     { "source": "/angebot", "destination": "/angebot.html" },
-   { "source": "/scout", "destination": "/scout.html" },
-{ "source": "/lpr-de", "destination": "/lpr-de.html" },
-{ "source": "/lpr-en", "destination": "/lpr-en.html" }
+    { "source": "/scout", "destination": "/scout.html" },
+    { "source": "/lpr-de", "destination": "/lpr-de.html" },
+    { "source": "/lpr-en", "destination": "/lpr-en.html" }
   ],
   "crons": [
     { "path": "/api/scan", "schedule": "0 7 * * *" }
   ],
   "functions": {
     "api/*.js": {
+      "runtime": "nodejs20.x",
       "includeFiles": "template.docx"
     }
   }
