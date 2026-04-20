@@ -18,8 +18,6 @@ function replacePara(paraXml, newText) {
     return '<w:t></w:t>';
   });
   return result;
-function removePara(paraXml) {
-  return paraXml.replace(/w:before="[^"]*"/g, 'w:before="0"').replace(/w:after="[^"]*"/g, 'w:after="0"');
 }
 
 function removeHighlights(paraXml) {
@@ -64,10 +62,9 @@ export default async function handler(req, res) {
     }
 
     // Fixed replacements
-   
     newParas[3]   = replacePara(newParas[3],   d.positionTitle || '');
     newParas[8]   = replacePara(newParas[8],   d.clientCompany || '');
-    newParas[13] = replacePara(newParas[13], d.date || '');    for (let i = 14; i <= 36; i++) { newParas[i] = replacePara(newParas[i], ''); }newParas[37] = replacePara(newParas[37], '');
+    newParas[13] = replacePara(newParas[13], d.date || '');
     newParas[41]  = replacePara(newParas[41],  d.clientContactName || '');
     newParas[42]  = replacePara(newParas[42],  d.clientSignatoryTitle || '');
     newParas[43]  = replacePara(newParas[43],  d.clientAddress || '');
@@ -130,7 +127,6 @@ export default async function handler(req, res) {
       newXml += newParas[i] + (parts[i+1] || '');
     }
 
-    newXml = newXml.replace(/w:top="2693"/, 'w:top="1200"');
     zip.file('word/document.xml', newXml);
     const outputBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 6 } });
     const safeName = `Signium_Angebot_${(d.clientCompany||'Klient').replace(/\s+/g,'_')}_${(d.positionTitle||'Position').replace(/\s+/g,'_')}`;
