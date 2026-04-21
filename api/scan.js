@@ -55,25 +55,22 @@ export default async function handler(req, res) {
       {
         name: 'Leadersnet',
         url: 'https://www.leadersnet.at/',
-        // Leadersnet: <a href="/news/99347,titel.html">
         linkPattern: /href="(\/news\/\d+,[^"]+\.html)"/g,
-        // Titel aus title= Attribut: title="Artikeltitel"
-        titlePattern: /title="([^"]{10,150})"/g,
+        titlePattern: /class="[^"]*title[^"]*"[^>]*>([^<]{10,150})</g,
         baseUrl: 'https://www.leadersnet.at',
       },
       {
         name: 'Top-Leader',
         url: 'https://top-leader.at/category/people/karrieremeldungen/',
-        // Top Leader WordPress: href="https://top-leader.at/..."
         linkPattern: /href="(https:\/\/top-leader\.at\/(?!category|tag|author|page)[^"#?]+)"/g,
-        titlePattern: /title="([^"]{10,150})"/g,
+        titlePattern: /class="[^"]*title[^"]*"[^>]*>([^<]{10,150})</g,
         baseUrl: '',
       },
       {
         name: 'Horizont-AT',
         url: 'https://www.horizont.at/agenturen/menschen/',
         linkPattern: /href="(\/agenturen\/menschen\/[^"]+)"/g,
-        titlePattern: /title="([^"]{10,120})"/g,
+        titlePattern: /class="[^"]*title[^"]*"[^>]*>([^<]{10,120})</g,
         baseUrl: 'https://www.horizont.at',
       },
     ];
@@ -108,10 +105,12 @@ export default async function handler(req, res) {
           if (t.length > 10) titles.push(t);
         }
 
-        // Kombiniere: für jeden Link einen Eintrag mit dem entsprechenden Titel (wenn vorhanden)
         links.forEach((href, idx) => {
+          // URL-Slug als Fallback-Titel: letzten Pfadteil dekodieren
+          const slug = decodeURIComponent(href.split('/').filter(Boolean).pop() || '')
+            .replace(/[-_]/g, ' ').replace(/\.\w+$/, '').substring(0, 120);
           allArticles.push({
-            title: titles[idx] || `${src.name} Personalien`,
+            title: titles[idx] || slug || `${src.name} Personalien`,
             description: '',
             url: href,
             source: src.name,
