@@ -19,10 +19,15 @@ export default async function handler(req, res) {
     // --- APA-OTS: Primäre AT-Quelle mit Zeitfilter ---
     const otsQueries = [
       'Vorstandsvorsitzender',
+      'Vorstandsvorsitzende',           // weibliche Form
       'Gesch%C3%A4ftsf%C3%BChrer+Wechsel',
+      'Gesch%C3%A4ftsf%C3%BChrerin',   // weibliche Form
       'CEO+bestellt',
       'CFO+bestellt',
+      'CHRO+bestellt',
+      'COO+bestellt',
       'Aufsichtsrat+Bestellung',
+      'Aufsichtsratsvorsitzender',
       '%C3%9Cbernahme+Akquisition',
       'Fusion+Merger',
     ];
@@ -43,6 +48,78 @@ export default async function handler(req, res) {
           }));
         }
       } catch(e) {}
+    }
+
+    // --- AT-Medien Scraping: Leadersnet, Top Leader, Horizont ---
+    const atMediaSources = [
+      {
+        name: 'Leadersnet',
+        url: 'https://www.leadersnet.at/news/',
+        // Leadersnet: <a href="/news/12345,titel.html">Titel</a>
+        linkPattern: /href="(\/news\/\d+,[^"]+\.html)"/g,
+        titlePattern: /<h[23][^>]*>\s*([^<]{10,120})\s*<\/h[23]>/g,
+        baseUrl: 'https://www.leadersnet.at',
+      },
+      {
+        name: 'Top-Leader',
+        url: 'https://top-leader.at/people/',
+        // Top Leader: article links
+        linkPattern: /href="(https:\/\/top-leader\.at\/people\/[^"]+)"/g,
+        titlePattern: /<h[23][^>]*>\s*([^<]{10,150})\s*<\/h[23]>/g,
+        baseUrl: '',
+      },
+      {
+        name: 'Horizont-AT',
+        url: 'https://www.horizont.at/personal/news/',
+        linkPattern: /href="(\/personal\/news\/[^"]+)"/g,
+        titlePattern: /<h[23][^>]*>\s*([^<]{10,120})\s*<\/h[23]>/g,
+        baseUrl: 'https://www.horizont.at',
+      },
+    ];
+
+    for (const src of atMediaSources) {
+      try {
+        const r = await fetch(src.url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; SigniumPAUL/1.0; +https://signium.com)',
+            'Accept': 'text/html,application/xhtml+xml',
+            'Accept-Language': 'de-AT,de;q=0.9',
+          },
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!r.ok) continue;
+        const html = await r.text();
+
+        // Extrahiere Links
+        const links = [];
+        let m;
+        const linkRe = new RegExp(src.linkPattern.source, 'g');
+        while ((m = linkRe.exec(html)) !== null && links.length < 30) {
+          const href = m[1].startsWith('http') ? m[1] : src.baseUrl + m[1];
+          if (!links.includes(href)) links.push(href);
+        }
+
+        // Extrahiere Titel aus H2/H3 Tags (grobe Zuordnung)
+        const titles = [];
+        const titleRe = new RegExp(src.titlePattern.source, 'g');
+        while ((m = titleRe.exec(html)) !== null && titles.length < 30) {
+          const t = m[1].replace(/\s+/g, ' ').trim();
+          if (t.length > 10) titles.push(t);
+        }
+
+        // Kombiniere: für jeden Link einen Eintrag mit dem entsprechenden Titel (wenn vorhanden)
+        links.forEach((href, idx) => {
+          allArticles.push({
+            title: titles[idx] || `${src.name} Personalien`,
+            description: '',
+            url: href,
+            source: src.name,
+            published_at: new Date().toISOString().split('T')[0],
+          });
+        });
+      } catch(e) {
+        // Lautloser Fehler — Scraping kann jederzeit fehlschlagen
+      }
     }
 
     // --- NewsAPI: DE und CEE ---
