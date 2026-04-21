@@ -54,25 +54,26 @@ export default async function handler(req, res) {
     const atMediaSources = [
       {
         name: 'Leadersnet',
-        url: 'https://www.leadersnet.at/news/',
-        // Leadersnet: <a href="/news/12345,titel.html">Titel</a>
+        url: 'https://www.leadersnet.at/',
+        // Leadersnet: <a href="/news/99347,titel.html">
         linkPattern: /href="(\/news\/\d+,[^"]+\.html)"/g,
-        titlePattern: /<h[23][^>]*>\s*([^<]{10,120})\s*<\/h[23]>/g,
+        // Titel aus title= Attribut: title="Artikeltitel"
+        titlePattern: /title="([^"]{10,150})"/g,
         baseUrl: 'https://www.leadersnet.at',
       },
       {
         name: 'Top-Leader',
-        url: 'https://top-leader.at/people/',
-        // Top Leader: article links
-        linkPattern: /href="(https:\/\/top-leader\.at\/people\/[^"]+)"/g,
-        titlePattern: /<h[23][^>]*>\s*([^<]{10,150})\s*<\/h[23]>/g,
+        url: 'https://top-leader.at/category/people/karrieremeldungen/',
+        // Top Leader WordPress: href="https://top-leader.at/..."
+        linkPattern: /href="(https:\/\/top-leader\.at\/(?!category|tag|author|page)[^"#?]+)"/g,
+        titlePattern: /title="([^"]{10,150})"/g,
         baseUrl: '',
       },
       {
         name: 'Horizont-AT',
-        url: 'https://www.horizont.at/personal/news/',
-        linkPattern: /href="(\/personal\/news\/[^"]+)"/g,
-        titlePattern: /<h[23][^>]*>\s*([^<]{10,120})\s*<\/h[23]>/g,
+        url: 'https://www.horizont.at/agenturen/menschen/',
+        linkPattern: /href="(\/agenturen\/menschen\/[^"]+)"/g,
+        titlePattern: /title="([^"]{10,120})"/g,
         baseUrl: 'https://www.horizont.at',
       },
     ];
