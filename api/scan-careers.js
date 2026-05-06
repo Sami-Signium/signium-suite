@@ -1,19 +1,70 @@
 // api/scan-careers.js
-// PAUL Career Scanner — Serverless Function
-// Vercel Hobby Plan: zählt als 1 von max. 12 Funktionen
-// Supabase Projekt: ftdxhswcnghlmcagrsox (PAUL/Henry)
+// PAUL Career Scanner — ohne @supabase/supabase-js Paket
+// Verwendet native fetch direkt gegen Supabase REST API
 
-import { createClient } from '@supabase/supabase-js';
+const SUPABASE_URL        = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const ANTHROPIC_API_KEY   = process.env.ANTHROPIC_API_KEY;
+const CLAUDE_MODEL        = 'claude-haiku-4-5-20251001';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+// ── Supabase REST Helpers ─────────────────────────────────────────────────────
+async function sbSelect(table, params = '') {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  if (!r.ok) throw new Error(`Supabase SELECT ${table}: ${await r.text()}`);
+  return r.json();
+}
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
+async function sbInsert(table, body) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(`Supabase INSERT ${table}: ${await r.text()}`);
+  return r.json();
+}
 
-// Positionsfilter — Leitungsfunktionen >125k
+async function sbUpsert(table, body, onConflict) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=${onConflict}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=representation'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(`Supabase UPSERT ${table}: ${await r.text()}`);
+  return r.json();
+}
+
+async function sbUpdate(table, filter, body) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${filter}`, {
+    method: 'PATCH',
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(`Supabase UPDATE ${table}: ${await r.text()}`);
+  return r.json();
+}
+
+// ── Positionsfilter ───────────────────────────────────────────────────────────
 const LEADERSHIP_PROMPT = `Du bist ein Executive Search Spezialist. Analysiere den folgenden Text einer Karriereseite und extrahiere NUR Leitungspositionen mit einem geschätzten Jahresgehalt über €125.000.
 
 EINSCHLIESSEN:
@@ -28,25 +79,16 @@ EINSCHLIESSEN:
 AUSSCHLIESSEN:
 - Team Lead / Gruppenleiter (operative Ebene)
 - Sachbearbeiter, Specialist, Analyst, Coordinator
-- Junior-Positionen, Trainees, Werkstudenten, Praktikanten
-- Positionen ohne klare Leitungsverantwortung
+- Junior, Trainee, Werkstudent, Praktikant
 
 Antworte NUR mit einem JSON-Array. Kein Text davor oder danach.
 Format:
-[
-  {
-    "title": "Exakter Positionstitel wie auf der Seite",
-    "department": "Bereich/Abteilung oder null",
-    "level": "C-Level|Geschäftsführung|Bereichsleitung|Abteilungsleitung|Sonstige Leitungsfunktion",
-    "job_url": "URL zur Stelle wenn erkennbar, sonst null"
-  }
-]
+[{"title":"Positionstitel","department":"Bereich oder null","level":"C-Level|Geschäftsführung|Bereichsleitung|Abteilungsleitung|Sonstige Leitungsfunktion","job_url":"URL oder null"}]
 
-Wenn keine passenden Positionen gefunden: antworte mit []`;
+Wenn keine passenden Positionen: antworte mit []`;
 
-// Hauptfunktion
+// ── Main Handler ──────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -63,394 +105,336 @@ export default async function handler(req, res) {
     if (action === 'get-stats')      return await getStats(req, res);
     if (action === 'mark-outreach')  return await markOutreach(req, res);
     if (action === 'generate-mail')  return await generateOutreachMail(req, res);
-
-    return res.status(400).json({ error: 'Unbekannte action. Gültig: upload-targets, scan-one, scan-all, get-vacancies, get-targets, get-stats, mark-outreach, generate-mail' });
+    return res.status(400).json({ error: 'Unbekannte action' });
   } catch (err) {
-    console.error('[scan-careers] Unhandled error:', err);
+    console.error('[scan-careers]', err);
     return res.status(500).json({ error: err.message });
   }
 }
 
-// ── 1. Excel-Upload: Unternehmen in Supabase speichern ───────────────────────
+// ── 1. Upload Targets ─────────────────────────────────────────────────────────
 async function uploadTargets(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST required' });
+  const { companies } = req.body;
+  if (!Array.isArray(companies) || !companies.length)
+    return res.status(400).json({ error: 'companies[] fehlt' });
 
-  const { companies } = req.body; // Array aus dem Frontend (nach Excel-Parse)
-  if (!Array.isArray(companies) || companies.length === 0) {
-    return res.status(400).json({ error: 'companies[] fehlt oder leer' });
-  }
-
-  const rows = companies.map(c => ({
-    company_name: c.company_name?.trim(),
-    career_url:   c.career_url?.trim(),
-    country:      c.country?.trim() || 'AT',
-    industry:     c.industry || null,
+  const rows = companies.map((c, i) => ({
+    company_name: String(c.company_name || '').trim(),
+    career_url:   String(c.career_url   || '').trim(),
+    country:      String(c.country      || 'AT').trim(),
+    industry:     c.industry  || null,
     revenue_mio:  c.revenue_mio ? parseFloat(c.revenue_mio) : null,
-    employees:    c.employees ? parseInt(c.employees) : null,
-    priority:     c.priority ? parseInt(c.priority) : 2,
-    source:       c.source || null,
-    notes:        c.notes || null,
-    internal_id:  c.internal_id || null,
+    employees:    c.employees   ? parseInt(c.employees)     : null,
+    priority:     c.priority    ? parseInt(c.priority)      : 2,
+    source:       c.source  || null,
+    notes:        c.notes   || null,
+    internal_id:  c.internal_id || `IMPORT-${Date.now()}-${i}`,
     active:       c.active !== 'N' && c.active !== false,
     updated_at:   new Date().toISOString()
   })).filter(r => r.company_name && r.career_url);
 
-  // Upsert: bestehende Einträge aktualisieren, neue hinzufügen
-  const { data, error } = await supabase
-    .from('career_targets')
-    .upsert(rows, { onConflict: 'internal_id', ignoreDuplicates: false });
-
-  if (error) return res.status(500).json({ error: error.message });
-
+  await sbUpsert('career_targets', rows, 'internal_id');
   return res.json({ success: true, uploaded: rows.length, message: `${rows.length} Unternehmen importiert/aktualisiert` });
 }
 
-// ── 2. Eine Firma scannen ────────────────────────────────────────────────────
+// ── 2. Scan one ───────────────────────────────────────────────────────────────
 async function scanOneCompany(req, res) {
   const { target_id } = req.method === 'POST' ? req.body : req.query;
   if (!target_id) return res.status(400).json({ error: 'target_id fehlt' });
 
-  const { data: target, error: tErr } = await supabase
-    .from('career_targets')
-    .select('*')
-    .eq('id', target_id)
-    .single();
+  const rows = await sbSelect('career_targets', `id=eq.${target_id}`);
+  if (!rows.length) return res.status(404).json({ error: 'Nicht gefunden' });
 
-  if (tErr || !target) return res.status(404).json({ error: 'Unternehmen nicht gefunden' });
-
-  const result = await scanTarget(target);
+  const result = await scanTarget(rows[0]);
   return res.json(result);
 }
 
-// ── 3. Alle aktiven Firmen scannen (mit Limit pro Request) ───────────────────
+// ── 3. Scan all ───────────────────────────────────────────────────────────────
 async function scanAllCompanies(req, res) {
-  const { limit = 10, priority } = req.query;
+  const limit    = parseInt(req.query.limit || '10');
+  const priority = req.query.priority;
 
-  let query = supabase
-    .from('career_targets')
-    .select('*')
-    .eq('active', true)
-    .order('priority', { ascending: true })
-    .order('last_scanned_at', { ascending: true, nullsFirst: true })
-    .limit(parseInt(limit));
+  let params = `active=eq.true&order=priority.asc,last_scanned_at.asc.nullsfirst&limit=${limit}`;
+  if (priority) params += `&priority=eq.${priority}`;
 
-  if (priority) query = query.eq('priority', parseInt(priority));
-
-  const { data: targets, error } = await query;
-  if (error) return res.status(500).json({ error: error.message });
-
+  const targets = await sbSelect('career_targets', params);
   const results = [];
+
   for (const target of targets) {
     const result = await scanTarget(target);
     results.push(result);
-    // Kurze Pause zwischen Requests (Rate limiting)
     await sleep(1500);
   }
 
-  const summary = {
-    total_scanned: results.length,
-    total_new_vacancies: results.reduce((s, r) => s + (r.new_vacancies || 0), 0),
-    total_filled: results.reduce((s, r) => s + (r.filled_vacancies || 0), 0),
-    errors: results.filter(r => r.status === 'error').length,
+  return res.json({
+    total_scanned:        results.length,
+    total_new_vacancies:  results.reduce((s, r) => s + (r.new_vacancies  || 0), 0),
+    total_filled:         results.reduce((s, r) => s + (r.filled_vacancies || 0), 0),
+    errors:               results.filter(r => r.status === 'error').length,
     results
-  };
-
-  return res.json(summary);
+  });
 }
 
-// ── Core: Eine Karriereseite scrapen + KI-Analyse ────────────────────────────
+// ── Core scan ─────────────────────────────────────────────────────────────────
 async function scanTarget(target) {
   const startTime = Date.now();
-  const logEntry = {
-    target_id: target.id,
-    company_name: target.company_name,
-    status: 'error',
-    vacancies_found: 0,
-    new_vacancies: 0,
+  const log = {
+    target_id:        target.id,
+    company_name:     target.company_name,
+    status:           'error',
+    vacancies_found:  0,
+    new_vacancies:    0,
     filled_vacancies: 0
   };
 
   try {
-    // Schritt 1: Karriereseite abrufen
     const pageText = await fetchCareerPage(target.career_url);
 
     if (!pageText || pageText.length < 100) {
-      logEntry.status = 'skipped';
-      logEntry.error_message = 'Seite leer oder nicht erreichbar';
-      await writeLog(logEntry, startTime);
-      return { ...logEntry, company: target.company_name };
+      log.status = 'skipped';
+      log.error_message = 'Seite leer oder nicht erreichbar';
+      await writeLog(log, startTime);
+      return { ...log };
     }
 
-    // Schritt 2: KI-Analyse
     const jobs = await analyzeWithClaude(pageText, target.company_name, target.career_url);
+    log.vacancies_found = jobs.length;
 
-    if (!jobs || jobs.length === 0) {
-      logEntry.status = 'no_jobs';
-      await supabase.from('career_targets').update({ last_scanned_at: new Date().toISOString() }).eq('id', target.id);
-      await writeLog(logEntry, startTime);
-      return { ...logEntry, company: target.company_name, jobs: [] };
+    if (!jobs.length) {
+      log.status = 'no_jobs';
+      await sbUpdate('career_targets', `id=eq.${target.id}`, { last_scanned_at: new Date().toISOString() });
+      await writeLog(log, startTime);
+      return { ...log, jobs: [] };
     }
 
-    logEntry.vacancies_found = jobs.length;
+    // Bestehende aktive Vakanzen laden
+    const existing = await sbSelect('career_vacancies', `target_id=eq.${target.id}&is_active=eq.true`);
+    const existingTitles = new Set(existing.map(e => e.job_title.toLowerCase().trim()));
+    const foundTitles    = new Set(jobs.map(j => j.title.toLowerCase().trim()));
 
-    // Schritt 3: Bestehende Vakanzen laden
-    const { data: existing } = await supabase
-      .from('career_vacancies')
-      .select('id, job_title, is_active')
-      .eq('target_id', target.id);
-
-    const existingTitles = new Set((existing || []).filter(e => e.is_active).map(e => e.job_title.toLowerCase().trim()));
-    const foundTitles = new Set(jobs.map(j => j.title.toLowerCase().trim()));
-
-    // Schritt 4: Neue Vakanzen einfügen
+    // Neue einfügen
     let newCount = 0;
     for (const job of jobs) {
-      const titleKey = job.title.toLowerCase().trim();
-      if (!existingTitles.has(titleKey)) {
-        const { error } = await supabase.from('career_vacancies').insert({
-          target_id:    target.id,
-          company_name: target.company_name,
-          job_title:    job.title,
-          department:   job.department || null,
-          job_level:    job.level || null,
-          job_url:      job.job_url || target.career_url,
-          is_active:    true,
-          first_seen_at: new Date().toISOString(),
-          last_seen_at:  new Date().toISOString()
-        });
-        if (!error) newCount++;
+      if (!existingTitles.has(job.title.toLowerCase().trim())) {
+        try {
+          await sbInsert('career_vacancies', {
+            target_id:     target.id,
+            company_name:  target.company_name,
+            job_title:     job.title,
+            department:    job.department || null,
+            job_level:     job.level      || null,
+            job_url:       job.job_url    || target.career_url,
+            is_active:     true,
+            first_seen_at: new Date().toISOString(),
+            last_seen_at:  new Date().toISOString()
+          });
+          newCount++;
+        } catch(e) {
+          // Duplikat — ignorieren
+        }
       } else {
-        // Vorhandene: last_seen aktualisieren
-        await supabase.from('career_vacancies')
-          .update({ last_seen_at: new Date().toISOString() })
-          .eq('target_id', target.id)
-          .ilike('job_title', job.title);
+        // last_seen aktualisieren
+        await sbUpdate('career_vacancies',
+          `target_id=eq.${target.id}&job_title=eq.${encodeURIComponent(job.title)}`,
+          { last_seen_at: new Date().toISOString() }
+        );
       }
     }
 
-    // Schritt 5: Verschwundene Stellen als "besetzt" markieren
+    // Verschwundene als besetzt markieren
     let filledCount = 0;
-    for (const ex of (existing || []).filter(e => e.is_active)) {
+    for (const ex of existing) {
       if (!foundTitles.has(ex.job_title.toLowerCase().trim())) {
-        await supabase.from('career_vacancies')
-          .update({ is_active: false, filled_at: new Date().toISOString() })
-          .eq('id', ex.id);
+        await sbUpdate('career_vacancies', `id=eq.${ex.id}`, {
+          is_active: false,
+          filled_at: new Date().toISOString()
+        });
         filledCount++;
       }
     }
 
-    // Schritt 6: last_scanned_at updaten
-    await supabase.from('career_targets')
-      .update({ last_scanned_at: new Date().toISOString() })
-      .eq('id', target.id);
+    await sbUpdate('career_targets', `id=eq.${target.id}`, { last_scanned_at: new Date().toISOString() });
 
-    logEntry.status = 'success';
-    logEntry.new_vacancies = newCount;
-    logEntry.filled_vacancies = filledCount;
-
-    await writeLog(logEntry, startTime);
-    return { ...logEntry, company: target.company_name, jobs };
+    log.status           = 'success';
+    log.new_vacancies    = newCount;
+    log.filled_vacancies = filledCount;
+    await writeLog(log, startTime);
+    return { ...log, jobs };
 
   } catch (err) {
-    logEntry.error_message = err.message;
-    await writeLog(logEntry, startTime);
-    return { ...logEntry, company: target.company_name, error: err.message };
+    log.error_message = err.message;
+    await writeLog(log, startTime);
+    return { ...log, error: err.message };
   }
 }
 
-// ── Karriereseite abrufen (fetch mit Timeout) ────────────────────────────────
+// ── Karriereseite abrufen ─────────────────────────────────────────────────────
 async function fetchCareerPage(url) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
-
+  const timeout    = setTimeout(() => controller.abort(), 12000);
   try {
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; CareerScanner/1.0)',
-        'Accept': 'text/html,application/xhtml+xml',
+        'User-Agent':      'Mozilla/5.0 (compatible; CareerScanner/1.0)',
+        'Accept':          'text/html,application/xhtml+xml',
         'Accept-Language': 'de-AT,de;q=0.9,en;q=0.8'
       }
     });
     clearTimeout(timeout);
-
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
     const html = await response.text();
-    // HTML-Tags entfernen, Text bereinigen
     return html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s+/g, ' ')
       .trim()
-      .substring(0, 8000); // Max 8000 Zeichen für Claude
+      .substring(0, 8000);
   } catch (err) {
     clearTimeout(timeout);
     throw new Error(`Seite nicht erreichbar: ${err.message}`);
   }
 }
 
-// ── KI-Analyse mit Claude Haiku ──────────────────────────────────────────────
+// ── KI-Analyse ────────────────────────────────────────────────────────────────
 async function analyzeWithClaude(pageText, companyName, baseUrl) {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
+      'Content-Type':      'application/json',
+      'x-api-key':         ANTHROPIC_API_KEY,
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: CLAUDE_MODEL,
+      model:      CLAUDE_MODEL,
       max_tokens: 1000,
       messages: [{
-        role: 'user',
+        role:    'user',
         content: `${LEADERSHIP_PROMPT}\n\nUnternehmen: ${companyName}\nBasis-URL: ${baseUrl}\n\nKarriereseiteninhalt:\n${pageText}`
       }]
     })
   });
-
-  if (!response.ok) throw new Error(`Claude API Fehler: ${response.status}`);
-
+  if (!response.ok) throw new Error(`Claude API: ${response.status}`);
   const data = await response.json();
   const text = data.content?.[0]?.text || '[]';
-
   try {
-    const clean = text.replace(/```json|```/g, '').trim();
-    return JSON.parse(clean);
+    return JSON.parse(text.replace(/```json|```/g, '').trim());
   } catch {
     return [];
   }
 }
 
-// ── 4. Vakanzen abrufen ──────────────────────────────────────────────────────
+// ── 4. Get Vacancies ──────────────────────────────────────────────────────────
 async function getVacancies(req, res) {
-  const { min_days = 0, level, country, priority, limit = 200 } = req.query;
+  const { min_days = 0, level, limit = 200 } = req.query;
 
-  let query = supabase
-    .from('career_vacancies')
-    .select(`
-      *,
-      career_targets (company_name, career_url, country, industry, priority)
-    `)
-    .eq('is_active', true)
-    .order('first_seen_at', { ascending: true })
-    .limit(parseInt(limit));
+  let params = `is_active=eq.true&order=first_seen_at.asc&limit=${limit}`;
+  if (level) params += `&job_level=eq.${encodeURIComponent(level)}`;
 
   if (parseInt(min_days) > 0) {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - parseInt(min_days));
-    query = query.lte('first_seen_at', cutoff.toISOString());
+    params += `&first_seen_at=lte.${cutoff.toISOString()}`;
   }
 
-  if (level) query = query.eq('job_level', level);
+  const vacancies = await sbSelect('career_vacancies', params);
 
-  const { data, error } = await query;
-  if (error) return res.status(500).json({ error: error.message });
+  // Target-Daten dazu laden
+  const targetIds = [...new Set(vacancies.map(v => v.target_id))];
+  let targets = [];
+  if (targetIds.length) {
+    targets = await sbSelect('career_targets', `id=in.(${targetIds.join(',')})`);
+  }
+  const targetMap = Object.fromEntries(targets.map(t => [t.id, t]));
 
-  // Nachfilter nach country/priority (über join)
-  let filtered = data || [];
-  if (country) filtered = filtered.filter(v => v.career_targets?.country === country);
-  if (priority) filtered = filtered.filter(v => v.career_targets?.priority === parseInt(priority));
+  const enriched = vacancies.map(v => ({
+    ...v,
+    career_targets: targetMap[v.target_id] || null
+  }));
+
+  // Nachfilter country
+  let filtered = enriched;
+  if (req.query.country) filtered = filtered.filter(v => v.career_targets?.country === req.query.country);
 
   return res.json({ vacancies: filtered, count: filtered.length });
 }
 
-// ── 5. Targets abrufen ───────────────────────────────────────────────────────
+// ── 5. Get Targets ────────────────────────────────────────────────────────────
 async function getTargets(req, res) {
   const { active = 'true', country, priority } = req.query;
+  let params = `order=priority.asc,company_name.asc`;
+  if (active !== 'all') params += `&active=eq.${active}`;
+  if (country)  params += `&country=eq.${country}`;
+  if (priority) params += `&priority=eq.${priority}`;
 
-  let query = supabase.from('career_targets').select('*').order('priority').order('company_name');
-  if (active !== 'all') query = query.eq('active', active === 'true');
-  if (country) query = query.eq('country', country);
-  if (priority) query = query.eq('priority', parseInt(priority));
-
-  const { data, error } = await query;
-  if (error) return res.status(500).json({ error: error.message });
-  return res.json({ targets: data || [], count: (data || []).length });
+  const targets = await sbSelect('career_targets', params);
+  return res.json({ targets, count: targets.length });
 }
 
-// ── 6. Statistiken ───────────────────────────────────────────────────────────
+// ── 6. Stats ──────────────────────────────────────────────────────────────────
 async function getStats(req, res) {
-  const [targets, vacancies, recentScans] = await Promise.all([
-    supabase.from('career_targets').select('id, active, priority, last_scanned_at').eq('active', true),
-    supabase.from('career_vacancies').select('id, job_level, first_seen_at, outreach_sent, days_open').eq('is_active', true),
-    supabase.from('career_scan_log').select('*').order('scanned_at', { ascending: false }).limit(20)
+  const [targets, vacancies] = await Promise.all([
+    sbSelect('career_targets',  'active=eq.true&select=id'),
+    sbSelect('career_vacancies','is_active=eq.true&select=id,job_level,first_seen_at,outreach_sent')
   ]);
 
-  const vacs = vacancies.data || [];
-  const now = new Date();
-
+  const vacs = vacancies || [];
   const stats = {
-    total_targets:       (targets.data || []).length,
-    total_vacancies:     vacs.length,
-    vacancies_30d:       vacs.filter(v => daysSince(v.first_seen_at) >= 30).length,
-    vacancies_60d:       vacs.filter(v => daysSince(v.first_seen_at) >= 60).length,
-    vacancies_90d:       vacs.filter(v => daysSince(v.first_seen_at) >= 90).length,
-    c_level_open:        vacs.filter(v => v.job_level === 'C-Level').length,
-    outreach_pending:    vacs.filter(v => !v.outreach_sent && daysSince(v.first_seen_at) >= 30).length,
-    last_scans:          recentScans.data || []
+    total_targets:    targets.length,
+    total_vacancies:  vacs.length,
+    vacancies_30d:    vacs.filter(v => daysSince(v.first_seen_at) >= 30).length,
+    vacancies_60d:    vacs.filter(v => daysSince(v.first_seen_at) >= 60).length,
+    vacancies_90d:    vacs.filter(v => daysSince(v.first_seen_at) >= 90).length,
+    c_level_open:     vacs.filter(v => v.job_level === 'C-Level').length,
+    outreach_pending: vacs.filter(v => !v.outreach_sent && daysSince(v.first_seen_at) >= 30).length
   };
-
   return res.json(stats);
 }
 
-// ── 7. Outreach markieren ────────────────────────────────────────────────────
+// ── 7. Mark Outreach ──────────────────────────────────────────────────────────
 async function markOutreach(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST required' });
   const { vacancy_id } = req.body;
   if (!vacancy_id) return res.status(400).json({ error: 'vacancy_id fehlt' });
-
-  const { error } = await supabase.from('career_vacancies')
-    .update({ outreach_sent: true, outreach_sent_at: new Date().toISOString() })
-    .eq('id', vacancy_id);
-
-  if (error) return res.status(500).json({ error: error.message });
+  await sbUpdate('career_vacancies', `id=eq.${vacancy_id}`, {
+    outreach_sent: true, outreach_sent_at: new Date().toISOString()
+  });
   return res.json({ success: true });
 }
 
-// ── 8. Outreach-Mail generieren (Sonnet für Qualität) ────────────────────────
+// ── 8. Generate Mail ──────────────────────────────────────────────────────────
 async function generateOutreachMail(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST required' });
   const { vacancy_id } = req.body;
   if (!vacancy_id) return res.status(400).json({ error: 'vacancy_id fehlt' });
 
-  const { data: vac, error } = await supabase
-    .from('career_vacancies')
-    .select('*, career_targets(*)')
-    .eq('id', vacancy_id)
-    .single();
+  const rows = await sbSelect('career_vacancies', `id=eq.${vacancy_id}`);
+  if (!rows.length) return res.status(404).json({ error: 'Nicht gefunden' });
+  const vac = rows[0];
 
-  if (error || !vac) return res.status(404).json({ error: 'Vakanz nicht gefunden' });
+  const targets = await sbSelect('career_targets', `id=eq.${vac.target_id}`);
+  const target  = targets[0] || {};
+  const days    = daysSince(vac.first_seen_at);
 
-  const days = daysSince(vac.first_seen_at);
-  const company = vac.career_targets?.company_name || vac.company_name;
-  const country = vac.career_targets?.country || 'AT';
+  const prompt = `Du bist Sami Hamid, Managing Partner bei Signium Austria (Stein & Partner GmbH, Wien). 30+ Jahre Erfahrung im Executive Search, DACH & CEE.
 
-  const prompt = `Du bist Sami Hamid, Managing Partner bei Signium Austria (Stein & Partner GmbH, Wien). 
-30+ Jahre Erfahrung im Executive Search, DACH & CEE.
+Schreibe eine professionelle Erstansprache (max. 120 Wörter) an den Entscheidungsträger bei ${target.company_name || vac.company_name} bezüglich der seit ${days} Tagen offenen Position "${vac.job_title}" (${vac.job_level}).
 
-Schreibe eine professionelle Erstansprache (max. 120 Wörter) an den Entscheidungsträger bei ${company} (${country}) bezüglich der seit ${days} Tagen offenen Position "${vac.job_title}" (${vac.job_level}).
-
-Regeln:
-- Keine generischen Floskeln
-- Direkt ansprechen DASS die Stelle lange offen ist — als Signal, nicht als Kritik
-- Signium positionieren: DACH/CEE Spezialist, eigene Büros, 1000+ Mandate, 30 Jahre
-- Auf Augenhöhe, substanziell
-- Sprache: Deutsch
-- Kein Betreff, nur Fließtext`;
+Regeln: Keine Floskeln. Direkt ansprechen dass die Stelle lange offen ist. Signium positionieren: DACH/CEE Spezialist, eigene Büros, 1000+ Mandate, 30 Jahre. Auf Augenhöhe. Sprache: Deutsch. Kein Betreff.`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
+      'Content-Type':      'application/json',
+      'x-api-key':         ANTHROPIC_API_KEY,
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model:      'claude-sonnet-4-6',
       max_tokens: 400,
-      messages: [{ role: 'user', content: prompt }]
+      messages:   [{ role: 'user', content: prompt }]
     })
   });
 
@@ -459,7 +443,7 @@ Regeln:
   return res.json({ mail, vacancy: vac });
 }
 
-// ── Hilfsfunktionen ──────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function daysSince(dateStr) {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
 }
@@ -469,8 +453,9 @@ function sleep(ms) {
 }
 
 async function writeLog(entry, startTime) {
-  await supabase.from('career_scan_log').insert({
-    ...entry,
-    duration_ms: Date.now() - startTime
-  });
+  try {
+    await sbInsert('career_scan_log', { ...entry, duration_ms: Date.now() - startTime });
+  } catch(e) {
+    console.error('Log write failed:', e.message);
+  }
 }
