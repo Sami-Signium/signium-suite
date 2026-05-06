@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PAUL — Career Scanner</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --navy:  #1B2A4A;
+    --gold:  #C9A84C;
+    --gold-light: #FDF6E3;
+    --red:   #dc2626;
+    --orange:#ea580c;
+    --yellow:#ca8a04;
+    --green: #16a34a;
+    --grey:  #f8f7f4;
+    --border:#e5e0d8;
+    --text:  #1a1a1a;
+    --muted: #6b7280;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: var(--grey); color: var(--text); font-size: 13px; }
+
+  /* Header */
+  .header { background: var(--navy); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; }
+  .header-title { color: white; font-size: 18px; font-weight: 700; }
+  .header-sub { color: #8899bb; font-size: 11px; margin-top: 2px; }
+  .header-badge { color: var(--gold); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+
+  /* Tabs */
+  .tabs { background: white; border-bottom: 1px solid var(--border); display: flex; padding: 0 28px; }
+  .tab { padding: 12px 18px; border: none; background: none; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab.active { color: var(--navy); border-bottom-color: var(--gold); }
+
+  /* Layout */
+  .content { padding: 24px 28px; max-width: 1200px; }
+
+  /* Cards */
+  .card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 18px; }
+  .card-title { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 14px; }
+
+  /* KPI Grid */
+  .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 20px; }
+  .kpi { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; }
+  .kpi.highlight { border-color: var(--gold); border-width: 2px; }
+  .kpi-value { font-size: 32px; font-weight: 700; color: var(--navy); }
+  .kpi-value.gold { color: var(--gold); }
+  .kpi-value.red  { color: var(--red); }
+  .kpi-label { font-size: 11px; font-weight: 600; color: #444; margin-top: 2px; }
+  .kpi-sub   { font-size: 10px; color: var(--muted); }
+
+  /* Buttons */
+  .btn { padding: 8px 18px; border-radius: 5px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; }
+  .btn-primary { background: var(--navy); color: white; }
+  .btn-primary:hover { background: #243660; }
+  .btn-secondary { background: white; color: var(--navy); border: 1px solid var(--navy); }
+  .btn-gold { background: var(--gold); color: var(--navy); }
+  .btn-sm { padding: 5px 12px; font-size: 11px; }
+  .btn:disabled { background: #ccc; color: #888; cursor: default; }
+
+  /* Vacancy rows */
+  .vacancy-list { display: flex; flex-direction: column; gap: 6px; }
+  .vacancy-row { background: white; border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; display: flex; align-items: center; gap: 14px; border-left: 3px solid #ddd; }
+  .vacancy-row.c-level { border-left-color: var(--gold); }
+  .vacancy-row.gf { border-left-color: #3b82f6; }
+  .vacancy-title { font-weight: 700; color: var(--navy); font-size: 13px; }
+  .vacancy-meta  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .vacancy-info  { flex: 1; }
+  .age-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+
+  /* Filter bar */
+  .filter-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filter-btn { padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border); background: white; cursor: pointer; font-size: 11px; color: #555; }
+  .filter-btn.active { background: var(--navy); color: white; border-color: var(--navy); }
+  select.filter-select { padding: 5px 10px; border: 1px solid var(--border); border-radius: 5px; font-size: 12px; }
+
+  /* Upload zone */
+  .upload-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s; }
+  .upload-zone:hover { border-color: var(--gold); background: var(--gold-light); }
+  .upload-icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-text { font-size: 13px; color: var(--navy); font-weight: 600; }
+  .upload-sub  { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* Progress bar */
+  .progress-wrap { background: #eee; border-radius: 4px; height: 6px; overflow: hidden; margin-top: 10px; }
+  .progress-bar  { background: var(--gold); height: 100%; transition: width 0.3s; }
+
+  /* Outreach modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 10px; width: 600px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
+  .modal-header { background: var(--navy); color: white; padding: 16px 20px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center; }
+  .modal-body   { padding: 20px; }
+  .modal-close  { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+  textarea.mail-draft { width: 100%; min-height: 180px; border: 1px solid var(--border); border-radius: 5px; padding: 12px; font-size: 13px; line-height: 1.6; resize: vertical; }
+
+  /* AI insight box */
+  .ai-box { background: var(--navy); border-radius: 8px; padding: 20px; margin-bottom: 18px; }
+  .ai-box-title { color: var(--gold); font-size: 12px; font-weight: 700; letter-spacing: 1px; margin-bottom: 12px; }
+  .ai-box-text  { color: #d4dce8; font-size: 12px; line-height: 1.7; white-space: pre-wrap; }
+  .ai-box-placeholder { color: #5a7090; font-size: 12px; font-style: italic; }
+
+  /* Table for targets */
+  .targets-table { width: 100%; border-collapse: collapse; }
+  .targets-table th { background: var(--navy); color: white; padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; }
+  .targets-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .targets-table tr:hover td { background: #f9f8f6; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot-green { background: var(--green); }
+  .dot-grey  { background: #ccc; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: white; padding: 12px 20px; border-radius: 6px; font-size: 12px; z-index: 9999; display: none; }
+  .toast.show { display: block; animation: fadeIn 0.3s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-hidden { display: none; }
+  input[type=file] { display: none; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <div class="header-badge">Signium Austria — PAUL</div>
+    <div class="header-title">Career Scanner</div>
+    <div class="header-sub">Automatisches Monitoring von Führungsvakanzen · DACH/CEE</div>
+  </div>
+  <div style="text-align:right">
+    <div id="kpi-header-val" style="color:var(--gold);font-size:28px;font-weight:700">—</div>
+    <div style="color:#8899bb;font-size:10px">lange offene Positionen</div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" onclick="showTab('dashboard')">Dashboard</button>
+  <button class="tab" onclick="showTab('vacancies')">Vakanzen</button>
+  <button class="tab" onclick="showTab('targets')">Unternehmen</button>
+  <button class="tab" onclick="showTab('upload')">Upload</button>
+</div>
+
+<div class="content">
+
+  <!-- ── DASHBOARD ── -->
+  <div id="tab-dashboard">
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-value" id="s-targets">—</div><div class="kpi-label">Unternehmen</div><div class="kpi-sub">überwacht</div></div>
+      <div class="kpi"><div class="kpi-value" id="s-total">—</div><div class="kpi-label">Offene Vakanzen</div><div class="kpi-sub">gesamt</div></div>
+      <div class="kpi highlight"><div class="kpi-value red" id="s-30d">—</div><div class="kpi-label">> 30 Tage offen</div><div class="kpi-sub">Handlungsbedarf</div></div>
+      <div class="kpi"><div class="kpi-value gold" id="s-clevel">—</div><div class="kpi-label">C-Level Vakanzen</div><div class="kpi-sub">aktiv</div></div>
+      <div class="kpi"><div class="kpi-value" id="s-outreach">—</div><div class="kpi-label">Outreach ausstehend</div><div class="kpi-sub">>30 Tage, kein Kontakt</div></div>
+    </div>
+
+    <!-- Scan Controls -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div class="card-title" style="margin-bottom:2px">Scan starten</div>
+          <div style="font-size:11px;color:var(--muted)">PAUL besucht Karriereseiten und sucht nach Leitungsvakanzen</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm" onclick="scanAll(1)">Prio 1 scannen</button>
+          <button class="btn btn-primary" id="btn-scan-all" onclick="scanAll()">▶ Alle scannen (10)</button>
+        </div>
+      </div>
+      <div class="progress-wrap" id="scan-progress-wrap" style="display:none">
+        <div class="progress-bar" id="scan-progress-bar" style="width:0%"></div>
+      </div>
+      <div id="scan-status" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
+    </div>
+
+    <!-- AI Insight -->
+    <div class="ai-box">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="ai-box-title">⬡ KI-STRATEGIEANALYSE</div>
+        <button class="btn btn-gold btn-sm" onclick="getAiInsight()">Analyse starten</button>
+      </div>
+      <div id="ai-insight-text" class="ai-box-placeholder" style="margin-top:12px">
+        Starte einen Scan, dann klicke "Analyse starten" für KI-Empfehlungen zum Mandate-Potenzial.
+      </div>
+    </div>
+
+    <!-- Top Vakanzen -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div class="card-title" style="margin-bottom:0">Top Opportunities <span id="dash-vac-count" style="color:var(--muted);font-weight:400"></span></div>
+        <div class="filter-bar" style="margin-bottom:0">
+          <button class="filter-btn active" onclick="setDashFilter(30,this)">30 Tage</button>
+          <button class="filter-btn" onclick="setDashFilter(60,this)">60 Tage</button>
+          <button class="filter-btn" onclick="setDashFilter(90,this)">90 Tage</button>
+        </div>
+      </div>
+      <div class="vacancy-list" id="dash-vacancy-list">
+        <div style="color:var(--muted);text-align:center;padding:30px">Noch keine Scan-Daten. Starte einen Scan.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VAKANZEN ── -->
+  <div id="tab-vacancies" class="section-hidden">
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <select class="filter-select" id="vac-filter-level" onchange="loadVacancies()">
+        <option value="">Alle Level</option>
+        <option value="C-Level">C-Level</option>
+        <option value="Geschäftsführung">Geschäftsführung</option>
+        <option value="Bereichsleitung">Bereichsleitung</option>
+        <option value="Abteilungsleitung">Abteilungsleitung</option>
+        <option value="Sonstige Leitungsfunktion">Sonstige</option>
+      </select>
+      <select class="filter-select" id="vac-filter-days" onchange="loadVacancies()">
+        <option value="0">Alle Vakanzen</option>
+        <option value="30" selected>> 30 Tage</option>
+        <option value="60">> 60 Tage</option>
+        <option value="90">> 90 Tage</option>
+      </select>
+      <select class="filter-select" id="vac-filter-country" onchange="loadVacancies()">
+        <option value="">Alle Länder</option>
+        <option value="AT">Österreich</option>
+        <option value="DE">Deutschland</option>
+        <option value="CH">Schweiz</option>
+        <option value="PL">Polen</option>
+        <option value="CZ">Tschechien</option>
+      </select>
+      <div style="margin-left:auto;font-size:11px;color:var(--muted);align-self:center" id="vac-count-label"></div>
+    </div>
+    <div class="vacancy-list" id="vac-list">
+      <div style="color:var(--muted);text-align:center;padding:30px">Lade Vakanzen...</div>
+    </div>
+  </div>
+
+  <!-- ── UNTERNEHMEN ── -->
+  <div id="tab-targets" class="section-hidden">
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:700;color:var(--navy)" id="targets-count-label"></div>
+      <div style="display:flex;gap:8px">
+        <select class="filter-select" id="t-filter-country" onchange="loadTargets()">
+          <option value="">Alle Länder</option>
+          <option value="AT">AT</option><option value="DE">DE</option><option value="CH">CH</option>
+          <option value="PL">PL</option><option value="CZ">CZ</option><option value="HU">HU</option>
+        </select>
+        <select class="filter-select" id="t-filter-prio" onchange="loadTargets()">
+          <option value="">Alle Prioritäten</option>
+          <option value="1">Priorität 1</option>
+          <option value="2">Priorität 2</option>
+          <option value="3">Priorität 3</option>
+        </select>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="targets-table">
+        <thead>
+          <tr>
+            <th>Unternehmen</th>
+            <th>Land</th>
+            <th>Branche</th>
+            <th>Prio</th>
+            <th>Quelle</th>
+            <th>Letzter Scan</th>
+            <th>Aktiv</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="targets-tbody">
+          <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Lade Unternehmen...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── UPLOAD ── -->
+  <div id="tab-upload" class="section-hidden">
+    <div class="card">
+      <div class="card-title">Targetliste hochladen (Excel)</div>
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+        <div class="upload-icon">📊</div>
+        <div class="upload-text">Excel-Datei hier ablegen oder klicken</div>
+        <div class="upload-sub">paul_career_scanner_targetliste.xlsx · Sheet "Unternehmen"</div>
+      </div>
+      <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
+      <div id="upload-preview" style="margin-top:16px;display:none">
+        <div style="font-weight:700;color:var(--navy);margin-bottom:8px" id="upload-preview-title"></div>
+        <div style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:6px">
+          <table style="width:100%;border-collapse:collapse">
+            <thead>
+              <tr style="background:var(--navy);color:white">
+                <th style="padding:6px 10px;font-size:11px;text-align:left">Unternehmen</th>
+                <th style="padding:6px 10px;font-size:11px;text-align:left">URL</th>
+                <th style="padding:6px 10px;font-size:11px">Land</th>
+                <th style="padding:6px 10px;font-size:11px">Prio</th>
+                <th style="padding:6px 10px;font-size:11px">Quelle</th>
+              </tr>
+            </thead>
+            <tbody id="upload-preview-tbody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
+          <button class="btn btn-primary" id="btn-confirm-upload" onclick="confirmUpload()">✓ In PAUL importieren</button>
+          <button class="btn btn-secondary btn-sm" onclick="cancelUpload()">Abbrechen</button>
+          <span id="upload-count-label" style="font-size:11px;color:var(--muted)"></span>
+        </div>
+      </div>
+      <div id="upload-result" style="margin-top:12px;font-size:12px;display:none"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Unternehmen manuell hinzufügen</div>
+      <div style="display:grid;grid-template-columns:1fr 2fr 80px 100px auto;gap:8px">
+        <input id="m-name" placeholder="Unternehmensname *" style="padding:7px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px">
+        <input id="m-url" placeholder="Karriereseite URL *" style="padding:7px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px">
+        <select id="m-country" style="padding:7px;border:1px solid var(--border);border-radius:5px;font-size:12px">
+          <option>AT</option><option>DE</option><option>CH</option><option>PL</option><option>CZ</option><option>HU</option>
+        </select>
+        <select id="m-prio" style="padding:7px;border:1px solid var(--border);border-radius:5px;font-size:12px">
+          <option value="1">Priorität 1</option>
+          <option value="2" selected>Priorität 2</option>
+          <option value="3">Priorität 3</option>
+        </select>
+        <button class="btn btn-primary" onclick="addManual()">+ Hinzufügen</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<!-- Outreach Modal -->
+<div class="modal-overlay" id="outreach-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div style="font-size:11px;color:var(--gold);letter-spacing:1px">KI-KONTAKTVORLAGE</div>
+        <div id="modal-title" style="font-size:14px;font-weight:700;margin-top:2px"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="modal-meta" style="font-size:11px;color:var(--muted);margin-bottom:14px"></div>
+      <div id="modal-loading" style="text-align:center;padding:20px;color:var(--muted);display:none">
+        KI generiert Kontaktmail...
+      </div>
+      <textarea class="mail-draft" id="modal-mail" placeholder="Klicke 'Mail generieren' um eine personalisierte Erstansprache zu erstellen."></textarea>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-primary btn-sm" onclick="generateMail()">⬡ Mail generieren</button>
+        <button class="btn btn-gold btn-sm" onclick="copyMail()">Kopieren</button>
+        <button class="btn btn-secondary btn-sm" onclick="markOutreachDone()">✓ Outreach gesendet</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+const API = '/api/scan-careers';  // Vercel serverless function
+let currentVacancyId = null;
+let dashFilterDays = 30;
+let allVacancies = [];
+let parsedCompanies = [];
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadStats();
+  loadVacanciesForDash();
+});
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function showTab(name) {
+  ['dashboard','vacancies','targets','upload'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('section-hidden', t !== name);
+    document.querySelectorAll('.tab').forEach((el, i) => {
+      el.classList.toggle('active', ['dashboard','vacancies','targets','upload'][i] === name);
+    });
+  });
+  if (name === 'vacancies') loadVacancies();
+  if (name === 'targets')   loadTargets();
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const r = await fetch(`${API}?action=get-stats`);
+    const d = await r.json();
+    document.getElementById('s-targets').textContent  = d.total_targets   ?? '—';
+    document.getElementById('s-total').textContent    = d.total_vacancies  ?? '—';
+    document.getElementById('s-30d').textContent      = d.vacancies_30d    ?? '—';
+    document.getElementById('s-clevel').textContent   = d.c_level_open     ?? '—';
+    document.getElementById('s-outreach').textContent = d.outreach_pending ?? '—';
+    document.getElementById('kpi-header-val').textContent = d.vacancies_30d ?? '—';
+  } catch(e) { console.warn('Stats:', e); }
+}
+
+// ── Dashboard Vakanzen ────────────────────────────────────────────────────────
+async function loadVacanciesForDash() {
+  try {
+    const r = await fetch(`${API}?action=get-vacancies&min_days=${dashFilterDays}&limit=50`);
+    const d = await r.json();
+    allVacancies = d.vacancies || [];
+    renderDashVacancies();
+  } catch(e) { console.warn('Dash vacancies:', e); }
+}
+
+function setDashFilter(days, btn) {
+  dashFilterDays = days;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadVacanciesForDash();
+}
+
+function renderDashVacancies() {
+  const list = document.getElementById('dash-vacancy-list');
+  const sorted = [...allVacancies].sort((a,b) => new Date(a.first_seen_at) - new Date(b.first_seen_at));
+  document.getElementById('dash-vac-count').textContent = sorted.length ? `(${sorted.length})` : '';
+
+  if (!sorted.length) {
+    list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:30px">Keine Vakanzen gefunden. Starte einen Scan.</div>';
+    return;
+  }
+
+  list.innerHTML = sorted.map(v => {
+    const days = daysSince(v.first_seen_at);
+    const age  = ageStyle(days);
+    const levelClass = v.job_level === 'C-Level' ? 'c-level' : v.job_level === 'Geschäftsführung' ? 'gf' : '';
+    return `<div class="vacancy-row ${levelClass}">
+      <div style="color:var(--gold);font-size:16px;min-width:16px">${levelIcon(v.job_level)}</div>
+      <div class="vacancy-info">
+        <div class="vacancy-title">${v.job_title}</div>
+        <div class="vacancy-meta">${v.company_name} · ${v.job_level || '—'}${v.career_targets?.country ? ' · ' + v.career_targets.country : ''}</div>
+      </div>
+      <div class="age-badge" style="background:${age.bg};color:${age.color}">${days} Tage</div>
+      <button class="btn btn-secondary btn-sm" onclick="openOutreach(${v.id}, '${esc(v.job_title)}', '${esc(v.company_name)}', ${days})">Kontaktieren →</button>
+    </div>`;
+  }).join('');
+}
+
+// ── Vacancies Tab ─────────────────────────────────────────────────────────────
+async function loadVacancies() {
+  const level   = document.getElementById('vac-filter-level').value;
+  const days    = document.getElementById('vac-filter-days').value;
+  const country = document.getElementById('vac-filter-country').value;
+
+  const params = new URLSearchParams({ action: 'get-vacancies', min_days: days, limit: 300 });
+  if (level)   params.set('level', level);
+  if (country) params.set('country', country);
+
+  try {
+    const r = await fetch(`${API}?${params}`);
+    const d = await r.json();
+    const vacs = d.vacancies || [];
+    document.getElementById('vac-count-label').textContent = `${vacs.length} Position${vacs.length !== 1 ? 'en' : ''}`;
+
+    const sorted = [...vacs].sort((a,b) => new Date(a.first_seen_at) - new Date(b.first_seen_at));
+    const list = document.getElementById('vac-list');
+
+    if (!sorted.length) {
+      list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:40px">Keine Vakanzen mit diesen Filtern.</div>';
+      return;
+    }
+
+    list.innerHTML = sorted.map(v => {
+      const days = daysSince(v.first_seen_at);
+      const age  = ageStyle(days);
+      const levelClass = v.job_level === 'C-Level' ? 'c-level' : v.job_level === 'Geschäftsführung' ? 'gf' : '';
+      const outreachBadge = v.outreach_sent ? '<span style="font-size:10px;color:var(--green);margin-left:6px">✓ Outreach</span>' : '';
+      return `<div class="vacancy-row ${levelClass}">
+        <div style="color:var(--gold);font-size:16px;min-width:16px">${levelIcon(v.job_level)}</div>
+        <div class="vacancy-info">
+          <div class="vacancy-title">${v.job_title}${outreachBadge}</div>
+          <div class="vacancy-meta">
+            ${v.company_name} · ${v.job_level || '—'} · ${v.career_targets?.country || ''}
+            ${v.career_targets?.industry ? ' · ' + v.career_targets.industry : ''}
+          </div>
+          <div style="font-size:10px;color:#aaa;margin-top:2px">Erstmals gesehen: ${fmtDate(v.first_seen_at)}</div>
+        </div>
+        <div class="age-badge" style="background:${age.bg};color:${age.color}">${days} Tage offen</div>
+        <div style="display:flex;gap:6px">
+          ${v.job_url ? `<a href="${v.job_url}" target="_blank" class="btn btn-secondary btn-sm">Anzeige ↗</a>` : ''}
+          <button class="btn btn-primary btn-sm" onclick="openOutreach(${v.id}, '${esc(v.job_title)}', '${esc(v.company_name)}', ${days})">Mail →</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('vac-list').innerHTML = '<div style="color:red;padding:20px">Fehler beim Laden.</div>';
+  }
+}
+
+// ── Targets Tab ───────────────────────────────────────────────────────────────
+async function loadTargets() {
+  const country = document.getElementById('t-filter-country').value;
+  const prio    = document.getElementById('t-filter-prio').value;
+
+  const params = new URLSearchParams({ action: 'get-targets' });
+  if (country) params.set('country', country);
+  if (prio)    params.set('priority', prio);
+
+  try {
+    const r = await fetch(`${API}?${params}`);
+    const d = await r.json();
+    const targets = d.targets || [];
+    document.getElementById('targets-count-label').textContent = `${targets.length} Unternehmen`;
+
+    const tbody = document.getElementById('targets-tbody');
+    if (!targets.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Keine Unternehmen. Lade eine Liste hoch.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = targets.map(t => `<tr>
+      <td><strong>${t.company_name}</strong><br><span style="font-size:10px;color:#aaa">${t.career_url}</span></td>
+      <td>${t.country || '—'}</td>
+      <td>${t.industry || '—'}</td>
+      <td><span style="background:${t.priority===1?'#fef2f2':'#f8f7f4'};padding:2px 8px;border-radius:10px;font-size:11px">P${t.priority||2}</span></td>
+      <td>${t.source || '—'}</td>
+      <td>${t.last_scanned_at ? fmtDate(t.last_scanned_at) : '<span style="color:#aaa">Nie</span>'}</td>
+      <td><span class="dot ${t.active ? 'dot-green' : 'dot-grey'}"></span></td>
+      <td><button class="btn btn-secondary btn-sm" onclick="scanOne(${t.id}, '${esc(t.company_name)}')">Scannen</button></td>
+    </tr>`).join('');
+  } catch(e) {
+    document.getElementById('targets-tbody').innerHTML = '<tr><td colspan="8" style="color:red;padding:20px">Fehler.</td></tr>';
+  }
+}
+
+// ── Single scan ───────────────────────────────────────────────────────────────
+async function scanOne(targetId, name) {
+  showToast(`Scanne ${name}...`);
+  try {
+    const r = await fetch(`${API}?action=scan-one&target_id=${targetId}`);
+    const d = await r.json();
+    showToast(`✓ ${name}: ${d.new_vacancies || 0} neue Vakanzen`);
+    loadStats();
+    loadVacanciesForDash();
+    if (document.getElementById('tab-targets').style.display !== 'none') loadTargets();
+  } catch(e) {
+    showToast('Fehler beim Scan.', true);
+  }
+}
+
+// ── Scan all ──────────────────────────────────────────────────────────────────
+async function scanAll(priority) {
+  const btn = document.getElementById('btn-scan-all');
+  btn.disabled = true;
+  document.getElementById('scan-progress-wrap').style.display = 'block';
+  document.getElementById('scan-progress-bar').style.width = '10%';
+  document.getElementById('scan-status').textContent = 'Scanne Karriereseiten...';
+
+  try {
+    const params = new URLSearchParams({ action: 'scan-all', limit: 10 });
+    if (priority) params.set('priority', priority);
+
+    const r = await fetch(`${API}?${params}`);
+    document.getElementById('scan-progress-bar').style.width = '90%';
+    const d = await r.json();
+    document.getElementById('scan-progress-bar').style.width = '100%';
+    document.getElementById('scan-status').textContent =
+      `✓ ${d.total_scanned} Unternehmen gescannt · ${d.total_new_vacancies} neue Vakanzen · ${d.errors} Fehler`;
+    loadStats();
+    loadVacanciesForDash();
+  } catch(e) {
+    document.getElementById('scan-status').textContent = 'Fehler beim Scan.';
+  }
+
+  btn.disabled = false;
+  setTimeout(() => { document.getElementById('scan-progress-wrap').style.display = 'none'; }, 3000);
+}
+
+// ── AI Insight ────────────────────────────────────────────────────────────────
+async function getAiInsight() {
+  const el = document.getElementById('ai-insight-text');
+  el.className = 'ai-box-placeholder';
+  el.textContent = 'Analysiere...';
+
+  // Top-Vakanzen zusammenstellen
+  const top = allVacancies
+    .sort((a,b) => new Date(a.first_seen_at) - new Date(b.first_seen_at))
+    .slice(0, 12)
+    .map(v => `${v.company_name}: "${v.job_title}" (${v.job_level}) — seit ${daysSince(v.first_seen_at)} Tagen`);
+
+  if (!top.length) { el.textContent = 'Keine Vakanzen für Analyse vorhanden. Starte erst einen Scan.'; return; }
+
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content:
+          `Du bist Executive Search Berater bei Signium Austria (DACH/CEE, 30+ Jahre, Sami Hamid).\n\nOffene Leitungsvakanzen:\n${top.join('\n')}\n\n1. Welche 2–3 Positionen haben das höchste Mandate-Potenzial? Warum?\n2. Was signalisiert die lange Vakanzzeit?\n3. Konkrete Gesprächseinstieg für die beste Opportunity.\n\nMax. 180 Wörter, Deutsch, prägnant.`
+        }]
+      })
+    });
+    const d = await r.json();
+    const text = d.content?.find(b => b.type === 'text')?.text || 'Keine Antwort.';
+    el.className = 'ai-box-text';
+    el.textContent = text;
+  } catch(e) {
+    el.textContent = 'KI-Analyse nicht verfügbar.';
+  }
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+function handleDrop(e) {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file) parseExcel(file);
+}
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) parseExcel(file);
+}
+
+function parseExcel(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const wb = XLSX.read(e.target.result, { type: 'binary' });
+    const sheet = wb.Sheets['Unternehmen'] || wb.Sheets[wb.SheetNames[0]];
+    const rows  = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+    // Header-Zeile finden (Zeile 2 in unserer Vorlage = Index 1)
+    const dataRows = rows.slice(2).filter(r => r[0] && r[1]); // Name + URL required
+
+    parsedCompanies = dataRows.map((r, i) => ({
+      company_name: String(r[0] || '').trim(),
+      career_url:   String(r[1] || '').trim(),
+      country:      String(r[2] || 'AT').trim(),
+      industry:     String(r[3] || '').trim(),
+      revenue_mio:  r[4] || null,
+      employees:    r[5] || null,
+      priority:     r[6] || 2,
+      source:       String(r[7] || '').trim(),
+      notes:        String(r[8] || '').trim(),
+      active:       String(r[10] || 'J').trim(),
+      internal_id:  String(r[11] || '').trim() || null
+    })).filter(c => c.company_name && c.career_url);
+
+    // Preview
+    document.getElementById('upload-preview-title').textContent = `${parsedCompanies.length} Unternehmen erkannt in "${file.name}"`;
+    document.getElementById('upload-count-label').textContent = `${parsedCompanies.length} Datensätze werden importiert`;
+    document.getElementById('upload-preview-tbody').innerHTML = parsedCompanies.slice(0, 20).map(c =>
+      `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:5px 10px">${c.company_name}</td>
+        <td style="padding:5px 10px;font-size:10px;color:var(--muted)">${c.career_url.substring(0,45)}${c.career_url.length>45?'…':''}</td>
+        <td style="padding:5px 10px;text-align:center">${c.country}</td>
+        <td style="padding:5px 10px;text-align:center">${c.priority}</td>
+        <td style="padding:5px 10px">${c.source}</td>
+      </tr>`
+    ).join('') + (parsedCompanies.length > 20 ? `<tr><td colspan="5" style="padding:8px 10px;text-align:center;color:var(--muted);font-style:italic">... und ${parsedCompanies.length-20} weitere</td></tr>` : '');
+
+    document.getElementById('upload-preview').style.display = 'block';
+    document.getElementById('upload-result').style.display = 'none';
+  };
+  reader.readAsBinaryString(file);
+}
+
+async function confirmUpload() {
+  if (!parsedCompanies.length) return;
+  const btn = document.getElementById('btn-confirm-upload');
+  btn.disabled = true;
+  btn.textContent = 'Importiere...';
+
+  try {
+    const r = await fetch(`${API}?action=upload-targets`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ companies: parsedCompanies })
+    });
+    const d = await r.json();
+    const result = document.getElementById('upload-result');
+    result.style.display = 'block';
+    result.style.color   = d.success ? 'var(--green)' : 'var(--red)';
+    result.textContent   = d.message || d.error;
+    if (d.success) {
+      document.getElementById('upload-preview').style.display = 'none';
+      loadStats();
+    }
+  } catch(e) {
+    document.getElementById('upload-result').style.display = 'block';
+    document.getElementById('upload-result').textContent = 'Upload fehlgeschlagen.';
+  }
+  btn.disabled = false;
+  btn.textContent = '✓ In PAUL importieren';
+}
+
+function cancelUpload() {
+  document.getElementById('upload-preview').style.display = 'none';
+  parsedCompanies = [];
+}
+
+// ── Manual add ────────────────────────────────────────────────────────────────
+async function addManual() {
+  const name    = document.getElementById('m-name').value.trim();
+  const url     = document.getElementById('m-url').value.trim();
+  const country = document.getElementById('m-country').value;
+  const prio    = document.getElementById('m-prio').value;
+  if (!name || !url) { showToast('Name und URL sind Pflichtfelder.', true); return; }
+
+  try {
+    const r = await fetch(`${API}?action=upload-targets`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ companies: [{ company_name: name, career_url: url, country, priority: prio, source: 'Manuell', active: 'J' }] })
+    });
+    const d = await r.json();
+    if (d.success) {
+      showToast(`✓ ${name} hinzugefügt`);
+      ['m-name','m-url'].forEach(id => document.getElementById(id).value = '');
+      loadStats();
+    } else {
+      showToast(d.error || 'Fehler', true);
+    }
+  } catch(e) { showToast('Fehler.', true); }
+}
+
+// ── Outreach Modal ────────────────────────────────────────────────────────────
+function openOutreach(id, title, company, days) {
+  currentVacancyId = id;
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-meta').textContent  = `${company} · ${days} Tage offen`;
+  document.getElementById('modal-mail').value = '';
+  document.getElementById('outreach-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('outreach-modal').classList.remove('open');
+  currentVacancyId = null;
+}
+
+async function generateMail() {
+  if (!currentVacancyId) return;
+  document.getElementById('modal-loading').style.display = 'block';
+  document.getElementById('modal-mail').value = '';
+
+  try {
+    const r = await fetch(`${API}?action=generate-mail`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vacancy_id: currentVacancyId })
+    });
+    const d = await r.json();
+    document.getElementById('modal-mail').value = d.mail || '';
+  } catch(e) {
+    document.getElementById('modal-mail').value = 'Fehler beim Generieren.';
+  }
+  document.getElementById('modal-loading').style.display = 'none';
+}
+
+async function markOutreachDone() {
+  if (!currentVacancyId) return;
+  await fetch(`${API}?action=mark-outreach`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ vacancy_id: currentVacancyId })
+  });
+  showToast('✓ Outreach als gesendet markiert');
+  closeModal();
+  loadStats();
+  loadVacanciesForDash();
+}
+
+function copyMail() {
+  const text = document.getElementById('modal-mail').value;
+  navigator.clipboard.writeText(text).then(() => showToast('In Zwischenablage kopiert'));
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function daysSince(dateStr) {
+  return Math.floor((Date.now() - new Date(dateStr)) / 86400000);
+}
+
+function ageStyle(days) {
+  if (days > 90) return { color: '#dc2626', bg: '#fef2f2' };
+  if (days > 60) return { color: '#ea580c', bg: '#fff7ed' };
+  if (days > 30) return { color: '#ca8a04', bg: '#fefce8' };
+  return { color: '#16a34a', bg: '#f0fdf4' };
+}
+
+function levelIcon(level) {
+  return level === 'C-Level' ? '⬡' : level === 'Geschäftsführung' ? '◆' : '●';
+}
+
+function fmtDate(d) {
+  return new Date(d).toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
+}
+
+function esc(s) { return String(s||'').replace(/'/g, "\\'"); }
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isError ? '#dc2626' : 'var(--navy)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
