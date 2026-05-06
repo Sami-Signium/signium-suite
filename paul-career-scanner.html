@@ -542,24 +542,43 @@ async function scanAll(priority) {
   const btn = document.getElementById('btn-scan-all');
   btn.disabled = true;
   document.getElementById('scan-progress-wrap').style.display = 'block';
-  document.getElementById('scan-progress-bar').style.width = '10%';
-  document.getElementById('scan-status').textContent = 'Scanne Karriereseiten...';
+  document.getElementById('scan-progress-bar').style.width = '5%';
 
-  try {
+  let totalScanned = 0, totalNew = 0, totalErrors = 0;
+  let batch = 1;
+
+  while (true) {
+    document.getElementById('scan-status').textContent = `Batch ${batch} wird gescannt...`;
     const params = new URLSearchParams({ action: 'scan-all', limit: 10 });
     if (priority) params.set('priority', priority);
 
-    const r = await fetch(`${API}?${params}`);
-    document.getElementById('scan-progress-bar').style.width = '90%';
-    const d = await r.json();
-    document.getElementById('scan-progress-bar').style.width = '100%';
-    document.getElementById('scan-status').textContent =
-      `✓ ${d.total_scanned} Unternehmen gescannt · ${d.total_new_vacancies} neue Vakanzen · ${d.errors} Fehler`;
-    loadStats();
-    loadVacanciesForDash();
-  } catch(e) {
-    document.getElementById('scan-status').textContent = 'Fehler beim Scan.';
+    try {
+      const r = await fetch(`${API}?${params}`);
+      const d = await r.json();
+      totalScanned += d.total_scanned || 0;
+      totalNew     += d.total_new_vacancies || 0;
+      totalErrors  += d.errors || 0;
+
+      const pct = Math.min(95, batch * 8);
+      document.getElementById('scan-progress-bar').style.width = pct + '%';
+
+      if (!d.results || d.results.length < 10) break;
+      batch++;
+      await sleep(2000);
+    } catch(e) {
+      break;
+    }
   }
+
+  document.getElementById('scan-progress-bar').style.width = '100%';
+  document.getElementById('scan-status').textContent =
+    `✓ ${totalScanned} Unternehmen gescannt · ${totalNew} neue Vakanzen · ${totalErrors} Fehler`;
+
+  btn.disabled = false;
+  loadStats();
+  loadVacanciesForDash();
+  setTimeout(() => { document.getElementById('scan-progress-wrap').style.display = 'none'; }, 4000);
+}
 
   btn.disabled = false;
   setTimeout(() => { document.getElementById('scan-progress-wrap').style.display = 'none'; }, 3000);
