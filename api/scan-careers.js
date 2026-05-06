@@ -2,10 +2,7 @@ const SUPABASE_URL        = 'https://ftdxhswcnghlmcagrsox.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_KEY;
 const ANTHROPIC_API_KEY   = process.env.ANTHROPIC_API_KEY;
 const CLAUDE_MODEL        = 'claude-haiku-4-5-20251001';
-const SUPABASE_URL        = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const ANTHROPIC_API_KEY   = process.env.ANTHROPIC_API_KEY;
-const CLAUDE_MODEL        = 'claude-haiku-4-5-20251001';
+
 
 // ── Supabase REST Helpers ─────────────────────────────────────────────────────
 async function sbSelect(table, params = '') {
