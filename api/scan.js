@@ -10,7 +10,7 @@ export default async function handler(req, res) {
 
     // 7 Tage zurück
     const fromDate = new Date();
-    fromDate.setDate(fromDate.getDate() - 30);
+    fromDate.setDate(fromDate.getDate() - 7);
     const from = fromDate.toISOString().split('T')[0];
     const fromUnix = Math.floor(fromDate.getTime() / 1000);
 
@@ -214,11 +214,13 @@ Artikel:\n` + summaries }]
       seenCompanies.add(key); return true;
     });
 
-    items = items.map(it => ({
-      ...it,
-      source_url: (it.article_index !== undefined && articleMap[it.article_index]) ? articleMap[it.article_index].url : null,
-      published_at: (it.article_index !== undefined && articleMap[it.article_index]) ? articleMap[it.article_index].published_at : null
-    }));
+    items = items.map(it => {
+      const pub = (it.article_index !== undefined && articleMap[it.article_index]) ? articleMap[it.article_index].published_at : null;
+      const url = (it.article_index !== undefined && articleMap[it.article_index]) ? articleMap[it.article_index].url : null;
+      const dateStr = pub ? pub.substring(0, 10) : new Date().toISOString().substring(0, 10);
+      const dedupKey = `${(it.company||'').toLowerCase().replace(/\s+/g,'_')}|${(it.trigger_type||'').toLowerCase().replace(/\s+/g,'_')}|${dateStr}`;
+      return { ...it, source_url: url, published_at: pub, dedup_key: dedupKey };
+    });
 
     return res.status(200).json({ text: JSON.stringify(items), articleCount: unique.length });
 
