@@ -635,7 +635,8 @@ function parseExcel(file) {
     const rows  = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 
     // Header-Zeile finden (Zeile 2 in unserer Vorlage = Index 1)
-    const dataRows = rows.slice(2).filter(r => r[0] && r[1]); // Name + URL required
+  const dataRows = rows.slice(2).filter(r => r[0]); // Name required
+    
 
     parsedCompanies = dataRows.map((r, i) => ({
       company_name: String(r[0] || '').trim(),
