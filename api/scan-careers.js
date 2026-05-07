@@ -131,7 +131,7 @@ export default async function handler(req, res) {
     if (action === 'get-stats')      return await getStats(req, res);
     if (action === 'mark-outreach')  return await markOutreach(req, res);
     if (action === 'generate-mail')  return await generateOutreachMail(req, res);
-    if (action === 'find-workday')   return await findWorkdayBatch(req, res);
+    if (action === 'update-workday') return await updateWorkdayTenant(req, res);
     return res.status(400).json({ error: 'Unbekannte action' });
   } catch (err) {
     console.error('[scan-careers]', err);
@@ -547,43 +547,22 @@ async function generateOutreachMail(req, res) {
   const target  = targets[0] || {};
   const days    = daysSince(vac.first_seen_at);
 
- const prompt = `Du bist Sami Hamid, Managing Partner bei Signium Austria (Stein & Partner GmbH, Wien).
+  const prompt = `Du bist Sami Hamid, Managing Partner bei Signium Austria (Stein & Partner GmbH, Wien).
 
-Signium-Fakten:
-- Zweitaelteste Executive Search Firma der Welt, globaler Market Leader
-- Ueber 30 Jahre Markterfahrung in Oesterreich
-- Eigene Bueros in Wien, Warschau, Prag, Bukarest - NUR bei CEE/Osteuropa-Bezug erwaehnen
-- In den letzten Monaten mehrere vergleichbare ${vac.job_level}-Positionen erfolgreich besetzt - innerhalb weniger Wochen
+Signium: Zweitaelteste Executive Search Firma der Welt. Globaler Market Leader. 30+ Jahre Markterfahrung in Oesterreich. Eigenbueros Wien/Warschau/Prag/Bukarest - CEE nur erwaehnen wenn die Stelle Osteuropa-Bezug hat.
 
 Schreibe eine professionelle Erstansprache (150-180 Woerter) an den Geschaeftsfuehrer oder HR-Verantwortlichen bei ${target.company_name || vac.company_name}.
 
 Struktur:
-1. Einstieg: Direkt auf die Position "${vac.job_title}" eingehen - sachlich, nicht aufdringlich
-2. These: Eine solche Fuehrungsposition wird ueber Executive Search schneller und treffsicherer besetzt als ueber Ausschreibung allein
-3. Beweis: Signium hat vergleichbare Positionen innerhalb weniger Wochen erfolgreich besetzt - mit Kandidaten die ueber Ausschreibungen nicht erreichbar waren
-4. Marktstellung: Signium gehoert zu den aeltesten und erfahrensten Executive Search Partnern in Oesterreich
+1. Einstieg: Direkt auf die Position "${vac.job_title}" eingehen - sachlich
+2. These: Executive Search besetzt Fuehrungspositionen schneller und treffsicherer als Ausschreibung allein
+3. Beweis: Signium hat aehnliche ${vac.job_level}-Positionen in den letzten Monaten innerhalb weniger Wochen besetzt - mit Kandidaten die ueber Ausschreibungen nicht erreichbar waren
+4. USP: Signium gehoert zu den aeltesten und erfahrensten Executive Search Partnern in Oesterreich
 5. Call to Action: Konkreter Vorschlag fuer ein kurzes Gespraech
 
 Ton: Professionell, substanziell, selbstbewusst - nicht aufdringlich.
 Sprache: Deutsch. Kein Betreff. Anrede: Sehr geehrte/r [Name],`;
-- Eigene Büros in Wien, Warschau, Prag, Bukarest — NUR bei CEE/Osteuropa-Bezug der Position erwähnen
-- In den letzten Monaten mehrere vergleichbare ${vac.job_level}-Positionen in Österreich erfolgreich besetzt — innerhalb weniger Wochen
 
-Schreibe eine Erstansprache-E-Mail (120-150 Wörter) an den Geschäftsführer oder HR-Verantwortlichen bei ${target.company_name || vac.company_name}.
-
-Struktur — genau in dieser Reihenfolge:
-1. Direkter Einstieg: "Sie haben die Position '${vac.job_title}' ausgeschrieben..." — sachlich, kein Vorwurf
-2. These: Eine solche Führungsposition wird über Executive Search schneller und treffsicherer besetzt als über eine klassische Ausschreibung allein
-3. Beweis: Signium hat in den letzten Monaten mehrere vergleichbare Positionen innerhalb weniger Wochen erfolgreich besetzt — mit Kandidaten die über Ausschreibungen nicht erreichbar waren
-4. Marktstellung: Kurz — Signium ist einer der ältesten und erfahrensten Executive Search Partner in Österreich
-5. Call to Action: Konkreter Vorschlag für ein kurzes Gespräch — direkt und unverbindlich
-
-Ton: Professionell, substanziell, selbstbewusst — nicht aufdringlich.
-Sprache: Deutsch. Kein Betreff. Anrede: "Sehr geehrte/r [Name],"`;
-Ton: Direkt, substanziell, auf Augenhoehe. Kein "Ich habe gesehen dass...". Kein "Ich hoffe diese Mail findet Sie...".
-Einstieg: Komm sofort zum Punkt — warum du schreibst und was Signium konkret bieten kann.
-Positionierung: Signium ist der spezialisierte DACH/CEE Partner für genau diese Art von Besetzung — mit eigenen Büros, 30 Jahren Erfahrung und einem Netzwerk das intern nicht erreichbar ist.
-Sprache: Deutsch. Kein Betreff.`;
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -614,59 +593,6 @@ async function updateWorkdayTenant(req, res) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-async function findWorkdayBatch(req, res) {
-  const limit = parseInt(req.query.limit || '20');
-  const targets = await sbSelect('career_targets',
-    `active=eq.true&career_url=eq.&order=company_name.asc&limit=${limit}`
-  );
-  const results = [];
-  let found = 0;
-  for (const target of targets) {
-    const result = await testWorkdayForCompany(target.company_name);
-    if (result.found) {
-      await sbUpdate('career_targets', `id=eq.${target.id}`, { career_url: result.url });
-      found++;
-    }
-    results.push({ company: target.company_name, found: result.found, url: result.url || null });
-    await sleep(300);
-  }
-  return res.json({ scanned: results.length, found, results });
-}
-
-async function testWorkdayForCompany(companyName) {
-  const base = companyName.toLowerCase()
-    .replace(/\s+(ag|gmbh|se|sa|plc|inc|corp|ltd|group|holding|kg)\s*$/gi, '')
-    .replace(/[^a-z0-9]/g, '').trim();
-  const words = companyName.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/)
-    .filter(w => !['ag','gmbh','se','sa','group','holding','the','and','of'].includes(w));
-  const tenants = [...new Set([base, words[0], words.slice(0,2).join(''), words.join('')])].filter(t => t && t.length >= 2).slice(0,4);
-  const sites = ['Careers','careers','Jobs','ExternalCareers','External','JobBoard','Job_Board'];
-  const wds = ['3','1','5'];
-  for (const tenant of tenants) {
-    for (const wd of wds) {
-      for (const site of sites) {
-        const url = `https://${tenant}.wd${wd}.myworkdayjobs.com/wday/cxs/${tenant}/${site}/jobs`;
-        try {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 3000);
-          const r = await fetch(url, {
-            method: 'POST', signal: controller.signal,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ appliedFacets: {}, limit: 1, offset: 0, searchText: '' })
-          });
-          clearTimeout(timeout);
-          if (r.ok) {
-            const d = await r.json();
-            if (d.jobPostings !== undefined) {
-              return { found: true, url: `https://${tenant}.wd${wd}.myworkdayjobs.com/${site}`, total: d.total || 0 };
-            }
-          }
-        } catch { /* continue */ }
-      }
-    }
-  }
-  return { found: false };
-}
 function daysSince(dateStr) {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
 }
