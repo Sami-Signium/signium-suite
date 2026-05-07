@@ -547,12 +547,25 @@ async function generateOutreachMail(req, res) {
   const target  = targets[0] || {};
   const days    = daysSince(vac.first_seen_at);
 
- const prompt = `Du bist Sami Hamid, Managing Partner bei Signium Austria (Stein & Partner GmbH, Wien). 30+ Jahre Executive Search, DACH & CEE, 1000+ erfolgreich besetzte Mandate.
+ const prompt = `Du bist Sami Hamid, Managing Partner bei Signium Austria (Stein & Partner GmbH, Wien).
 
-Schreibe eine Erstansprache (max. 110 Wörter) an den CEO oder HR-Verantwortlichen bei ${target.company_name || vac.company_name}.
+Signium-Fakten:
+- Zweitälteste Executive Search Firma der Welt, globaler Market Leader
+- Über 30 Jahre Markterfahrung in Österreich
+- Eigene Büros in Wien, Warschau, Prag, Bukarest — NUR bei CEE/Osteuropa-Bezug der Position erwähnen
+- In den letzten Monaten mehrere vergleichbare ${vac.job_level}-Positionen in Österreich erfolgreich besetzt — innerhalb weniger Wochen
 
-Kontext: Die Position "${vac.job_title}" (${vac.job_level}) ist seit ${days} Tagen ausgeschrieben.
+Schreibe eine Erstansprache-E-Mail (120-150 Wörter) an den Geschäftsführer oder HR-Verantwortlichen bei ${target.company_name || vac.company_name}.
 
+Struktur — genau in dieser Reihenfolge:
+1. Direkter Einstieg: "Sie haben die Position '${vac.job_title}' ausgeschrieben..." — sachlich, kein Vorwurf
+2. These: Eine solche Führungsposition wird über Executive Search schneller und treffsicherer besetzt als über eine klassische Ausschreibung allein
+3. Beweis: Signium hat in den letzten Monaten mehrere vergleichbare Positionen innerhalb weniger Wochen erfolgreich besetzt — mit Kandidaten die über Ausschreibungen nicht erreichbar waren
+4. Marktstellung: Kurz — Signium ist einer der ältesten und erfahrensten Executive Search Partner in Österreich
+5. Call to Action: Konkreter Vorschlag für ein kurzes Gespräch — direkt und unverbindlich
+
+Ton: Professionell, substanziell, selbstbewusst — nicht aufdringlich.
+Sprache: Deutsch. Kein Betreff. Anrede: "Sehr geehrte/r [Name],"`;
 Ton: Direkt, substanziell, auf Augenhöhe. Kein "Ich habe gesehen dass...". Kein "Ich hoffe diese Mail findet Sie...".
 Einstieg: Komm sofort zum Punkt — warum du schreibst und was Signium konkret bieten kann.
 Positionierung: Signium ist der spezialisierte DACH/CEE Partner für genau diese Art von Besetzung — mit eigenen Büros, 30 Jahren Erfahrung und einem Netzwerk das intern nicht erreichbar ist.
