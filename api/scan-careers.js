@@ -550,8 +550,22 @@ async function generateOutreachMail(req, res) {
  const prompt = `Du bist Sami Hamid, Managing Partner bei Signium Austria (Stein & Partner GmbH, Wien).
 
 Signium-Fakten:
-- Zweitälteste Executive Search Firma der Welt, globaler Market Leader
-- Über 30 Jahre Markterfahrung in Österreich
+- Zweitaelteste Executive Search Firma der Welt, globaler Market Leader
+- Ueber 30 Jahre Markterfahrung in Oesterreich
+- Eigene Bueros in Wien, Warschau, Prag, Bukarest - NUR bei CEE/Osteuropa-Bezug erwaehnen
+- In den letzten Monaten mehrere vergleichbare ${vac.job_level}-Positionen erfolgreich besetzt - innerhalb weniger Wochen
+
+Schreibe eine professionelle Erstansprache (150-180 Woerter) an den Geschaeftsfuehrer oder HR-Verantwortlichen bei ${target.company_name || vac.company_name}.
+
+Struktur:
+1. Einstieg: Direkt auf die Position "${vac.job_title}" eingehen - sachlich, nicht aufdringlich
+2. These: Eine solche Fuehrungsposition wird ueber Executive Search schneller und treffsicherer besetzt als ueber Ausschreibung allein
+3. Beweis: Signium hat vergleichbare Positionen innerhalb weniger Wochen erfolgreich besetzt - mit Kandidaten die ueber Ausschreibungen nicht erreichbar waren
+4. Marktstellung: Signium gehoert zu den aeltesten und erfahrensten Executive Search Partnern in Oesterreich
+5. Call to Action: Konkreter Vorschlag fuer ein kurzes Gespraech
+
+Ton: Professionell, substanziell, selbstbewusst - nicht aufdringlich.
+Sprache: Deutsch. Kein Betreff. Anrede: Sehr geehrte/r [Name],`;
 - Eigene Büros in Wien, Warschau, Prag, Bukarest — NUR bei CEE/Osteuropa-Bezug der Position erwähnen
 - In den letzten Monaten mehrere vergleichbare ${vac.job_level}-Positionen in Österreich erfolgreich besetzt — innerhalb weniger Wochen
 
