@@ -566,7 +566,7 @@ Struktur — genau in dieser Reihenfolge:
 
 Ton: Professionell, substanziell, selbstbewusst — nicht aufdringlich.
 Sprache: Deutsch. Kein Betreff. Anrede: "Sehr geehrte/r [Name],"`;
-Ton: Direkt, substanziell, auf Augenhöhe. Kein "Ich habe gesehen dass...". Kein "Ich hoffe diese Mail findet Sie...".
+Ton: Direkt, substanziell, auf Augenhoehe. Kein "Ich habe gesehen dass...". Kein "Ich hoffe diese Mail findet Sie...".
 Einstieg: Komm sofort zum Punkt — warum du schreibst und was Signium konkret bieten kann.
 Positionierung: Signium ist der spezialisierte DACH/CEE Partner für genau diese Art von Besetzung — mit eigenen Büros, 30 Jahren Erfahrung und einem Netzwerk das intern nicht erreichbar ist.
 Sprache: Deutsch. Kein Betreff.`;
