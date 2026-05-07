@@ -545,11 +545,11 @@ async function scanAll(priority) {
   document.getElementById('scan-progress-bar').style.width = '5%';
 
   let totalScanned = 0, totalNew = 0, totalErrors = 0;
-  let batch = 1;
+  let batch = 1, offset = 0;
 
   while (true) {
     document.getElementById('scan-status').textContent = `Batch ${batch} wird gescannt...`;
-    const params = new URLSearchParams({ action: 'scan-all', limit: 10 });
+   const params = new URLSearchParams({ action: 'scan-all', limit: 10, offset });
     if (priority) params.set('priority', priority);
 
     try {
@@ -564,6 +564,7 @@ async function scanAll(priority) {
 
       if (!d.results || d.results.length === 0) break;
       batch++;
+      offset += 10;
       await sleep(2000);
     } catch(e) {
       break;
