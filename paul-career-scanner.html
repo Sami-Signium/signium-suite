@@ -542,33 +542,31 @@ async function scanAll(priority) {
   const btn = document.getElementById('btn-scan-all');
   btn.disabled = true;
   document.getElementById('scan-progress-wrap').style.display = 'block';
-  document.getElementById('scan-progress-bar').style.width = '5%';
+  document.getElementById('scan-progress-bar').style.width = '2%';
 
   let totalScanned = 0, totalNew = 0, totalErrors = 0;
-  let batch = 1, offset = 0;
 
-  while (true) {
-    document.getElementById('scan-status').textContent = `Batch ${batch} wird gescannt...`;
-   const params = new URLSearchParams({ action: 'scan-all', limit: 10, offset });
-    if (priority) params.set('priority', priority);
+  // Alle Targets mit URL laden
+  const r = await fetch(`${API}?action=get-targets&active=true`);
+  const d = await r.json();
+  const targets = (d.targets || []).filter(t => t.career_url && t.career_url.trim() !== '');
+
+  for (let i = 0; i < targets.length; i++) {
+    const t = targets[i];
+    document.getElementById('scan-status').textContent = `${i+1}/${targets.length}: ${t.company_name}...`;
+    const pct = Math.round(((i+1) / targets.length) * 93);
+    document.getElementById('scan-progress-bar').style.width = pct + '%';
 
     try {
-      const r = await fetch(`${API}?${params}`);
-      const d = await r.json();
-      totalScanned += d.total_scanned || 0;
-      totalNew     += d.total_new_vacancies || 0;
-      totalErrors  += d.errors || 0;
-
-      const pct = Math.min(95, batch * 8);
-      document.getElementById('scan-progress-bar').style.width = pct + '%';
-
-      if (!d.results || d.results.length === 0) break;
-      batch++;
-      offset += 10;
-      await sleep(2000);
+      const r2 = await fetch(`${API}?action=scan-one&target_id=${t.id}`);
+      const d2 = await r2.json();
+      totalScanned++;
+      totalNew     += d2.new_vacancies    || 0;
+      totalErrors  += d2.status === 'error' ? 1 : 0;
     } catch(e) {
-      break;
+      totalErrors++;
     }
+    await sleep(500);
   }
 
   document.getElementById('scan-progress-bar').style.width = '100%';
