@@ -1,8 +1,36 @@
-const SUPABASE_URL        = 'https://ftdxhswcnghlmcagrsox.supabase.co';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_KEY;
-const ANTHROPIC_API_KEY   = process.env.ANTHROPIC_API_KEY;
-const CLAUDE_MODEL        = 'claude-haiku-4-5-20251001';
+// api/scan-careers.js
+// PAUL Career Scanner — mit Workday API + HTML Fallback
+// Vercel Hobby Plan: 1 von max. 12 Functions
 
+const SUPABASE_URL         = 'https://ftdxhswcnghlmcagrsox.supabase.co';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_KEY;
+const ANTHROPIC_API_KEY    = process.env.ANTHROPIC_API_KEY;
+const CLAUDE_MODEL         = 'claude-haiku-4-5-20251001';
+
+// ── Bekannte Workday-Tenants österreichischer/CEE Unternehmen ─────────────────
+// Format: { company_name_pattern: { tenant, site } }
+const WORKDAY_TENANTS = {
+  'agrana':         { tenant: 'agrana',     site: 'Careers' },
+  'kapsch':         { tenant: 'kapsch',     site: 'onestepahead_kapsch' },
+  'fronius':        { tenant: 'fronius',    site: 'Job_Board' },
+  'andritz':        { tenant: 'andritz',    site: 'ANDRITZ_Careers' },
+  'borealis':       { tenant: 'borealis',   site: 'Borealis' },
+  'omv':            { tenant: 'omv',        site: 'OMV_Careers' },
+  'voestalpine':    { tenant: 'voestalpine',site: 'voestalpine' },
+  'verbund':        { tenant: 'verbund',    site: 'Verbund' },
+  'lenzing':        { tenant: 'lenzing',    site: 'Lenzing' },
+  'palfinger':      { tenant: 'palfinger',  site: 'Palfinger' },
+  'zumtobel':       { tenant: 'zumtobel',   site: 'Zumtobel' },
+  'wienerberger':   { tenant: 'wienerberger',site: 'Wienerberger' },
+  'rosenbauer':     { tenant: 'rosenbauer', site: 'Rosenbauer' },
+  'frequentis':     { tenant: 'frequentis', site: 'Frequentis' },
+  'blum':           { tenant: 'blum',       site: 'Blum' },
+  'alpla':          { tenant: 'alpla',      site: 'ALPLA' },
+  'bwt':            { tenant: 'bwt',        site: 'BWT' },
+  'engel':          { tenant: 'engelglobal',site: 'Engel' },
+  'doka':           { tenant: 'doka',       site: 'Doka' },
+  'greiner':        { tenant: 'greiner',    site: 'Greiner' },
+};
 
 // ── Supabase REST Helpers ─────────────────────────────────────────────────────
 async function sbSelect(table, params = '') {
@@ -61,8 +89,8 @@ async function sbUpdate(table, filter, body) {
   return r.json();
 }
 
-// ── Positionsfilter ───────────────────────────────────────────────────────────
-const LEADERSHIP_PROMPT = `Du bist ein Executive Search Spezialist. Analysiere den folgenden Text einer Karriereseite und extrahiere NUR Leitungspositionen mit einem geschätzten Jahresgehalt über €125.000.
+// ── Positionsfilter Prompt ────────────────────────────────────────────────────
+const LEADERSHIP_PROMPT = `Du bist ein Executive Search Spezialist. Analysiere die folgende Liste von Stellentiteln und extrahiere NUR Leitungspositionen mit einem geschätzten Jahresgehalt über €125.000.
 
 EINSCHLIESSEN:
 - C-Level: CEO, CFO, COO, CTO, CHRO, CMO, CDO, CRO, CPO, CIO, CSO
@@ -77,6 +105,7 @@ AUSSCHLIESSEN:
 - Team Lead / Gruppenleiter (operative Ebene)
 - Sachbearbeiter, Specialist, Analyst, Coordinator
 - Junior, Trainee, Werkstudent, Praktikant
+- Techniker, Meister, Fachkraft (ohne Leitungsfunktion)
 
 Antworte NUR mit einem JSON-Array. Kein Text davor oder danach.
 Format:
@@ -102,10 +131,266 @@ export default async function handler(req, res) {
     if (action === 'get-stats')      return await getStats(req, res);
     if (action === 'mark-outreach')  return await markOutreach(req, res);
     if (action === 'generate-mail')  return await generateOutreachMail(req, res);
+    if (action === 'update-workday') return await updateWorkdayTenant(req, res);
     return res.status(400).json({ error: 'Unbekannte action' });
   } catch (err) {
     console.error('[scan-careers]', err);
     return res.status(500).json({ error: err.message });
+  }
+}
+
+// ── Workday Tenant erkennen ───────────────────────────────────────────────────
+function detectWorkdayTenant(companyName, careerUrl) {
+  const name = companyName.toLowerCase();
+
+  // Direkt aus URL erkennen wenn myworkdayjobs.com
+  if (careerUrl && careerUrl.includes('myworkdayjobs.com')) {
+    const match = careerUrl.match(/https?:\/\/([^.]+)\.wd\d+\.myworkdayjobs\.com\/([^/?]+)/);
+    if (match) {
+      return { tenant: match[1], site: match[2], wd: careerUrl.match(/wd(\d+)/)?.[1] || '3' };
+    }
+  }
+
+  // Aus bekannter Liste
+  for (const [key, val] of Object.entries(WORKDAY_TENANTS)) {
+    if (name.includes(key)) {
+      return { ...val, wd: '3' };
+    }
+  }
+
+  return null;
+}
+
+// ── Workday API: Jobs abrufen ─────────────────────────────────────────────────
+async function fetchWorkdayJobs(tenant, site, wd = '3') {
+  const url = `https://${tenant}.wd${wd}.myworkdayjobs.com/wday/cxs/${tenant}/${site}/jobs`;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; CareerScanner/1.0)'
+      },
+      body: JSON.stringify({
+        appliedFacets: {},
+        limit: 100,
+        offset: 0,
+        searchText: ""
+      })
+    });
+    clearTimeout(timeout);
+
+    if (!r.ok) throw new Error(`Workday HTTP ${r.status}`);
+
+    const data = await r.json();
+    return data.jobPostings || [];
+  } catch (err) {
+    clearTimeout(timeout);
+    throw new Error(`Workday API Fehler: ${err.message}`);
+  }
+}
+
+// ── HTML Fallback: Karriereseite scrapen ──────────────────────────────────────
+async function fetchCareerPage(url) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; CareerScanner/1.0)',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'de-AT,de;q=0.9,en;q=0.8'
+      }
+    });
+    clearTimeout(timeout);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const html = await response.text();
+    return html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .substring(0, 8000);
+  } catch (err) {
+    clearTimeout(timeout);
+    throw new Error(`Seite nicht erreichbar: ${err.message}`);
+  }
+}
+
+// ── KI-Analyse: Stellentitel filtern ─────────────────────────────────────────
+async function analyzeWithClaude(content, companyName, baseUrl, isWorkday = false) {
+  let prompt;
+
+  if (isWorkday) {
+    // Workday: saubere Liste von Titeln → effizienter Prompt
+    prompt = `${LEADERSHIP_PROMPT}\n\nUnternehmen: ${companyName}\nBasis-URL: ${baseUrl}\n\nStellenangebote (JSON):\n${content}`;
+  } else {
+    // HTML Fallback
+    prompt = `${LEADERSHIP_PROMPT}\n\nUnternehmen: ${companyName}\nBasis-URL: ${baseUrl}\n\nKarriereseiteninhalt:\n${content}`;
+  }
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODEL,
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!response.ok) throw new Error(`Claude API: ${response.status}`);
+  const data = await response.json();
+  const text = data.content?.[0]?.text || '[]';
+  try {
+    return JSON.parse(text.replace(/```json|```/g, '').trim());
+  } catch {
+    return [];
+  }
+}
+
+// ── Core scan: Eine Firma scannen ─────────────────────────────────────────────
+async function scanTarget(target) {
+  const startTime = Date.now();
+  const log = {
+    target_id:        target.id,
+    company_name:     target.company_name,
+    status:           'error',
+    vacancies_found:  0,
+    new_vacancies:    0,
+    filled_vacancies: 0
+  };
+
+  try {
+    let jobs = [];
+    let scanMethod = 'html';
+
+    // Schritt 1: Workday erkennen und API nutzen
+    const workday = detectWorkdayTenant(target.company_name, target.career_url);
+
+    if (workday) {
+      try {
+        const postings = await fetchWorkdayJobs(workday.tenant, workday.site, workday.wd);
+        scanMethod = 'workday';
+
+        if (postings.length > 0) {
+          // Nur Titel + URL für KI-Analyse aufbereiten
+          const titleList = postings.slice(0, 100).map(p =>
+            `${p.title} | ${p.locationsText || ''} | ${p.externalPath ? 'https://' + workday.tenant + '.wd' + workday.wd + '.myworkdayjobs.com' + p.externalPath : ''}`
+          ).join('\n');
+
+          jobs = await analyzeWithClaude(titleList, target.company_name, target.career_url, true);
+
+          // Job URLs aus Workday-Daten ergänzen
+          jobs = jobs.map(job => {
+            const match = postings.find(p => p.title === job.title || p.title?.includes(job.title?.split(' ')[0]));
+            if (match?.externalPath) {
+              job.job_url = `https://${workday.tenant}.wd${workday.wd}.myworkdayjobs.com${match.externalPath}`;
+            }
+            return job;
+          });
+        }
+      } catch (workdayErr) {
+        console.warn(`Workday failed for ${target.company_name}, falling back to HTML: ${workdayErr.message}`);
+        scanMethod = 'html_fallback';
+      }
+    }
+
+    // Schritt 2: HTML Fallback wenn kein Workday oder Workday fehlgeschlagen
+    if (scanMethod !== 'workday' && target.career_url) {
+      try {
+        const pageText = await fetchCareerPage(target.career_url);
+        if (pageText && pageText.length > 100) {
+          jobs = await analyzeWithClaude(pageText, target.company_name, target.career_url, false);
+        } else {
+          log.status = 'skipped';
+          log.error_message = 'Seite leer';
+          await writeLog(log, startTime);
+          return { ...log };
+        }
+      } catch (htmlErr) {
+        log.status = 'error';
+        log.error_message = htmlErr.message;
+        await writeLog(log, startTime);
+        return { ...log, error: htmlErr.message };
+      }
+    }
+
+    log.vacancies_found = jobs.length;
+
+    if (!jobs.length) {
+      log.status = 'no_jobs';
+      await sbUpdate('career_targets', `id=eq.${target.id}`, { last_scanned_at: new Date().toISOString() });
+      await writeLog(log, startTime);
+      return { ...log, jobs: [], scan_method: scanMethod };
+    }
+
+    // Schritt 3: Bestehende Vakanzen laden
+    const existing = await sbSelect('career_vacancies', `target_id=eq.${target.id}&is_active=eq.true`);
+    const existingTitles = new Set(existing.map(e => e.job_title.toLowerCase().trim()));
+    const foundTitles    = new Set(jobs.map(j => j.title.toLowerCase().trim()));
+
+    // Schritt 4: Neue einfügen
+    let newCount = 0;
+    for (const job of jobs) {
+      if (!existingTitles.has(job.title.toLowerCase().trim())) {
+        try {
+          await sbInsert('career_vacancies', {
+            target_id:     target.id,
+            company_name:  target.company_name,
+            job_title:     job.title,
+            department:    job.department || null,
+            job_level:     job.level      || null,
+            job_url:       job.job_url    || target.career_url,
+            is_active:     true,
+            first_seen_at: new Date().toISOString(),
+            last_seen_at:  new Date().toISOString()
+          });
+          newCount++;
+        } catch(e) { /* Duplikat */ }
+      } else {
+        await sbUpdate('career_vacancies',
+          `target_id=eq.${target.id}&job_title=eq.${encodeURIComponent(job.title)}`,
+          { last_seen_at: new Date().toISOString() }
+        );
+      }
+    }
+
+    // Schritt 5: Verschwundene als besetzt markieren
+    let filledCount = 0;
+    for (const ex of existing) {
+      if (!foundTitles.has(ex.job_title.toLowerCase().trim())) {
+        await sbUpdate('career_vacancies', `id=eq.${ex.id}`, {
+          is_active: false, filled_at: new Date().toISOString()
+        });
+        filledCount++;
+      }
+    }
+
+    await sbUpdate('career_targets', `id=eq.${target.id}`, { last_scanned_at: new Date().toISOString() });
+
+    log.status           = 'success';
+    log.new_vacancies    = newCount;
+    log.filled_vacancies = filledCount;
+    await writeLog(log, startTime);
+    return { ...log, jobs, scan_method: scanMethod };
+
+  } catch (err) {
+    log.error_message = err.message;
+    await writeLog(log, startTime);
+    return { ...log, error: err.message };
   }
 }
 
@@ -129,7 +414,7 @@ async function uploadTargets(req, res) {
     internal_id:  c.internal_id || `IMPORT-${Date.now()}-${i}`,
     active:       c.active !== 'N' && c.active !== false,
     updated_at:   new Date().toISOString()
-  })).filter(r => r.company_name && r.career_url);
+  })).filter(r => r.company_name);
 
   await sbUpsert('career_targets', rows, 'internal_id');
   return res.json({ success: true, uploaded: rows.length, message: `${rows.length} Unternehmen importiert/aktualisiert` });
@@ -150,10 +435,10 @@ async function scanOneCompany(req, res) {
 // ── 3. Scan all ───────────────────────────────────────────────────────────────
 async function scanAllCompanies(req, res) {
   const limit    = parseInt(req.query.limit || '10');
+  const offset   = parseInt(req.query.offset || '0');
   const priority = req.query.priority;
 
-  const offset = parseInt(req.query.offset || '0');
-let params = `active=eq.true&career_url=neq.&order=company_name.asc&limit=${limit}&offset=${offset}`;
+  let params = `active=eq.true&order=priority.asc,company_name.asc&limit=${limit}&offset=${offset}`;
   if (priority) params += `&priority=eq.${priority}`;
 
   const targets = await sbSelect('career_targets', params);
@@ -162,7 +447,7 @@ let params = `active=eq.true&career_url=neq.&order=company_name.asc&limit=${limi
   for (const target of targets) {
     const result = await scanTarget(target);
     results.push(result);
-    await sleep(1500);
+    await sleep(500);
   }
 
   return res.json({
@@ -170,158 +455,9 @@ let params = `active=eq.true&career_url=neq.&order=company_name.asc&limit=${limi
     total_new_vacancies:  results.reduce((s, r) => s + (r.new_vacancies  || 0), 0),
     total_filled:         results.reduce((s, r) => s + (r.filled_vacancies || 0), 0),
     errors:               results.filter(r => r.status === 'error').length,
+    workday_used:         results.filter(r => r.scan_method === 'workday').length,
     results
   });
-}
-
-// ── Core scan ─────────────────────────────────────────────────────────────────
-async function scanTarget(target) {
-  const startTime = Date.now();
-  const log = {
-    target_id:        target.id,
-    company_name:     target.company_name,
-    status:           'error',
-    vacancies_found:  0,
-    new_vacancies:    0,
-    filled_vacancies: 0
-  };
-
-  try {
-    const pageText = await fetchCareerPage(target.career_url);
-
-    if (!pageText || pageText.length < 100) {
-      log.status = 'skipped';
-      log.error_message = 'Seite leer oder nicht erreichbar';
-      await writeLog(log, startTime);
-      return { ...log };
-    }
-
-    const jobs = await analyzeWithClaude(pageText, target.company_name, target.career_url);
-    log.vacancies_found = jobs.length;
-
-    if (!jobs.length) {
-      log.status = 'no_jobs';
-      await sbUpdate('career_targets', `id=eq.${target.id}`, { last_scanned_at: new Date().toISOString() });
-      await writeLog(log, startTime);
-      return { ...log, jobs: [] };
-    }
-
-    // Bestehende aktive Vakanzen laden
-    const existing = await sbSelect('career_vacancies', `target_id=eq.${target.id}&is_active=eq.true`);
-    const existingTitles = new Set(existing.map(e => e.job_title.toLowerCase().trim()));
-    const foundTitles    = new Set(jobs.map(j => j.title.toLowerCase().trim()));
-
-    // Neue einfügen
-    let newCount = 0;
-    for (const job of jobs) {
-      if (!existingTitles.has(job.title.toLowerCase().trim())) {
-        try {
-          await sbInsert('career_vacancies', {
-            target_id:     target.id,
-            company_name:  target.company_name,
-            job_title:     job.title,
-            department:    job.department || null,
-            job_level:     job.level      || null,
-            job_url:       job.job_url    || target.career_url,
-            is_active:     true,
-            first_seen_at: new Date().toISOString(),
-            last_seen_at:  new Date().toISOString()
-          });
-          newCount++;
-        } catch(e) {
-          // Duplikat — ignorieren
-        }
-      } else {
-        // last_seen aktualisieren
-        await sbUpdate('career_vacancies',
-          `target_id=eq.${target.id}&job_title=eq.${encodeURIComponent(job.title)}`,
-          { last_seen_at: new Date().toISOString() }
-        );
-      }
-    }
-
-    // Verschwundene als besetzt markieren
-    let filledCount = 0;
-    for (const ex of existing) {
-      if (!foundTitles.has(ex.job_title.toLowerCase().trim())) {
-        await sbUpdate('career_vacancies', `id=eq.${ex.id}`, {
-          is_active: false,
-          filled_at: new Date().toISOString()
-        });
-        filledCount++;
-      }
-    }
-
-    await sbUpdate('career_targets', `id=eq.${target.id}`, { last_scanned_at: new Date().toISOString() });
-
-    log.status           = 'success';
-    log.new_vacancies    = newCount;
-    log.filled_vacancies = filledCount;
-    await writeLog(log, startTime);
-    return { ...log, jobs };
-
-  } catch (err) {
-    log.error_message = err.message;
-    await writeLog(log, startTime);
-    return { ...log, error: err.message };
-  }
-}
-
-// ── Karriereseite abrufen ─────────────────────────────────────────────────────
-async function fetchCareerPage(url) {
-  const controller = new AbortController();
-  const timeout    = setTimeout(() => controller.abort(), 12000);
-  try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent':      'Mozilla/5.0 (compatible; CareerScanner/1.0)',
-        'Accept':          'text/html,application/xhtml+xml',
-        'Accept-Language': 'de-AT,de;q=0.9,en;q=0.8'
-      }
-    });
-    clearTimeout(timeout);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const html = await response.text();
-    return html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .substring(0, 8000);
-  } catch (err) {
-    clearTimeout(timeout);
-    throw new Error(`Seite nicht erreichbar: ${err.message}`);
-  }
-}
-
-// ── KI-Analyse ────────────────────────────────────────────────────────────────
-async function analyzeWithClaude(pageText, companyName, baseUrl) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type':      'application/json',
-      'x-api-key':         ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model:      CLAUDE_MODEL,
-      max_tokens: 1000,
-      messages: [{
-        role:    'user',
-        content: `${LEADERSHIP_PROMPT}\n\nUnternehmen: ${companyName}\nBasis-URL: ${baseUrl}\n\nKarriereseiteninhalt:\n${pageText}`
-      }]
-    })
-  });
-  if (!response.ok) throw new Error(`Claude API: ${response.status}`);
-  const data = await response.json();
-  const text = data.content?.[0]?.text || '[]';
-  try {
-    return JSON.parse(text.replace(/```json|```/g, '').trim());
-  } catch {
-    return [];
-  }
 }
 
 // ── 4. Get Vacancies ──────────────────────────────────────────────────────────
@@ -330,7 +466,6 @@ async function getVacancies(req, res) {
 
   let params = `is_active=eq.true&order=first_seen_at.asc&limit=${limit}`;
   if (level) params += `&job_level=eq.${encodeURIComponent(level)}`;
-
   if (parseInt(min_days) > 0) {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - parseInt(min_days));
@@ -338,22 +473,12 @@ async function getVacancies(req, res) {
   }
 
   const vacancies = await sbSelect('career_vacancies', params);
-
-  // Target-Daten dazu laden
   const targetIds = [...new Set(vacancies.map(v => v.target_id))];
   let targets = [];
-  if (targetIds.length) {
-    targets = await sbSelect('career_targets', `id=in.(${targetIds.join(',')})`);
-  }
+  if (targetIds.length) targets = await sbSelect('career_targets', `id=in.(${targetIds.join(',')})`);
   const targetMap = Object.fromEntries(targets.map(t => [t.id, t]));
 
-  const enriched = vacancies.map(v => ({
-    ...v,
-    career_targets: targetMap[v.target_id] || null
-  }));
-
-  // Nachfilter country
-  let filtered = enriched;
+  let filtered = vacancies.map(v => ({ ...v, career_targets: targetMap[v.target_id] || null }));
   if (req.query.country) filtered = filtered.filter(v => v.career_targets?.country === req.query.country);
 
   return res.json({ vacancies: filtered, count: filtered.length });
@@ -368,7 +493,14 @@ async function getTargets(req, res) {
   if (priority) params += `&priority=eq.${priority}`;
 
   const targets = await sbSelect('career_targets', params);
-  return res.json({ targets, count: targets.length });
+
+  // Workday-Status für jedes Target anzeigen
+  const enriched = targets.map(t => ({
+    ...t,
+    has_workday: !!detectWorkdayTenant(t.company_name, t.career_url)
+  }));
+
+  return res.json({ targets: enriched, count: enriched.length });
 }
 
 // ── 6. Stats ──────────────────────────────────────────────────────────────────
@@ -379,7 +511,7 @@ async function getStats(req, res) {
   ]);
 
   const vacs = vacancies || [];
-  const stats = {
+  return res.json({
     total_targets:    targets.length,
     total_vacancies:  vacs.length,
     vacancies_30d:    vacs.filter(v => daysSince(v.first_seen_at) >= 30).length,
@@ -387,8 +519,7 @@ async function getStats(req, res) {
     vacancies_90d:    vacs.filter(v => daysSince(v.first_seen_at) >= 90).length,
     c_level_open:     vacs.filter(v => v.job_level === 'C-Level').length,
     outreach_pending: vacs.filter(v => !v.outreach_sent && daysSince(v.first_seen_at) >= 30).length
-  };
-  return res.json(stats);
+  });
 }
 
 // ── 7. Mark Outreach ──────────────────────────────────────────────────────────
@@ -425,20 +556,30 @@ Regeln: Keine Floskeln. Direkt ansprechen dass die Stelle lange offen ist. Signi
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
-      'Content-Type':      'application/json',
-      'x-api-key':         ANTHROPIC_API_KEY,
+      'Content-Type': 'application/json',
+      'x-api-key': ANTHROPIC_API_KEY,
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model:      'claude-sonnet-4-6',
+      model: 'claude-sonnet-4-6',
       max_tokens: 400,
-      messages:   [{ role: 'user', content: prompt }]
+      messages: [{ role: 'user', content: prompt }]
     })
   });
 
   const data = await response.json();
   const mail = data.content?.[0]?.text || '';
   return res.json({ mail, vacancy: vac });
+}
+
+// ── 9. Workday Tenant manuell setzen ─────────────────────────────────────────
+async function updateWorkdayTenant(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST required' });
+  const { target_id, workday_url } = req.body;
+  if (!target_id || !workday_url) return res.status(400).json({ error: 'target_id und workday_url erforderlich' });
+
+  await sbUpdate('career_targets', `id=eq.${target_id}`, { career_url: workday_url });
+  return res.json({ success: true, message: 'Workday URL gesetzt' });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
