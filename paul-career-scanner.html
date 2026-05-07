@@ -649,7 +649,7 @@ function parseExcel(file) {
       notes:        String(r[8] || '').trim(),
       active:       String(r[10] || 'J').trim(),
       internal_id:  String(r[11] || '').trim() || null
-    })).filter(c => c.company_name && c.career_url);
+    })).filter(c => c.company_name);
 
     // Preview
     document.getElementById('upload-preview-title').textContent = `${parsedCompanies.length} Unternehmen erkannt in "${file.name}"`;
