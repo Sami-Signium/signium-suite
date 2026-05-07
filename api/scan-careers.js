@@ -152,7 +152,8 @@ async function scanAllCompanies(req, res) {
   const limit    = parseInt(req.query.limit || '10');
   const priority = req.query.priority;
 
-  let params = `active=eq.true&career_url=neq.&order=priority.asc,last_scanned_at.asc.nullsfirst&limit=${limit}`;
+  const offset = parseInt(req.query.offset || '0');
+let params = `active=eq.true&career_url=neq.&order=company_name.asc&limit=${limit}&offset=${offset}`;
   if (priority) params += `&priority=eq.${priority}`;
 
   const targets = await sbSelect('career_targets', params);
