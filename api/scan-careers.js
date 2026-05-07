@@ -547,12 +547,16 @@ async function generateOutreachMail(req, res) {
   const target  = targets[0] || {};
   const days    = daysSince(vac.first_seen_at);
 
-  const prompt = `Du bist Sami Hamid, Managing Partner bei Signium Austria (Stein & Partner GmbH, Wien). 30+ Jahre Erfahrung im Executive Search, DACH & CEE.
+ const prompt = `Du bist Sami Hamid, Managing Partner bei Signium Austria (Stein & Partner GmbH, Wien). 30+ Jahre Executive Search, DACH & CEE, 1000+ erfolgreich besetzte Mandate.
 
-Schreibe eine professionelle Erstansprache (max. 120 Wörter) an den Entscheidungsträger bei ${target.company_name || vac.company_name} bezüglich der seit ${days} Tagen offenen Position "${vac.job_title}" (${vac.job_level}).
+Schreibe eine Erstansprache (max. 110 Wörter) an den CEO oder HR-Verantwortlichen bei ${target.company_name || vac.company_name}.
 
-Regeln: Keine Floskeln. Direkt ansprechen dass die Stelle lange offen ist. Signium positionieren: DACH/CEE Spezialist, eigene Büros, 1000+ Mandate, 30 Jahre. Auf Augenhöhe. Sprache: Deutsch. Kein Betreff.`;
+Kontext: Die Position "${vac.job_title}" (${vac.job_level}) ist seit ${days} Tagen ausgeschrieben.
 
+Ton: Direkt, substanziell, auf Augenhöhe. Kein "Ich habe gesehen dass...". Kein "Ich hoffe diese Mail findet Sie...".
+Einstieg: Komm sofort zum Punkt — warum du schreibst und was Signium konkret bieten kann.
+Positionierung: Signium ist der spezialisierte DACH/CEE Partner für genau diese Art von Besetzung — mit eigenen Büros, 30 Jahren Erfahrung und einem Netzwerk das intern nicht erreichbar ist.
+Sprache: Deutsch. Kein Betreff.`;
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
