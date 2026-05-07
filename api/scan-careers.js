@@ -7,7 +7,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_KEY;
 const ANTHROPIC_API_KEY    = process.env.ANTHROPIC_API_KEY;
 const CLAUDE_MODEL         = 'claude-haiku-4-5-20251001';
 
-// ── Bekannte Workday-Tenants österreichischer/CEE Unternehmen ─────────────────
+// ── Bekannte Workday-Tenants oesterreichischer/CEE Unternehmen ─────────────────
 // Format: { company_name_pattern: { tenant, site } }
 const WORKDAY_TENANTS = {
   'agrana':         { tenant: 'agrana',     site: 'Careers' },
@@ -90,13 +90,13 @@ async function sbUpdate(table, filter, body) {
 }
 
 // ── Positionsfilter Prompt ────────────────────────────────────────────────────
-const LEADERSHIP_PROMPT = `Du bist ein Executive Search Spezialist. Analysiere die folgende Liste von Stellentiteln und extrahiere NUR Leitungspositionen mit einem geschätzten Jahresgehalt über €125.000.
+const LEADERSHIP_PROMPT = `Du bist ein Executive Search Spezialist. Analysiere die folgende Liste von Stellentiteln und extrahiere NUR Leitungspositionen mit einem geschaetzten Jahresgehalt ueber €125.000.
 
 EINSCHLIESSEN:
 - C-Level: CEO, CFO, COO, CTO, CHRO, CMO, CDO, CRO, CPO, CIO, CSO
-- Geschäftsführer/in, Managing Director, Generaldirektor, Vorstand
+- Geschaeftsfuehrer/in, Managing Director, Generaldirektor, Vorstand
 - Bereichsleiter/in, Division Head, Head of [Bereich]
-- Abteilungsleiter/in (nur bei großen Unternehmen / strategischen Abteilungen)
+- Abteilungsleiter/in (nur bei grossen Unternehmen / strategischen Abteilungen)
 - Country Manager, Regional Director, Market Lead
 - Vice President, Senior Vice President
 - General Counsel, Head of Strategy, Head of M&A
@@ -109,7 +109,7 @@ AUSSCHLIESSEN:
 
 Antworte NUR mit einem JSON-Array. Kein Text davor oder danach.
 Format:
-[{"title":"Positionstitel","department":"Bereich oder null","level":"C-Level|Geschäftsführung|Bereichsleitung|Abteilungsleitung|Sonstige Leitungsfunktion","job_url":"URL oder null"}]
+[{"title":"Positionstitel","department":"Bereich oder null","level":"C-Level|Geschaeftsfuehrung|Bereichsleitung|Abteilungsleitung|Sonstige Leitungsfunktion","job_url":"URL oder null"}]
 
 Wenn keine passenden Positionen: antworte mit []`;
 
@@ -286,14 +286,14 @@ async function scanTarget(target) {
         scanMethod = 'workday';
 
         if (postings.length > 0) {
-          // Nur Titel + URL für KI-Analyse aufbereiten
+          // Nur Titel + URL fuer KI-Analyse aufbereiten
           const titleList = postings.slice(0, 100).map(p =>
             `${p.title} | ${p.locationsText || ''} | ${p.externalPath ? 'https://' + workday.tenant + '.wd' + workday.wd + '.myworkdayjobs.com' + p.externalPath : ''}`
           ).join('\n');
 
           jobs = await analyzeWithClaude(titleList, target.company_name, target.career_url, true);
 
-          // Job URLs aus Workday-Daten ergänzen
+          // Job URLs aus Workday-Daten ergaenzen
           jobs = jobs.map(job => {
             const match = postings.find(p => p.title === job.title || p.title?.includes(job.title?.split(' ')[0]));
             if (match?.externalPath) {
@@ -342,7 +342,7 @@ async function scanTarget(target) {
     const existingTitles = new Set(existing.map(e => e.job_title.toLowerCase().trim()));
     const foundTitles    = new Set(jobs.map(j => j.title.toLowerCase().trim()));
 
-    // Schritt 4: Neue einfügen
+    // Schritt 4: Neue einfuegen
     let newCount = 0;
     for (const job of jobs) {
       if (!existingTitles.has(job.title.toLowerCase().trim())) {
@@ -494,7 +494,7 @@ async function getTargets(req, res) {
 
   const targets = await sbSelect('career_targets', params);
 
-  // Workday-Status für jedes Target anzeigen
+  // Workday-Status fuer jedes Target anzeigen
   const enriched = targets.map(t => ({
     ...t,
     has_workday: !!detectWorkdayTenant(t.company_name, t.career_url)
