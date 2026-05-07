@@ -131,7 +131,7 @@ export default async function handler(req, res) {
     if (action === 'get-stats')      return await getStats(req, res);
     if (action === 'mark-outreach')  return await markOutreach(req, res);
     if (action === 'generate-mail')  return await generateOutreachMail(req, res);
-    if (action === 'update-workday') return await updateWorkdayTenant(req, res);
+    if (action === 'find-workday')   return await findWorkdayBatch(req, res);
     return res.status(400).json({ error: 'Unbekannte action' });
   } catch (err) {
     console.error('[scan-careers]', err);
@@ -583,6 +583,59 @@ async function updateWorkdayTenant(req, res) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+async function findWorkdayBatch(req, res) {
+  const limit = parseInt(req.query.limit || '20');
+  const targets = await sbSelect('career_targets',
+    `active=eq.true&career_url=eq.&order=company_name.asc&limit=${limit}`
+  );
+  const results = [];
+  let found = 0;
+  for (const target of targets) {
+    const result = await testWorkdayForCompany(target.company_name);
+    if (result.found) {
+      await sbUpdate('career_targets', `id=eq.${target.id}`, { career_url: result.url });
+      found++;
+    }
+    results.push({ company: target.company_name, found: result.found, url: result.url || null });
+    await sleep(300);
+  }
+  return res.json({ scanned: results.length, found, results });
+}
+
+async function testWorkdayForCompany(companyName) {
+  const base = companyName.toLowerCase()
+    .replace(/\s+(ag|gmbh|se|sa|plc|inc|corp|ltd|group|holding|kg)\s*$/gi, '')
+    .replace(/[^a-z0-9]/g, '').trim();
+  const words = companyName.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/)
+    .filter(w => !['ag','gmbh','se','sa','group','holding','the','and','of'].includes(w));
+  const tenants = [...new Set([base, words[0], words.slice(0,2).join(''), words.join('')])].filter(t => t && t.length >= 2).slice(0,4);
+  const sites = ['Careers','careers','Jobs','ExternalCareers','External','JobBoard','Job_Board'];
+  const wds = ['3','1','5'];
+  for (const tenant of tenants) {
+    for (const wd of wds) {
+      for (const site of sites) {
+        const url = `https://${tenant}.wd${wd}.myworkdayjobs.com/wday/cxs/${tenant}/${site}/jobs`;
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 3000);
+          const r = await fetch(url, {
+            method: 'POST', signal: controller.signal,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ appliedFacets: {}, limit: 1, offset: 0, searchText: '' })
+          });
+          clearTimeout(timeout);
+          if (r.ok) {
+            const d = await r.json();
+            if (d.jobPostings !== undefined) {
+              return { found: true, url: `https://${tenant}.wd${wd}.myworkdayjobs.com/${site}`, total: d.total || 0 };
+            }
+          }
+        } catch { /* continue */ }
+      }
+    }
+  }
+  return { found: false };
+}
 function daysSince(dateStr) {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
 }
