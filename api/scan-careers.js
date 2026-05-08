@@ -1,4 +1,4 @@
-// api/scan-careers.js
+// api/scan-careers.js - v2
 // PAUL Career Scanner — mit Workday API + HTML Fallback
 // Vercel Hobby Plan: 1 von max. 12 Functions
 
