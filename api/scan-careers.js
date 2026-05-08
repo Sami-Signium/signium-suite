@@ -90,7 +90,7 @@ async function sbUpdate(table, filter, body) {
 }
 
 // ── Positionsfilter Prompt ────────────────────────────────────────────────────
-const LEADERSHIP_PROMPT = `Du bist ein Executive Search Spezialist. Analysiere die folgende Liste von Stellentiteln und extrahiere NUR Leitungspositionen mit einem geschaetzten Jahresgehalt ueber €125.000.
+const LEADERSHIP_SYSTEM_PROMPT = `Du bist ein Executive Search Spezialist. Analysiere die Liste von Stellentiteln und extrahiere NUR Leitungspositionen mit einem geschaetzten Jahresgehalt ueber EUR 125.000.
 
 EINSCHLIESSEN:
 - C-Level: CEO, CFO, COO, CTO, CHRO, CMO, CDO, CRO, CPO, CIO, CSO
@@ -107,11 +107,11 @@ AUSSCHLIESSEN:
 - Junior, Trainee, Werkstudent, Praktikant
 - Techniker, Meister, Fachkraft (ohne Leitungsfunktion)
 
-Antworte NUR mit einem JSON-Array. Kein Text davor oder danach.
+Antworte AUSSCHLIESSLICH mit einem JSON-Array. Kein Text davor oder danach. Keine Erklaerung. Keine Markdown-Formatierung.
 Format:
 [{"title":"Positionstitel","department":"Bereich oder null","level":"C-Level|Geschaeftsfuehrung|Bereichsleitung|Abteilungsleitung|Sonstige Leitungsfunktion","job_url":"URL oder null"}]
 
-Wenn keine passenden Positionen: antworte mit []`;
+Wenn keine passenden Positionen gefunden: antworte mit []`;
 
 // ── Main Handler ──────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
