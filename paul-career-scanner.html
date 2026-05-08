@@ -6,127 +6,101 @@
 <title>PAUL — Career Scanner</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-  :root {
-    --navy:  #1B2A4A;
-    --gold:  #C9A84C;
-    --gold-light: #FDF6E3;
-    --red:   #dc2626;
-    --orange:#ea580c;
-    --yellow:#ca8a04;
-    --green: #16a34a;
-    --grey:  #f8f7f4;
-    --border:#e5e0d8;
-    --text:  #1a1a1a;
-    --muted: #6b7280;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; background: var(--grey); color: var(--text); font-size: 13px; }
-
-  /* Header */
-  .header { background: var(--navy); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; }
-  .header-title { color: white; font-size: 18px; font-weight: 700; }
-  .header-sub { color: #8899bb; font-size: 11px; margin-top: 2px; }
-  .header-badge { color: var(--gold); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
-
-  /* Tabs */
-  .tabs { background: white; border-bottom: 1px solid var(--border); display: flex; padding: 0 28px; }
-  .tab { padding: 12px 18px; border: none; background: none; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
-  .tab.active { color: var(--navy); border-bottom-color: var(--gold); }
-
-  /* Layout */
-  .content { padding: 24px 28px; max-width: 1200px; }
-
-  /* Cards */
-  .card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 18px; }
-  .card-title { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 14px; }
-
-  /* KPI Grid */
-  .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 20px; }
-  .kpi { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; }
-  .kpi.highlight { border-color: var(--gold); border-width: 2px; }
-  .kpi-value { font-size: 32px; font-weight: 700; color: var(--navy); }
-  .kpi-value.gold { color: var(--gold); }
-  .kpi-value.red  { color: var(--red); }
-  .kpi-label { font-size: 11px; font-weight: 600; color: #444; margin-top: 2px; }
-  .kpi-sub   { font-size: 10px; color: var(--muted); }
-
-  /* Buttons */
-  .btn { padding: 8px 18px; border-radius: 5px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; }
-  .btn-primary { background: var(--navy); color: white; }
-  .btn-primary:hover { background: #243660; }
-  .btn-secondary { background: white; color: var(--navy); border: 1px solid var(--navy); }
-  .btn-gold { background: var(--gold); color: var(--navy); }
-  .btn-sm { padding: 5px 12px; font-size: 11px; }
-  .btn:disabled { background: #ccc; color: #888; cursor: default; }
-
-  /* Vacancy rows */
-  .vacancy-list { display: flex; flex-direction: column; gap: 6px; }
-  .vacancy-row { background: white; border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; display: flex; align-items: center; gap: 14px; border-left: 3px solid #ddd; }
-  .vacancy-row.c-level { border-left-color: var(--gold); }
-  .vacancy-row.gf { border-left-color: #3b82f6; }
-  .vacancy-title { font-weight: 700; color: var(--navy); font-size: 13px; }
-  .vacancy-meta  { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .vacancy-info  { flex: 1; }
-  .age-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
-
-  /* Filter bar */
-  .filter-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
-  .filter-btn { padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border); background: white; cursor: pointer; font-size: 11px; color: #555; }
-  .filter-btn.active { background: var(--navy); color: white; border-color: var(--navy); }
-  select.filter-select { padding: 5px 10px; border: 1px solid var(--border); border-radius: 5px; font-size: 12px; }
-
-  /* Upload zone */
-  .upload-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s; }
-  .upload-zone:hover { border-color: var(--gold); background: var(--gold-light); }
-  .upload-icon { font-size: 32px; margin-bottom: 8px; }
-  .upload-text { font-size: 13px; color: var(--navy); font-weight: 600; }
-  .upload-sub  { font-size: 11px; color: var(--muted); margin-top: 4px; }
-
-  /* Progress bar */
-  .progress-wrap { background: #eee; border-radius: 4px; height: 6px; overflow: hidden; margin-top: 10px; }
-  .progress-bar  { background: var(--gold); height: 100%; transition: width 0.3s; }
-
-  /* Outreach modal */
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
-  .modal-overlay.open { display: flex; }
-  .modal { background: white; border-radius: 10px; width: 600px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
-  .modal-header { background: var(--navy); color: white; padding: 16px 20px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center; }
-  .modal-body   { padding: 20px; }
-  .modal-close  { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
-  textarea.mail-draft { width: 100%; min-height: 180px; border: 1px solid var(--border); border-radius: 5px; padding: 12px; font-size: 13px; line-height: 1.6; resize: vertical; }
-
-  /* AI insight box */
-  .ai-box { background: var(--navy); border-radius: 8px; padding: 20px; margin-bottom: 18px; }
-  .ai-box-title { color: var(--gold); font-size: 12px; font-weight: 700; letter-spacing: 1px; margin-bottom: 12px; }
-  .ai-box-text  { color: #d4dce8; font-size: 12px; line-height: 1.7; white-space: pre-wrap; }
-  .ai-box-placeholder { color: #5a7090; font-size: 12px; font-style: italic; }
-
-  /* Table for targets */
-  .targets-table { width: 100%; border-collapse: collapse; }
-  .targets-table th { background: var(--navy); color: white; padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; }
-  .targets-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 12px; }
-  .targets-table tr:hover td { background: #f9f8f6; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-  .dot-green { background: var(--green); }
-  .dot-grey  { background: #ccc; }
-
-  /* Toast */
-  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: white; padding: 12px 20px; border-radius: 6px; font-size: 12px; z-index: 9999; display: none; }
-  .toast.show { display: block; animation: fadeIn 0.3s; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-  .section-hidden { display: none; }
-  input[type=file] { display: none; }
+:root {
+  --navy:#1B2A4A; --gold:#C9A84C; --gold-light:#FDF6E3;
+  --red:#dc2626; --orange:#ea580c; --yellow:#ca8a04; --green:#16a34a;
+  --grey:#f8f7f4; --border:#e5e0d8; --text:#1a1a1a; --muted:#6b7280;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:var(--grey);color:var(--text);font-size:13px;}
+.header{background:var(--navy);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;}
+.header-title{color:white;font-size:18px;font-weight:700;}
+.header-sub{color:#8899bb;font-size:11px;margin-top:2px;}
+.header-badge{color:var(--gold);font-size:11px;letter-spacing:2px;text-transform:uppercase;}
+.tabs{background:white;border-bottom:1px solid var(--border);display:flex;padding:0 28px;}
+.tab{padding:12px 18px;border:none;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;}
+.tab.active{color:var(--navy);border-bottom-color:var(--gold);}
+.content{padding:24px 28px;max-width:1200px;}
+.card{background:white;border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:18px;}
+.card-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:14px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px;}
+.kpi{background:white;border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;}
+.kpi.highlight{border-color:var(--gold);border-width:2px;}
+.kpi-value{font-size:32px;font-weight:700;color:var(--navy);}
+.kpi-value.gold{color:var(--gold);}
+.kpi-value.red{color:var(--red);}
+.kpi-label{font-size:11px;font-weight:600;color:#444;margin-top:2px;}
+.kpi-sub{font-size:10px;color:var(--muted);}
+.btn{padding:8px 18px;border-radius:5px;border:none;cursor:pointer;font-size:12px;font-weight:600;}
+.btn-primary{background:var(--navy);color:white;}
+.btn-primary:hover{background:#243660;}
+.btn-secondary{background:white;color:var(--navy);border:1px solid var(--navy);}
+.btn-gold{background:var(--gold);color:var(--navy);}
+.btn-sm{padding:5px 12px;font-size:11px;}
+.btn:disabled{background:#ccc;color:#888;cursor:default;}
+.vacancy-list{display:flex;flex-direction:column;gap:6px;}
+.vacancy-row{background:white;border:1px solid var(--border);border-radius:6px;padding:12px 16px;display:flex;align-items:center;gap:14px;border-left:3px solid #ddd;}
+.vacancy-row.c-level{border-left-color:var(--gold);}
+.vacancy-row.gf{border-left-color:#3b82f6;}
+.vacancy-title{font-weight:700;color:var(--navy);font-size:13px;}
+.vacancy-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.vacancy-info{flex:1;}
+.age-badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+.filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.filter-btn{padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:white;cursor:pointer;font-size:11px;color:#555;}
+.filter-btn.active{background:var(--navy);color:white;border-color:var(--navy);}
+select.filter-select{padding:5px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px;}
+.upload-zone{border:2px dashed var(--border);border-radius:8px;padding:32px;text-align:center;cursor:pointer;transition:all 0.2s;}
+.upload-zone:hover{border-color:var(--gold);background:var(--gold-light);}
+.progress-wrap{background:#eee;border-radius:4px;height:6px;overflow:hidden;margin-top:10px;}
+.progress-bar{background:var(--gold);height:100%;transition:width 0.3s;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:white;border-radius:10px;width:600px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.modal-header{background:var(--navy);color:white;padding:16px 20px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:center;}
+.modal-body{padding:20px;}
+.modal-close{background:none;border:none;color:white;font-size:20px;cursor:pointer;}
+textarea.mail-draft{width:100%;min-height:180px;border:1px solid var(--border);border-radius:5px;padding:12px;font-size:13px;line-height:1.6;resize:vertical;}
+.ai-box{background:var(--navy);border-radius:8px;padding:20px;margin-bottom:18px;}
+.ai-box-title{color:var(--gold);font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:12px;}
+.ai-box-text{color:#d4dce8;font-size:12px;line-height:1.7;white-space:pre-wrap;}
+.ai-box-placeholder{color:#5a7090;font-size:12px;font-style:italic;}
+.targets-table{width:100%;border-collapse:collapse;}
+.targets-table th{background:var(--navy);color:white;padding:8px 10px;text-align:left;font-size:11px;font-weight:600;}
+.targets-table td{padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle;}
+.targets-table tr:hover td{background:#f9f8f6;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:white;padding:12px 20px;border-radius:6px;font-size:12px;z-index:9999;display:none;}
+.toast.show{display:block;animation:fadeIn 0.3s;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.section-hidden{display:none;}
+input[type=file]{display:none;}
+/* Browserless Test Tab */
+.bl-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f0f0f0;}
+.bl-row:last-child{border-bottom:none;}
+.bl-status{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;font-weight:700;}
+.bl-status.pending{background:#f0f0f0;color:#999;}
+.bl-status.loading{background:#fff3cd;color:#856404;}
+.bl-status.ok{background:#d4edda;color:#155724;}
+.bl-status.jobs{background:#d1e7ff;color:#0c63e4;}
+.bl-status.error{background:#f8d7da;color:#721c24;}
+.bl-name{font-weight:600;color:var(--navy);min-width:160px;font-size:13px;}
+.bl-detail{font-size:12px;color:#666;flex:1;}
+.bl-ms{font-size:11px;color:#aaa;min-width:60px;text-align:right;}
+.bl-snippet{background:#f8f9fa;border-left:3px solid var(--gold);padding:6px 10px;font-size:11px;color:#555;margin-top:5px;border-radius:0 4px 4px 0;}
+.bl-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+/* HR contact badge */
+.hr-badge{display:inline-flex;align-items:center;gap:4px;background:#f0f4ff;border:1px solid #c7d2fe;border-radius:4px;padding:2px 7px;font-size:10px;color:#3730a3;}
+.email-gen{color:var(--orange);}
+.email-ver{color:var(--green);}
 </style>
 </head>
 <body>
 
-<!-- Header -->
 <div class="header">
   <div>
     <div class="header-badge">Signium Austria — PAUL</div>
     <div class="header-title">Career Scanner</div>
-    <div class="header-sub">Automatisches Monitoring von Führungsvakanzen · DACH/CEE</div>
+    <div class="header-sub">Automatisches Monitoring von Fuehrungsvakanzen · DACH/CEE · 127 Unternehmen</div>
   </div>
   <div style="text-align:right">
     <div id="kpi-header-val" style="color:var(--gold);font-size:28px;font-weight:700">—</div>
@@ -134,194 +108,231 @@
   </div>
 </div>
 
-<!-- Tabs -->
 <div class="tabs">
   <button class="tab active" onclick="showTab('dashboard')">Dashboard</button>
   <button class="tab" onclick="showTab('vacancies')">Vakanzen</button>
-  <button class="tab" onclick="showTab('targets')">Unternehmen</button>
+  <button class="tab" onclick="showTab('targets')">Unternehmen (127)</button>
+  <button class="tab" onclick="showTab('browserless')">Browserless Test</button>
   <button class="tab" onclick="showTab('upload')">Upload</button>
 </div>
 
 <div class="content">
 
-  <!-- ── DASHBOARD ── -->
-  <div id="tab-dashboard">
-    <div class="kpi-grid">
-      <div class="kpi"><div class="kpi-value" id="s-targets">—</div><div class="kpi-label">Unternehmen</div><div class="kpi-sub">überwacht</div></div>
-      <div class="kpi"><div class="kpi-value" id="s-total">—</div><div class="kpi-label">Offene Vakanzen</div><div class="kpi-sub">gesamt</div></div>
-      <div class="kpi highlight"><div class="kpi-value red" id="s-30d">—</div><div class="kpi-label">> 30 Tage offen</div><div class="kpi-sub">Handlungsbedarf</div></div>
-      <div class="kpi"><div class="kpi-value gold" id="s-clevel">—</div><div class="kpi-label">C-Level Vakanzen</div><div class="kpi-sub">aktiv</div></div>
-      <div class="kpi"><div class="kpi-value" id="s-outreach">—</div><div class="kpi-label">Outreach ausstehend</div><div class="kpi-sub">>30 Tage, kein Kontakt</div></div>
-    </div>
-
-    <!-- Scan Controls -->
-    <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div>
-          <div class="card-title" style="margin-bottom:2px">Scan starten</div>
-          <div style="font-size:11px;color:var(--muted)">PAUL besucht Karriereseiten und sucht nach Leitungsvakanzen</div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-secondary btn-sm" onclick="scanAll(1)">Prio 1 scannen</button>
-          <button class="btn btn-primary" id="btn-scan-all" onclick="scanAll()">▶ Alle scannen (10)</button>
-        </div>
-      </div>
-      <div class="progress-wrap" id="scan-progress-wrap" style="display:none">
-        <div class="progress-bar" id="scan-progress-bar" style="width:0%"></div>
-      </div>
-      <div id="scan-status" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
-    </div>
-
-    <!-- AI Insight -->
-    <div class="ai-box">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div class="ai-box-title">⬡ KI-STRATEGIEANALYSE</div>
-        <button class="btn btn-gold btn-sm" onclick="getAiInsight()">Analyse starten</button>
-      </div>
-      <div id="ai-insight-text" class="ai-box-placeholder" style="margin-top:12px">
-        Starte einen Scan, dann klicke "Analyse starten" für KI-Empfehlungen zum Mandate-Potenzial.
-      </div>
-    </div>
-
-    <!-- Top Vakanzen -->
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <div class="card-title" style="margin-bottom:0">Top Opportunities <span id="dash-vac-count" style="color:var(--muted);font-weight:400"></span></div>
-        <div class="filter-bar" style="margin-bottom:0">
-          <button class="filter-btn active" onclick="setDashFilter(30,this)">30 Tage</button>
-          <button class="filter-btn" onclick="setDashFilter(60,this)">60 Tage</button>
-          <button class="filter-btn" onclick="setDashFilter(90,this)">90 Tage</button>
-        </div>
-      </div>
-      <div class="vacancy-list" id="dash-vacancy-list">
-        <div style="color:var(--muted);text-align:center;padding:30px">Noch keine Scan-Daten. Starte einen Scan.</div>
-      </div>
-    </div>
+<!-- DASHBOARD -->
+<div id="tab-dashboard">
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-value" id="s-targets">127</div><div class="kpi-label">Unternehmen</div><div class="kpi-sub">ueberwacht</div></div>
+    <div class="kpi"><div class="kpi-value" id="s-total">—</div><div class="kpi-label">Offene Vakanzen</div><div class="kpi-sub">gesamt</div></div>
+    <div class="kpi highlight"><div class="kpi-value red" id="s-30d">—</div><div class="kpi-label">&gt; 30 Tage offen</div><div class="kpi-sub">Handlungsbedarf</div></div>
+    <div class="kpi"><div class="kpi-value gold" id="s-clevel">—</div><div class="kpi-label">C-Level Vakanzen</div><div class="kpi-sub">aktiv</div></div>
+    <div class="kpi"><div class="kpi-value" id="s-outreach">—</div><div class="kpi-label">Outreach ausstehend</div><div class="kpi-sub">&gt;30 Tage, kein Kontakt</div></div>
   </div>
-
-  <!-- ── VAKANZEN ── -->
-  <div id="tab-vacancies" class="section-hidden">
-    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-      <select class="filter-select" id="vac-filter-level" onchange="loadVacancies()">
-        <option value="">Alle Level</option>
-        <option value="C-Level">C-Level</option>
-        <option value="Geschäftsführung">Geschäftsführung</option>
-        <option value="Bereichsleitung">Bereichsleitung</option>
-        <option value="Abteilungsleitung">Abteilungsleitung</option>
-        <option value="Sonstige Leitungsfunktion">Sonstige</option>
-      </select>
-      <select class="filter-select" id="vac-filter-days" onchange="loadVacancies()">
-        <option value="30">> 30 Tage</option>
-        <option value="0" selected>Alle Vakanzen</option>
-        <option value="60">> 60 Tage</option>
-        <option value="90">> 90 Tage</option>
-      </select>
-      <select class="filter-select" id="vac-filter-country" onchange="loadVacancies()">
-        <option value="">Alle Länder</option>
-        <option value="AT">Österreich</option>
-        <option value="DE">Deutschland</option>
-        <option value="CH">Schweiz</option>
-        <option value="PL">Polen</option>
-        <option value="CZ">Tschechien</option>
-      </select>
-      <div style="margin-left:auto;font-size:11px;color:var(--muted);align-self:center" id="vac-count-label"></div>
-    </div>
-    <div class="vacancy-list" id="vac-list">
-      <div style="color:var(--muted);text-align:center;padding:30px">Lade Vakanzen...</div>
-    </div>
-  </div>
-
-  <!-- ── UNTERNEHMEN ── -->
-  <div id="tab-targets" class="section-hidden">
-    <div style="display:flex;justify-content:space-between;margin-bottom:14px">
-      <div style="font-size:13px;font-weight:700;color:var(--navy)" id="targets-count-label"></div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div>
+        <div class="card-title" style="margin-bottom:2px">Scan starten</div>
+        <div style="font-size:11px;color:var(--muted)">PAUL prueft Karriereseiten auf Fuehrungsvakanzen · Workday (21 Firmen) + Browserless (36 Firmen)</div>
+      </div>
       <div style="display:flex;gap:8px">
-        <select class="filter-select" id="t-filter-country" onchange="loadTargets()">
-          <option value="">Alle Länder</option>
-          <option value="AT">AT</option><option value="DE">DE</option><option value="CH">CH</option>
-          <option value="PL">PL</option><option value="CZ">CZ</option><option value="HU">HU</option>
-        </select>
-        <select class="filter-select" id="t-filter-prio" onchange="loadTargets()">
-          <option value="">Alle Prioritäten</option>
-          <option value="1">Priorität 1</option>
-          <option value="2">Priorität 2</option>
-          <option value="3">Priorität 3</option>
-        </select>
+        <button class="btn btn-secondary btn-sm" onclick="scanAll(1)">Prio 1 scannen</button>
+        <button class="btn btn-primary" id="btn-scan-all" onclick="scanAll()">▶ Alle scannen (127)</button>
       </div>
     </div>
-    <div class="card" style="padding:0;overflow:hidden">
-      <table class="targets-table">
-        <thead>
-          <tr>
-            <th>Unternehmen</th>
-            <th>Land</th>
-            <th>Branche</th>
-            <th>Prio</th>
-            <th>Quelle</th>
-            <th>Letzter Scan</th>
-            <th>Aktiv</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="targets-tbody">
-          <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Lade Unternehmen...</td></tr>
-        </tbody>
-      </table>
+    <div class="progress-wrap" id="scan-progress-wrap" style="display:none">
+      <div class="progress-bar" id="scan-progress-bar" style="width:0%"></div>
+    </div>
+    <div id="scan-status" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
+  </div>
+  <div class="ai-box">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="ai-box-title">⬡ KI-STRATEGIEANALYSE</div>
+      <button class="btn btn-gold btn-sm" onclick="getAiInsight()">Analyse starten</button>
+    </div>
+    <div id="ai-insight-text" class="ai-box-placeholder" style="margin-top:12px">
+      Starte einen Scan, dann klicke "Analyse starten" fuer KI-Empfehlungen zum Mandate-Potenzial.
     </div>
   </div>
-
-  <!-- ── UPLOAD ── -->
-  <div id="tab-upload" class="section-hidden">
-    <div class="card">
-      <div class="card-title">Targetliste hochladen (Excel)</div>
-      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-        <div class="upload-icon">📊</div>
-        <div class="upload-text">Excel-Datei hier ablegen oder klicken</div>
-        <div class="upload-sub">paul_career_scanner_targetliste.xlsx · Sheet "Unternehmen"</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="card-title" style="margin-bottom:0">Top Opportunities <span id="dash-vac-count" style="color:var(--muted);font-weight:400"></span></div>
+      <div class="filter-bar" style="margin-bottom:0">
+        <button class="filter-btn active" onclick="setDashFilter(30,this)">30 Tage</button>
+        <button class="filter-btn" onclick="setDashFilter(60,this)">60 Tage</button>
+        <button class="filter-btn" onclick="setDashFilter(90,this)">90 Tage</button>
       </div>
-      <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
-      <div id="upload-preview" style="margin-top:16px;display:none">
-        <div style="font-weight:700;color:var(--navy);margin-bottom:8px" id="upload-preview-title"></div>
-        <div style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:6px">
-          <table style="width:100%;border-collapse:collapse">
-            <thead>
-              <tr style="background:var(--navy);color:white">
-                <th style="padding:6px 10px;font-size:11px;text-align:left">Unternehmen</th>
-                <th style="padding:6px 10px;font-size:11px;text-align:left">URL</th>
-                <th style="padding:6px 10px;font-size:11px">Land</th>
-                <th style="padding:6px 10px;font-size:11px">Prio</th>
-                <th style="padding:6px 10px;font-size:11px">Quelle</th>
-              </tr>
-            </thead>
-            <tbody id="upload-preview-tbody"></tbody>
-          </table>
-        </div>
-        <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
-          <button class="btn btn-primary" id="btn-confirm-upload" onclick="confirmUpload()">✓ In PAUL importieren</button>
-          <button class="btn btn-secondary btn-sm" onclick="cancelUpload()">Abbrechen</button>
-          <span id="upload-count-label" style="font-size:11px;color:var(--muted)"></span>
-        </div>
-      </div>
-      <div id="upload-result" style="margin-top:12px;font-size:12px;display:none"></div>
     </div>
-
-    <div class="card">
-      <div class="card-title">Unternehmen manuell hinzufügen</div>
-      <div style="display:grid;grid-template-columns:1fr 2fr 80px 100px auto;gap:8px">
-        <input id="m-name" placeholder="Unternehmensname *" style="padding:7px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px">
-        <input id="m-url" placeholder="Karriereseite URL *" style="padding:7px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px">
-        <select id="m-country" style="padding:7px;border:1px solid var(--border);border-radius:5px;font-size:12px">
-          <option>AT</option><option>DE</option><option>CH</option><option>PL</option><option>CZ</option><option>HU</option>
-        </select>
-        <select id="m-prio" style="padding:7px;border:1px solid var(--border);border-radius:5px;font-size:12px">
-          <option value="1">Priorität 1</option>
-          <option value="2" selected>Priorität 2</option>
-          <option value="3">Priorität 3</option>
-        </select>
-        <button class="btn btn-primary" onclick="addManual()">+ Hinzufügen</button>
-      </div>
+    <div class="vacancy-list" id="dash-vacancy-list">
+      <div style="color:var(--muted);text-align:center;padding:30px">Noch keine Scan-Daten. Starte einen Scan.</div>
     </div>
   </div>
+</div>
+
+<!-- VAKANZEN -->
+<div id="tab-vacancies" class="section-hidden">
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+    <select class="filter-select" id="vac-filter-level" onchange="loadVacancies()">
+      <option value="">Alle Level</option>
+      <option value="C-Level">C-Level</option>
+      <option value="Geschaeftsfuehrung">Geschaeftsfuehrung</option>
+      <option value="Bereichsleitung">Bereichsleitung</option>
+      <option value="Abteilungsleitung">Abteilungsleitung</option>
+      <option value="Sonstige Leitungsfunktion">Sonstige</option>
+    </select>
+    <select class="filter-select" id="vac-filter-days" onchange="loadVacancies()">
+      <option value="30">&gt; 30 Tage</option>
+      <option value="0" selected>Alle Vakanzen</option>
+      <option value="60">&gt; 60 Tage</option>
+      <option value="90">&gt; 90 Tage</option>
+    </select>
+    <select class="filter-select" id="vac-filter-country" onchange="loadVacancies()">
+      <option value="">Alle Laender</option>
+      <option value="AT">Oesterreich</option>
+      <option value="DE">Deutschland</option>
+      <option value="CH">Schweiz</option>
+    </select>
+    <div style="margin-left:auto;font-size:11px;color:var(--muted);align-self:center" id="vac-count-label"></div>
+  </div>
+  <div class="vacancy-list" id="vac-list">
+    <div style="color:var(--muted);text-align:center;padding:30px">Lade Vakanzen...</div>
+  </div>
+</div>
+
+<!-- UNTERNEHMEN -->
+<div id="tab-targets" class="section-hidden">
+  <div style="display:flex;justify-content:space-between;margin-bottom:14px;align-items:center">
+    <div style="font-size:13px;font-weight:700;color:var(--navy)" id="targets-count-label"></div>
+    <div style="display:flex;gap:8px">
+      <input id="t-search" placeholder="Suche..." style="padding:5px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px;width:180px" oninput="renderTargets()">
+      <select class="filter-select" id="t-filter-sektor" onchange="renderTargets()">
+        <option value="">Alle Sektoren</option>
+        <option>Industrie &amp; Maschinenbau</option>
+        <option>Automobil &amp; Zulieferer</option>
+        <option>Technologie &amp; IT</option>
+        <option>Pharma &amp; Life Sciences</option>
+        <option>Banken &amp; Versicherungen</option>
+        <option>Handel &amp; Consumer / FMCG</option>
+        <option>Bau &amp; Baustoffe</option>
+        <option>Energie &amp; Utilities</option>
+        <option>Logistik &amp; Transport</option>
+        <option>Beratung &amp; Recht</option>
+        <option>Medien &amp; Telekommunikation</option>
+        <option>Immobilien</option>
+        <option>Packaging &amp; Paper</option>
+        <option>Gesundheit &amp; Soziales</option>
+      </select>
+      <select class="filter-select" id="t-filter-scan" onchange="renderTargets()">
+        <option value="">Alle Scan-Methoden</option>
+        <option value="workday">Workday</option>
+        <option value="browserless">Browserless</option>
+        <option value="">Keine URL</option>
+      </select>
+      <select class="filter-select" id="t-filter-prio" onchange="renderTargets()">
+        <option value="">Alle Prioritaeten</option>
+        <option value="1">Prioritaet 1</option>
+        <option value="2">Prioritaet 2</option>
+      </select>
+    </div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="targets-table">
+      <thead>
+        <tr>
+          <th>Unternehmen</th>
+          <th>Sektor</th>
+          <th>Stadt</th>
+          <th>HR-Chef</th>
+          <th>E-Mail</th>
+          <th>Scan</th>
+          <th>Prio</th>
+        </tr>
+      </thead>
+      <tbody id="targets-tbody">
+        <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Lade...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- BROWSERLESS TEST -->
+<div id="tab-browserless" class="section-hidden">
+  <div class="card">
+    <div class="card-title">Browserless.io — Karriereseiten Test</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">
+      Testet ob JavaScript-basierte Karriereseiten (Erste Group, OMV, RBI etc.) ueber Browserless lesbar sind.
+      Dieser Test laeuft direkt vom Browser aus — kein Deployment noetig.
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px">
+      <input type="password" id="bl-key" value="2UThgKewapQqTVD68f34504a789daee2c172f799815cc339c"
+        style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:5px;font-size:12px" placeholder="Browserless API Key">
+      <button class="btn btn-primary" id="bl-btn" onclick="runBrowserlessTest()">▶ Test starten</button>
+    </div>
+    <div style="font-size:11px;color:#888;margin-bottom:16px">
+      ⚠ Key wird nur lokal verwendet, nicht gespeichert. Free Tier: 1.000 Units.
+    </div>
+  </div>
+  <div id="bl-results" style="display:none">
+    <div class="bl-kpi-grid">
+      <div class="kpi"><div class="kpi-value" id="bl-total">0</div><div class="kpi-label">Getestet</div></div>
+      <div class="kpi"><div class="kpi-value" id="bl-readable">0</div><div class="kpi-label">Lesbar</div></div>
+      <div class="kpi"><div class="kpi-value gold" id="bl-jobs">0</div><div class="kpi-label">Jobs gefunden</div></div>
+      <div class="kpi"><div class="kpi-value red" id="bl-errors">0</div><div class="kpi-label">Fehler</div></div>
+    </div>
+    <div class="card" style="padding:16px">
+      <div id="bl-site-list"></div>
+    </div>
+    <div style="background:#1a1a1a;color:#00ff88;font-family:monospace;font-size:11px;padding:12px;border-radius:6px;max-height:200px;overflow-y:auto;margin-top:12px" id="bl-log"></div>
+  </div>
+</div>
+
+<!-- UPLOAD -->
+<div id="tab-upload" class="section-hidden">
+  <div class="card">
+    <div class="card-title">Targetliste hochladen (Excel)</div>
+    <div class="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+      <div style="font-size:32px;margin-bottom:8px">📊</div>
+      <div style="font-size:13px;color:var(--navy);font-weight:600">Excel-Datei hier ablegen oder klicken</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Spalten: Unternehmen, URL, Land, Prioritaet</div>
+    </div>
+    <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
+    <div id="upload-preview" style="margin-top:16px;display:none">
+      <div style="font-weight:700;color:var(--navy);margin-bottom:8px" id="upload-preview-title"></div>
+      <div style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:6px">
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="background:var(--navy);color:white">
+              <th style="padding:6px 10px;font-size:11px;text-align:left">Unternehmen</th>
+              <th style="padding:6px 10px;font-size:11px;text-align:left">URL</th>
+              <th style="padding:6px 10px;font-size:11px">Land</th>
+              <th style="padding:6px 10px;font-size:11px">Prio</th>
+            </tr>
+          </thead>
+          <tbody id="upload-preview-tbody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
+        <button class="btn btn-primary" onclick="confirmUpload()">Importieren</button>
+        <button class="btn btn-secondary btn-sm" onclick="cancelUpload()">Abbrechen</button>
+        <span id="upload-count-label" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+    </div>
+    <div id="upload-result" style="margin-top:12px;font-size:12px;display:none"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Unternehmen manuell hinzufuegen</div>
+    <div style="display:grid;grid-template-columns:1fr 2fr 80px 100px auto;gap:8px">
+      <input id="m-name" placeholder="Unternehmensname *" style="padding:7px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px">
+      <input id="m-url" placeholder="Karriereseite URL *" style="padding:7px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px">
+      <select id="m-country" style="padding:7px;border:1px solid var(--border);border-radius:5px;font-size:12px">
+        <option>AT</option><option>DE</option><option>CH</option>
+      </select>
+      <select id="m-prio" style="padding:7px;border:1px solid var(--border);border-radius:5px;font-size:12px">
+        <option value="1">Prioritaet 1</option>
+        <option value="2" selected>Prioritaet 2</option>
+      </select>
+      <button class="btn btn-primary" onclick="addManual()">+ Hinzufuegen</button>
+    </div>
+  </div>
+</div>
 
 </div><!-- /content -->
 
@@ -333,18 +344,20 @@
         <div style="font-size:11px;color:var(--gold);letter-spacing:1px">KI-KONTAKTVORLAGE</div>
         <div id="modal-title" style="font-size:14px;font-weight:700;margin-top:2px"></div>
       </div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()">x</button>
     </div>
     <div class="modal-body">
       <div id="modal-meta" style="font-size:11px;color:var(--muted);margin-bottom:14px"></div>
-      <div id="modal-loading" style="text-align:center;padding:20px;color:var(--muted);display:none">
-        KI generiert Kontaktmail...
-      </div>
-      <textarea class="mail-draft" id="modal-mail" placeholder="Klicke 'Mail generieren' um eine personalisierte Erstansprache zu erstellen."></textarea>
+      <div id="modal-loading" style="text-align:center;padding:20px;color:var(--muted);display:none">KI generiert Kontaktmail...</div>
+      <textarea class="mail-draft" id="modal-mail" placeholder="Klicke Mail generieren..."></textarea>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn btn-primary btn-sm" onclick="generateMail()">⬡ Mail generieren</button>
         <button class="btn btn-gold btn-sm" onclick="copyMail()">Kopieren</button>
-        <button class="btn btn-secondary btn-sm" onclick="markOutreachDone()">✓ Outreach gesendet</button>
+        <button class="btn btn-secondary btn-sm" onclick="markOutreachDone()">Outreach gesendet</button>
+      </div>
+      <div id="modal-hr" style="margin-top:16px;padding:12px;background:#f0f4ff;border-radius:6px;display:none">
+        <div style="font-size:11px;font-weight:700;color:#3730a3;margin-bottom:6px">HR-KONTAKT (aus Masterliste)</div>
+        <div id="modal-hr-content" style="font-size:12px;color:#374151"></div>
       </div>
     </div>
   </div>
@@ -353,8 +366,9 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ── Config ────────────────────────────────────────────────────────────────────
-const API = '/api/scan-careers';  // Vercel serverless function
+const API = '/api/scan-careers';
+const HR_MASTERLISTE = [{"name": "AVL List GmbH", "sektor": "Automobil & Zulieferer", "sub_sektor": "Testing & Simulation", "stadt": "Graz", "hr_name": "Armin Thalhammer", "hr_titel": "VP Human Resources", "email": "armin.thalhammer@avl.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "FACC AG", "sektor": "Automobil & Zulieferer", "sub_sektor": "Zulieferer Tier 1", "stadt": "Ried im Innkreis", "hr_name": "Georg Horacek", "hr_titel": "Leiter Personal", "email": "georg.horacek@facc.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "KTM AG", "sektor": "Automobil & Zulieferer", "sub_sektor": "Motorr\u00e4der & Fahrzeuge", "stadt": "Mattighofen", "hr_name": "Berit Buda", "hr_titel": "Leiter Personal", "email": "berit.buda@ktm.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Kapsch TrafficCom AG", "sektor": "Automobil & Zulieferer", "sub_sektor": "Zulieferer Tier 1", "stadt": "Wien", "hr_name": "Rudolf Bernscheerer", "hr_titel": "Leiter Personal", "email": "rudolf.bernscheerer@kapsch.net", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Magna Powertrain GmbH & Co KG", "sektor": "Automobil & Zulieferer", "sub_sektor": "Zulieferer Tier 1", "stadt": "Lannach", "hr_name": "Christian Zauner", "hr_titel": "Leiter Personal", "email": "christian.zauner@magna.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://magna.wd3.myworkdayjobs.com/Magna", "scan_method": "workday"}, {"name": "Magna Steyr AG & Co KG", "sektor": "Automobil & Zulieferer", "sub_sektor": "OEM", "stadt": "Graz", "hr_name": "Erich Mayer", "hr_titel": "Leiter Personal", "email": "erich.mayer@magna.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://magna.wd3.myworkdayjobs.com/Magna", "scan_method": "workday"}, {"name": "ZKW Group", "sektor": "Automobil & Zulieferer", "sub_sektor": "Zulieferer Tier 1", "stadt": "Wieselburg", "hr_name": "Hansjoerg Tutner", "hr_titel": "Group VP Human Resources", "email": "hansjoerg.tutner@zkw-group.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Allianz \u00d6sterreich", "sektor": "Banken & Versicherungen", "sub_sektor": "Versicherung", "stadt": "Wien", "hr_name": "Wolfgang Schimpl", "hr_titel": "HR Director", "email": "wolfgang.schimpl@allianz.at", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://karriere.allianz.at", "scan_method": "browserless"}, {"name": "BAWAG Group AG", "sektor": "Banken & Versicherungen", "sub_sektor": "Gesch\u00e4ftsbank", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "Leiter Personal", "email": "", "email_status": "", "prio": 1, "career_url": "https://jobs.bawaggroup.com", "scan_method": "browserless"}, {"name": "Bitpanda GmbH", "sektor": "Banken & Versicherungen", "sub_sektor": "FinTech / Payments", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "Head of People", "email": "", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Erste Group Bank AG", "sektor": "Banken & Versicherungen", "sub_sektor": "Gesch\u00e4ftsbank", "stadt": "Wien", "hr_name": "Sabine Bothe", "hr_titel": "Group Head of People & Culture (CHRO)", "email": "sabine.bothe@erstegroup.com", "email_status": "", "prio": 1, "career_url": "https://www.erstegroup.com/de/karriere/stellenangebote", "scan_method": "browserless"}, {"name": "Generali Austria AG", "sektor": "Banken & Versicherungen", "sub_sektor": "Versicherung", "stadt": "Wien", "hr_name": "Stefan Lorenz", "hr_titel": "HR Director Austria", "email": "stefan.lorenz@generali.at", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://www.generali.at/karriere", "scan_method": "browserless"}, {"name": "PayLife Bank GmbH", "sektor": "Banken & Versicherungen", "sub_sektor": "FinTech / Payments", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Director", "email": "", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Raiffeisen Bank International", "sektor": "Banken & Versicherungen", "sub_sektor": "Gesch\u00e4ftsbank", "stadt": "Wien", "hr_name": "Heike Mensi-Klarbach", "hr_titel": "Head of Group People, Culture & Organisation", "email": "heike.klarbach@rbinternational.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://www.rbinternational.com/de/karriere/offene-stellen.html", "scan_method": "browserless"}, {"name": "UNIQA Insurance Group AG", "sektor": "Banken & Versicherungen", "sub_sektor": "Versicherung", "stadt": "Wien", "hr_name": "Robert Bilek", "hr_titel": "Leiter Personal", "email": "robert.bilek@uniqa.at", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://karriere.uniqa.at", "scan_method": "browserless"}, {"name": "UniCredit Bank Austria AG", "sektor": "Banken & Versicherungen", "sub_sektor": "Gesch\u00e4ftsbank", "stadt": "Wien", "hr_name": "Federico Bedini", "hr_titel": "Head of CE & EE People & Culture", "email": "federico.bedini@unicreditgroup.eu", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Vienna Insurance Group (VIG)", "sektor": "Banken & Versicherungen", "sub_sektor": "Versicherung", "stadt": "Wien", "hr_name": "Barbara Hohl", "hr_titel": "Head of Human Resources Group", "email": "barbara.hohl@vig.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://jobs.vig.com", "scan_method": "browserless"}, {"name": "Baumit Wopfinger Baustoffind.", "sektor": "Bau & Baustoffe", "sub_sektor": "Baumaterialien", "stadt": "Wopfing", "hr_name": "Maria B\u00f6hm", "hr_titel": "HR-Leiterin", "email": "maria.boehm@baumit.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://www.baumit.com/at/karriere", "scan_method": "browserless"}, {"name": "Doka Group", "sektor": "Bau & Baustoffe", "sub_sektor": "Schalung & Ger\u00fcst", "stadt": "Amstetten", "hr_name": "Kurt K\u00f6nig", "hr_titel": "Leiter Personal", "email": "kurt.koenig@doka.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://doka.wd3.myworkdayjobs.com/Doka", "scan_method": "workday"}, {"name": "Porr AG", "sektor": "Bau & Baustoffe", "sub_sektor": "Bauunternehmen", "stadt": "Wien", "hr_name": "Martina Auer-Klass", "hr_titel": "Head of Group Human Resources", "email": "auer-klass.martina@porr-group.com", "email_status": "", "prio": 1, "career_url": "https://www.porr-group.com/karriere/offene-stellen", "scan_method": "browserless"}, {"name": "Strabag SE", "sektor": "Bau & Baustoffe", "sub_sektor": "Bauunternehmen", "stadt": "Wien", "hr_name": "Thomas Cerny", "hr_titel": "Head of People & Culture Development", "email": "thomas.cerny@strabag.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://www.strabag.com/karriere/stellenangebote", "scan_method": "browserless"}, {"name": "Wienerberger AG", "sektor": "Bau & Baustoffe", "sub_sektor": "Baumaterialien", "stadt": "Wien", "hr_name": "Bartek Cyganek", "hr_titel": "Head of HR CEE", "email": "bartek.cyganek@wienerberger.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://wienerberger.wd3.myworkdayjobs.com/Wienerberger", "scan_method": "workday"}, {"name": "Boston Consulting Group Austria", "sektor": "Beratung & Recht", "sub_sektor": "Strategieberatung", "stadt": "Wien", "hr_name": "Andrea Linska", "hr_titel": "Leiter Personal", "email": "andrea.linska@bcg.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://careers.bcg.com", "scan_method": "browserless"}, {"name": "CMS Reich-Rohrwig Hainz", "sektor": "Beratung & Recht", "sub_sektor": "Rechtsanw\u00e4lte", "stadt": "Wien", "hr_name": "Johanna Einsiedler", "hr_titel": "HR Manager", "email": "johanna.einsiedler@cms-rrh.com", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Cerha Hempel", "sektor": "Beratung & Recht", "sub_sektor": "Rechtsanw\u00e4lte", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Director", "email": "", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Deloitte Austria", "sektor": "Beratung & Recht", "sub_sektor": "Big Four", "stadt": "Wien", "hr_name": "Harald Breit", "hr_titel": "CEO Austria", "email": "hbreit@deloitte.at", "email_status": "", "prio": 1, "career_url": "https://deloitte.wd3.myworkdayjobs.com/DRT", "scan_method": "workday"}, {"name": "EY Austria", "sektor": "Beratung & Recht", "sub_sektor": "Big Four", "stadt": "Wien", "hr_name": "Eva Maria Berchtold", "hr_titel": "Head of Strategy & Transactions", "email": "eva.berchtold@at.ey.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://ey.wd5.myworkdayjobs.com/EY-Global", "scan_method": "workday"}, {"name": "Freshfields (Wien)", "sektor": "Beratung & Recht", "sub_sektor": "Rechtsanw\u00e4lte", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Manager", "email": "", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "KPMG Austria", "sektor": "Beratung & Recht", "sub_sektor": "Big Four", "stadt": "Wien", "hr_name": "Michael Ahammer", "hr_titel": "Managing Director and Partner", "email": "michael.ahammer@kpmg.at", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://kpmg.wd3.myworkdayjobs.com/Careers", "scan_method": "workday"}, {"name": "McKinsey & Company Austria", "sektor": "Beratung & Recht", "sub_sektor": "Strategieberatung", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Manager AT", "email": "", "email_status": "", "prio": 1, "career_url": "https://www.mckinsey.com/careers", "scan_method": "browserless"}, {"name": "PwC Austria", "sektor": "Beratung & Recht", "sub_sektor": "Big Four", "stadt": "Wien", "hr_name": "Rudolf Krickl", "hr_titel": "Territory Senior Partner & Chairman", "email": "rudolf.krickl@pwc.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Roland Berger Austria", "sektor": "Beratung & Recht", "sub_sektor": "Strategieberatung", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Manager AT", "email": "", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Schoenherr Attorneys at Law", "sektor": "Beratung & Recht", "sub_sektor": "Rechtsanw\u00e4lte", "stadt": "Wien", "hr_name": "Marguerita Sedrati-M\u00fcller", "hr_titel": "Director People & Culture", "email": "marguerita.mueller@schoenherr.eu", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://karriere.schoenherr.eu", "scan_method": "browserless"}, {"name": "Wolf Theiss", "sektor": "Beratung & Recht", "sub_sektor": "Rechtsanw\u00e4lte", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Director", "email": "", "email_status": "", "prio": 1, "career_url": "https://www.wolftheiss.com/karriere", "scan_method": "browserless"}, {"name": "EVN AG", "sektor": "Energie & Utilities", "sub_sektor": "Strom & Gas", "stadt": "Maria Enzersdorf", "hr_name": "Stefan Peter", "hr_titel": "HR Director", "email": "stefan.peter@evn.at", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://www.evn.at/karriere", "scan_method": "browserless"}, {"name": "Energie AG Ober\u00f6sterreich", "sektor": "Energie & Utilities", "sub_sektor": "Strom & Gas", "stadt": "Linz", "hr_name": "Walter Wurzinger", "hr_titel": "Leiter Personal", "email": "walter.wurzinger@energieag.at", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://www.energieag.at/karriere", "scan_method": "browserless"}, {"name": "Energie Steiermark AG", "sektor": "Energie & Utilities", "sub_sektor": "Strom & Gas", "stadt": "Graz", "hr_name": "Guntram Aufinger", "hr_titel": "Leiter Personal", "email": "guntram.aufinger@e-steiermark.at", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://www.e-steiermark.com/karriere", "scan_method": "browserless"}, {"name": "Lenzing AG", "sektor": "Energie & Utilities", "sub_sektor": "\u00d6l & Raffinerie", "stadt": "Lenzing", "hr_name": "Stefan Doboczky", "hr_titel": "n/a", "email": "stefan.doboczky@lenzing.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://lenzing.wd3.myworkdayjobs.com/Lenzing", "scan_method": "workday"}, {"name": "OMV AG", "sektor": "Energie & Utilities", "sub_sektor": "Strom & Gas", "stadt": "Wien", "hr_name": "Peter Pirkner", "hr_titel": "SVP Head of Human Resources", "email": "peter.pirkner@omv.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://careers.omv.com/de/jobs", "scan_method": "browserless"}, {"name": "Verbund AG", "sektor": "Energie & Utilities", "sub_sektor": "Strom & Gas", "stadt": "Wien", "hr_name": "Martin Kohlmayr", "hr_titel": "HR Manager Recruiting & Employer Branding", "email": "martin.kohlmayr@verbund.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Wien Energie GmbH", "sektor": "Energie & Utilities", "sub_sektor": "Strom & Gas", "stadt": "Wien", "hr_name": "Beate Pauer Zinggl", "hr_titel": "Leiter Personal", "email": "beate.zinggl@wienenergie.at", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://www.wienenergie.at/ueber-uns/karriere", "scan_method": "browserless"}, {"name": "Wiener Krankenanstaltenverbund", "sektor": "Gesundheit & Soziales", "sub_sektor": "Krankenhaus", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "Leiter Personal", "email": "", "email_status": "", "prio": 1, "career_url": "https://karriere.gesundheitsverbund.at", "scan_method": "browserless"}, {"name": "Agrana Beteiligungs-AG", "sektor": "Handel & Consumer / FMCG", "sub_sektor": "FMCG Produktion", "stadt": "Wien", "hr_name": "Georg Nemeth", "hr_titel": "Leiter Personal", "email": "georg.nemeth@agrana.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "BILLA AG", "sektor": "Handel & Consumer / FMCG", "sub_sektor": "Einzelhandel", "stadt": "Wr. Neudorf", "hr_name": "Barbara Weber", "hr_titel": "Leiter Personal", "email": "barbara.weber@billa.at", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://karriere.billa.at", "scan_method": "browserless"}, {"name": "Brau Union \u00d6sterreich AG", "sektor": "Handel & Consumer / FMCG", "sub_sektor": "Lebensmittel & Getr\u00e4nke", "stadt": "Linz", "hr_name": "Kurt K\u00f6nig", "hr_titel": "Leiter Personal", "email": "kurt.koenig@brauunion.at", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Julius Meinl", "sektor": "Handel & Consumer / FMCG", "sub_sektor": "Lebensmittel & Getr\u00e4nke", "stadt": "Wien", "hr_name": "Lisa Lichtenegger", "hr_titel": "Global HR Director", "email": "", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "REWE Group Austria", "sektor": "Handel & Consumer / FMCG", "sub_sektor": "Einzelhandel", "stadt": "Wien", "hr_name": "Johannes Sobe", "hr_titel": "Leiter Personal", "email": "", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Rauch Fruchts\u00e4fte GmbH", "sektor": "Handel & Consumer / FMCG", "sub_sektor": "Lebensmittel & Getr\u00e4nke", "stadt": "Rankweil", "hr_name": "Lukas Steinbach", "hr_titel": "Head of HR International", "email": "", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Red Bull GmbH", "sektor": "Handel & Consumer / FMCG", "sub_sektor": "Lebensmittel & Getr\u00e4nke", "stadt": "Salzburg", "hr_name": "Stefan Salzer", "hr_titel": "Global Head of HR", "email": "stefan.salzer@redbull.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://jobs.redbull.com", "scan_method": "browserless"}, {"name": "SPAR \u00d6sterreich", "sektor": "Handel & Consumer / FMCG", "sub_sektor": "Einzelhandel", "stadt": "Salzburg", "hr_name": "Kurt Liedl", "hr_titel": "Leiter Personal", "email": "kurt.liedl@spar.at", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://www.spar.at/karriere", "scan_method": "browserless"}, {"name": "dm drogerie markt GmbH", "sektor": "Handel & Consumer / FMCG", "sub_sektor": "Einzelhandel", "stadt": "Salzburg", "hr_name": "Petra Mathi Kogelnik", "hr_titel": "Leiter Personal", "email": "petra.kogelnik@dm.at", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://www.dm.at/karriere", "scan_method": "browserless"}, {"name": "CA Immo AG", "sektor": "Immobilien", "sub_sektor": "Immobilien b\u00f6rsenotiert", "stadt": "Wien", "hr_name": "Claudia H\u00f6bart", "hr_titel": "Group Head of Human Resources", "email": "claudia.hoebart@caimmo.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://www.caimmo.com/karriere", "scan_method": "browserless"}, {"name": "Immofinanz AG", "sektor": "Immobilien", "sub_sektor": "Immobilien b\u00f6rsenotiert", "stadt": "Wien", "hr_name": "Sonja Steinmetz", "hr_titel": "Deputy Head of Group HR", "email": "sonja.steinmetz@immofinanz.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://karriere.immofinanz.com", "scan_method": "browserless"}, {"name": "S IMMO AG", "sektor": "Immobilien", "sub_sektor": "Immobilien b\u00f6rsenotiert", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Director", "email": "", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "AMS OSRAM AG", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Elektronik & Licht", "stadt": "Premst\u00e4tten", "hr_name": "Petra Pesendorfer", "hr_titel": "VP HR Global", "email": "petra.pesendorfer@ams-osram.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Andritz AG", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Maschinen & Anlagen", "stadt": "Graz", "hr_name": "Hubert Knafl", "hr_titel": "Vice President Group HR", "email": "hubert.knafl@andritz.com", "email_status": "", "prio": 1, "career_url": "https://andritz.wd3.myworkdayjobs.com/ANDRITZ_Careers", "scan_method": "workday"}, {"name": "Anton Paar GmbH", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Maschinen & Anlagen", "stadt": "Graz", "hr_name": "n/a", "hr_titel": "HR Director", "email": "", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Blum GmbH", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Maschinen & Anlagen", "stadt": "H\u00f6chst", "hr_name": "Markus H\u00e4mmerle", "hr_titel": "Leiter Personal", "email": "markus.haemmerle@blum.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Borealis AG", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Kunststoff & Chemie", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "CHRO", "email": "", "email_status": "", "prio": 1, "career_url": "https://borealis.wd3.myworkdayjobs.com/Borealis", "scan_method": "workday"}, {"name": "Engel Austria GmbH", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Maschinen & Anlagen", "stadt": "Schwertberg", "hr_name": "Michael Grininger", "hr_titel": "VP HR/Legal/Insurance", "email": "michael.grininger@engelglobal.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Greiner AG", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Kunststoff & Chemie", "stadt": "Kremsm\u00fcnster", "hr_name": "Andrea Pfaffenbauer", "hr_titel": "Global People & Culture Director", "email": "andrea.pfaffenbauer@greiner.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://greiner.wd3.myworkdayjobs.com/Greiner", "scan_method": "workday"}, {"name": "KNAPP AG", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Intralogistik", "stadt": "Hart bei Graz", "hr_name": "Ingo Sp\u00f6rk", "hr_titel": "Leiter Personal", "email": "ingo.spoerk@knapp.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Miba AG", "sektor": "Industrie & Maschinenbau", "sub_sektor": "\u00d6l & Gas Equipment", "stadt": "Laakirchen", "hr_name": "Bernhard Reisner", "hr_titel": "Vice President Human Capital", "email": "bernhard.reisner@miba.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://miba.wd3.myworkdayjobs.com/Miba", "scan_method": "workday"}, {"name": "Neveon GmbH", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Kunststoff & Chemie", "stadt": "Wien", "hr_name": "Gerald Senn", "hr_titel": "VP Global Human Resources", "email": "gerald.senn@neveon.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "RHI Magnesita N.V.", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Stahl & Metall", "stadt": "Wien", "hr_name": "Barbara Reiner-Karabulut", "hr_titel": "Head of People & Culture Europe C&E", "email": "barbara.karabulut@rhimagnesita.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "SSI Sch\u00e4fer Automation GmbH", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Intralogistik", "stadt": "Graz", "hr_name": "Waltraud Kernler", "hr_titel": "Leiter Personal", "email": "waltraud.kernler@ssi-schaefer.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Semperit AG Holding", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Stahl & Metall", "stadt": "Wien", "hr_name": "Florian Austerer", "hr_titel": "Director HR Operations Europe & Americas", "email": "florian.austerer@semperit.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://semperit.wd3.myworkdayjobs.com/Semperit", "scan_method": "workday"}, {"name": "Teufelberger Holding AG", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Stahl & Metall", "stadt": "Wels", "hr_name": "Christian N\u00f6rpel", "hr_titel": "Global Head of Human Resources", "email": "christian.noerpel@teufelberger.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Zumtobel Group AG", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Elektronik & Licht", "stadt": "Dornbirn", "hr_name": "Petra Steiner", "hr_titel": "SVP Global Human Resources", "email": "petra.steiner@zumtobel.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://zumtobel.wd3.myworkdayjobs.com/Zumtobel", "scan_method": "workday"}, {"name": "voestalpine AG", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Stahl & Metall", "stadt": "Linz", "hr_name": "Paul Felsberger", "hr_titel": "Director Human Resources", "email": "paul.felsberger@voestalpine.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://voestalpine.wd3.myworkdayjobs.com/voestalpine", "scan_method": "workday"}, {"name": "Austrian Airlines AG", "sektor": "Logistik & Transport", "sub_sektor": "Luftfahrt", "stadt": "Wien", "hr_name": "Nathalie Rau", "hr_titel": "Leiter Personal", "email": "nathalie.rau@austrian.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://karriere.austrian.com", "scan_method": "browserless"}, {"name": "Gebr\u00fcder Weiss GmbH", "sektor": "Logistik & Transport", "sub_sektor": "Logistik", "stadt": "Lauterach", "hr_name": "Monika Mandl", "hr_titel": "Head Corporate HR Development", "email": "monika.mandl@gw-world.com", "email_status": "", "prio": 1, "career_url": "https://www.gw-world.com/karriere", "scan_method": "browserless"}, {"name": "\u00d6BB Holding AG", "sektor": "Logistik & Transport", "sub_sektor": "Bahn", "stadt": "Wien", "hr_name": "Silvia Angelo", "hr_titel": "Arbeitsdirektorin", "email": "silvia.angelo@oebb.at", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://jobs.oebb.at", "scan_method": "browserless"}, {"name": "\u00d6sterreichische Post AG", "sektor": "Logistik & Transport", "sub_sektor": "Logistik", "stadt": "Wien", "hr_name": "Franz Nigl", "hr_titel": "Leiter Personal", "email": "franz.nigl@post.at", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://jobs.post.at", "scan_method": "browserless"}, {"name": "A1 Telekom Austria Group", "sektor": "Medien & Telekommunikation", "sub_sektor": "Telekommunikation", "stadt": "Wien", "hr_name": "Eva Zehetner", "hr_titel": "Head of Group HR", "email": "eva.zehetner@a1.group", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://karriere.a1.group", "scan_method": "browserless"}, {"name": "Drei Austria GmbH", "sektor": "Medien & Telekommunikation", "sub_sektor": "Telekommunikation", "stadt": "Wien", "hr_name": "Johannes Sobe", "hr_titel": "Leiter Personal", "email": "johannes.sobe@drei.at", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://www.drei.at/karriere", "scan_method": "browserless"}, {"name": "Magenta Telekom", "sektor": "Medien & Telekommunikation", "sub_sektor": "Telekommunikation", "stadt": "Wien", "hr_name": "Gabriel Peter Szuhanek", "hr_titel": "Vice President HR", "email": "gabriel.szuhanek@magenta.at", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://www.magenta.at/karriere", "scan_method": "browserless"}, {"name": "ALPLA Group", "sektor": "Packaging & Paper", "sub_sektor": "Verpackung", "stadt": "Hard", "hr_name": "Gabriele Birkner", "hr_titel": "Chief Human Resources Officer", "email": "gabriele.birkner@alpla.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://alpla.wd3.myworkdayjobs.com/ALPLA", "scan_method": "workday"}, {"name": "Coveris Group", "sektor": "Packaging & Paper", "sub_sektor": "Verpackung", "stadt": "Wien", "hr_name": "Natalie Knight", "hr_titel": "Group HR Director", "email": "natalie.knight@coveris.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://www.coveris.com/careers", "scan_method": "browserless"}, {"name": "Greiner Packaging", "sektor": "Packaging & Paper", "sub_sektor": "Verpackung", "stadt": "Kremsm\u00fcnster", "hr_name": "Manfred Huemer", "hr_titel": "Leiter Personal", "email": "manfred.huemer@greiner.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "MM Group (Mayr-Melnhof)", "sektor": "Packaging & Paper", "sub_sektor": "Verpackung", "stadt": "Wien", "hr_name": "Petra Pointinger", "hr_titel": "Head of Group HR", "email": "petra.pointinger@mm.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://www.mm.com/karriere", "scan_method": "browserless"}, {"name": "Mondi Group", "sektor": "Packaging & Paper", "sub_sektor": "Verpackung", "stadt": "Wien", "hr_name": "Bernhard Wallner", "hr_titel": "Leiter Personal", "email": "bernhard.wallner@mondi.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://www.mondi.com/careers", "scan_method": "browserless"}, {"name": "Boehringer Ingelheim RCV", "sektor": "Pharma & Life Sciences", "sub_sektor": "Pharma Produktion", "stadt": "Wien", "hr_name": "Elisabeth Tomaschko", "hr_titel": "HR Director RCV", "email": "", "email_status": "", "prio": 1, "career_url": "https://boehringeringelheim.wd3.myworkdayjobs.com/Boehringer_Ingelheim", "scan_method": "workday"}, {"name": "Fresenius Kabi Austria GmbH", "sektor": "Pharma & Life Sciences", "sub_sektor": "Pharma Produktion", "stadt": "Graz", "hr_name": "Dunja M\u00fchlbacher", "hr_titel": "Leiter Personal", "email": "", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Octapharma Pharmazeutika Produktionsgesmbh", "sektor": "Pharma & Life Sciences", "sub_sektor": "Pharma Produktion", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "Head of HR", "email": "", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Sandoz GmbH (Novartis)", "sektor": "Pharma & Life Sciences", "sub_sektor": "Pharma Produktion", "stadt": "Kundl", "hr_name": "n/a", "hr_titel": "HR Director AT", "email": "", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Vamed AG", "sektor": "Pharma & Life Sciences", "sub_sektor": "Medizintechnik", "stadt": "Wien", "hr_name": "Sandra Freudenthaler", "hr_titel": "Head of HR", "email": "sandra.freudenthaler@vamed.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://vamed.wd3.myworkdayjobs.com/VAMED", "scan_method": "workday"}, {"name": "Dynatrace Austria GmbH", "sektor": "Technologie & IT", "sub_sektor": "Software & SaaS", "stadt": "Linz", "hr_name": "Regina Chiles", "hr_titel": "Leiter Personal", "email": "regina.chiles@dynatrace.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Frequentis AG", "sektor": "Technologie & IT", "sub_sektor": "Telekommunikation", "stadt": "Wien", "hr_name": "Christoph Leitgeb", "hr_titel": "Head of HR", "email": "christoph.leitgeb@frequentis.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://frequentis.wd3.myworkdayjobs.com/Frequentis", "scan_method": "workday"}, {"name": "Fronius International GmbH", "sektor": "Technologie & IT", "sub_sektor": "Software & SaaS", "stadt": "Wels", "hr_name": "Elisabeth Engelbrechsm\u00fcller Strau\u00df", "hr_titel": "Leiter Personal", "email": "elisabeth.strauss@fronius.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://fronius.wd3.myworkdayjobs.com/Job_Board", "scan_method": "workday"}, {"name": "Infineon Technologies Austria", "sektor": "Technologie & IT", "sub_sektor": "Hardware & Halbleiter", "stadt": "Villach", "hr_name": "Thomas Reisinger", "hr_titel": "HR Director AT", "email": "thomas.reisinger@infineon.com", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "https://infineon.wd3.myworkdayjobs.com/Infineon", "scan_method": "workday"}, {"name": "Kapsch Group", "sektor": "Technologie & IT", "sub_sektor": "Telekommunikation", "stadt": "Wien", "hr_name": "Rudolf Bernscheerer", "hr_titel": "Leiter Personal", "email": "rudolf.bernscheerer@kapsch.net", "email_status": "Generiert (nicht verifiziert)", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "NTT DATA Austria GmbH", "sektor": "Technologie & IT", "sub_sektor": "IT-Services", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "Leiter Personal", "email": "", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Nagarro SE", "sektor": "Technologie & IT", "sub_sektor": "IT-Services", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "Head of HR Austria", "email": "", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "TTTech Computertechnik AG", "sektor": "Technologie & IT", "sub_sektor": "Software & SaaS", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Director", "email": "", "email_status": "", "prio": 1, "career_url": "", "scan_method": ""}, {"name": "Blum-Novotest GmbH", "sektor": "Automobil & Zulieferer", "sub_sektor": "Zulieferer Tier 2", "stadt": "Bregenz", "hr_name": "n/a", "hr_titel": "HR Manager", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "B\u00f6hlerit GmbH & Co KG", "sektor": "Automobil & Zulieferer", "sub_sektor": "Zulieferer Tier 1", "stadt": "Kapfenberg", "hr_name": "n/a", "hr_titel": "HR Manager", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Melecs EWS GmbH", "sektor": "Automobil & Zulieferer", "sub_sektor": "Zulieferer Tier 1", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Manager", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Hypo Vorarlberg Bank AG", "sektor": "Banken & Versicherungen", "sub_sektor": "Gesch\u00e4ftsbank", "stadt": "Bregenz", "hr_name": "Ursula Randolf", "hr_titel": "Leiter Personal", "email": "ursula.randolf@hypovbg.at", "email_status": "Generiert (nicht verifiziert)", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Klarna Austria GmbH", "sektor": "Banken & Versicherungen", "sub_sektor": "FinTech / Payments", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Manager AT", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Nets Austria GmbH", "sektor": "Banken & Versicherungen", "sub_sektor": "FinTech / Payments", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "Leiter Personal", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Geberit Vertriebs GmbH", "sektor": "Bau & Baustoffe", "sub_sektor": "Haustechnik", "stadt": "Wien", "hr_name": "Sonja Lahner", "hr_titel": "Leiter Personal", "email": "sonja.lahner@geberit.com", "email_status": "Generiert (nicht verifiziert)", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Liebherr-Werk Bischofshofen", "sektor": "Bau & Baustoffe", "sub_sektor": "Baumaschinen", "stadt": "Bischofshofen", "hr_name": "Vanessa Kneissl", "hr_titel": "Leiter Personal", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Dorda Rechtsanw\u00e4lte", "sektor": "Beratung & Recht", "sub_sektor": "Rechtsanw\u00e4lte", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Manager", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "AGES GmbH", "sektor": "Gesundheit & Soziales", "sub_sektor": "Medizintechnik", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Manager", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Humanomed Holding GmbH", "sektor": "Gesundheit & Soziales", "sub_sektor": "Krankenhaus", "stadt": "Klagenfurt", "hr_name": "Markus Tercl", "hr_titel": "Leiter Personal", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Vinzenz Gruppe", "sektor": "Gesundheit & Soziales", "sub_sektor": "Krankenhaus", "stadt": "Wien", "hr_name": "Martin Gleitsmann", "hr_titel": "HR Director", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "OBI Austria", "sektor": "Handel & Consumer / FMCG", "sub_sektor": "Haushalt & DIY", "stadt": "Wien", "hr_name": "Christoph Tauscher", "hr_titel": "Leiter Personal", "email": "christoph.tauscher@obi.at", "email_status": "Generiert (nicht verifiziert)", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "ARE Austrian Real Estate GmbH", "sektor": "Immobilien", "sub_sektor": "Immobilien Entwicklung", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "Leiter Personal", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "UBM Development AG", "sektor": "Immobilien", "sub_sektor": "Immobilien Entwicklung", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "Leiter Personal", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Warimpex Finanz- u. Beteiligungs AG", "sektor": "Immobilien", "sub_sektor": "Immobilien b\u00f6rsenotiert", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Manager", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Schiebel GmbH", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Sicherheitstechnik", "stadt": "Wien", "hr_name": "Claire Benedik", "hr_titel": "Head of Human Resources", "email": "claire.benedik@schiebel.net", "email_status": "Generiert (nicht verifiziert)", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Schoeller-Bleckmann Oilfield Equipment AG", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Stahl & Metall", "stadt": "Ternitz", "hr_name": "Sabine Ringhofer-Luef", "hr_titel": "HR-Manager", "email": "sabine.luef@sbo.at", "email_status": "Generiert (nicht verifiziert)", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Semperit Technische Produkte", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Gummi & Kunststoff", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Manager", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Welser Profile Austria GmbH", "sektor": "Industrie & Maschinenbau", "sub_sektor": "Stahl & Metall", "stadt": "Gresten", "hr_name": "Gabriele Theuerkauf", "hr_titel": "Leiter Personal", "email": "gabriele.theuerkauf@welser.com", "email_status": "Generiert (nicht verifiziert)", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Schenker & Co AG", "sektor": "Logistik & Transport", "sub_sektor": "Logistik", "stadt": "Wien", "hr_name": "Klaus Wagner", "hr_titel": "HR Director AT", "email": "klaus.wagner@dbschenker.com", "email_status": "Generiert (nicht verifiziert)", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "ORF", "sektor": "Medien & Telekommunikation", "sub_sektor": "Medien", "stadt": "Wien", "hr_name": "Ingrid Tutschek", "hr_titel": "Personalchef", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "ProSiebenSat.1 PULS 4 GmbH", "sektor": "Medien & Telekommunikation", "sub_sektor": "Medien", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Director AT", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Bernina International AG", "sektor": "Pharma & Life Sciences", "sub_sektor": "Medizintechnik", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Manager", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Greiner Bio-One GmbH", "sektor": "Pharma & Life Sciences", "sub_sektor": "Medizintechnik", "stadt": "Kremsm\u00fcnster", "hr_name": "Birgit Humer Altmann", "hr_titel": "Leiter Personal", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Kwizda Holding GmbH", "sektor": "Pharma & Life Sciences", "sub_sektor": "Pharma Produktion", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Director", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Bechtle Austria GmbH", "sektor": "Technologie & IT", "sub_sektor": "IT-Services", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Manager", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Contextflow GmbH", "sektor": "Technologie & IT", "sub_sektor": "AI & Data", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "Head of People", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Fabasoft AG", "sektor": "Technologie & IT", "sub_sektor": "Software & SaaS", "stadt": "Linz", "hr_name": "Barbara Wimmer", "hr_titel": "Head of HR", "email": "barbara.wimmer@fabasoft.com", "email_status": "Generiert (nicht verifiziert)", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Inode IT-Solutions", "sektor": "Technologie & IT", "sub_sektor": "AI & Data", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "HR Manager", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "Loxone Electronics GmbH", "sektor": "Technologie & IT", "sub_sektor": "Intralogistik", "stadt": "Kollerschlag", "hr_name": "n/a", "hr_titel": "HR Manager", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}, {"name": "SEC Consult", "sektor": "Technologie & IT", "sub_sektor": "Cybersecurity", "stadt": "Wien", "hr_name": "n/a", "hr_titel": "Leiter Personal", "email": "", "email_status": "", "prio": 2, "career_url": "", "scan_method": ""}];
+
 let currentVacancyId = null;
 let dashFilterDays = 30;
 let allVacancies = [];
@@ -364,18 +378,18 @@ let parsedCompanies = [];
 document.addEventListener('DOMContentLoaded', () => {
   loadStats();
   loadVacanciesForDash();
+  renderTargets();
 });
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function showTab(name) {
-  ['dashboard','vacancies','targets','upload'].forEach(t => {
+  ['dashboard','vacancies','targets','browserless','upload'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('section-hidden', t !== name);
-    document.querySelectorAll('.tab').forEach((el, i) => {
-      el.classList.toggle('active', ['dashboard','vacancies','targets','upload'][i] === name);
-    });
+  });
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['dashboard','vacancies','targets','browserless','upload'][i] === name);
   });
   if (name === 'vacancies') loadVacancies();
-  if (name === 'targets')   loadTargets();
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -383,23 +397,22 @@ async function loadStats() {
   try {
     const r = await fetch(`${API}?action=get-stats`);
     const d = await r.json();
-    document.getElementById('s-targets').textContent  = d.total_targets   ?? '—';
     document.getElementById('s-total').textContent    = d.total_vacancies  ?? '—';
     document.getElementById('s-30d').textContent      = d.vacancies_30d    ?? '—';
     document.getElementById('s-clevel').textContent   = d.c_level_open     ?? '—';
     document.getElementById('s-outreach').textContent = d.outreach_pending ?? '—';
     document.getElementById('kpi-header-val').textContent = d.vacancies_30d ?? '—';
-  } catch(e) { console.warn('Stats:', e); }
+  } catch(e) {}
 }
 
-// ── Dashboard Vakanzen ────────────────────────────────────────────────────────
+// ── Dashboard ─────────────────────────────────────────────────────────────────
 async function loadVacanciesForDash() {
   try {
     const r = await fetch(`${API}?action=get-vacancies&min_days=${dashFilterDays}&limit=50`);
     const d = await r.json();
     allVacancies = d.vacancies || [];
     renderDashVacancies();
-  } catch(e) { console.warn('Dash vacancies:', e); }
+  } catch(e) {}
 }
 
 function setDashFilter(days, btn) {
@@ -412,198 +425,170 @@ function setDashFilter(days, btn) {
 function renderDashVacancies() {
   const list = document.getElementById('dash-vacancy-list');
   const sorted = [...allVacancies].sort((a,b) => new Date(a.first_seen_at) - new Date(b.first_seen_at));
-  document.getElementById('dash-vac-count').textContent = sorted.length ? `(${sorted.length})` : '';
-
+  document.getElementById('dash-vac-count').textContent = sorted.length ? '(' + sorted.length + ')' : '';
   if (!sorted.length) {
-    list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:30px">Keine Vakanzen gefunden. Starte einen Scan.</div>';
+    list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:30px">Keine Vakanzen. Starte einen Scan.</div>';
     return;
   }
-
   list.innerHTML = sorted.map(v => {
     const days = daysSince(v.first_seen_at);
     const age  = ageStyle(days);
-    const levelClass = v.job_level === 'C-Level' ? 'c-level' : v.job_level === 'Geschäftsführung' ? 'gf' : '';
-    return `<div class="vacancy-row ${levelClass}">
+    const hr   = findHR(v.company_name);
+    const lvlClass = v.job_level === 'C-Level' ? 'c-level' : v.job_level === 'Geschaeftsfuehrung' ? 'gf' : '';
+    return `<div class="vacancy-row ${lvlClass}">
       <div style="color:var(--gold);font-size:16px;min-width:16px">${levelIcon(v.job_level)}</div>
       <div class="vacancy-info">
         <div class="vacancy-title">${v.job_title}</div>
-        <div class="vacancy-meta">${v.company_name} · ${v.job_level || '—'}${v.career_targets?.country ? ' · ' + v.career_targets.country : ''}</div>
+        <div class="vacancy-meta">${v.company_name} &middot; ${v.job_level || '—'}
+          ${hr ? ' &middot; <span class="hr-badge">HR: ' + hr.hr_name + '</span>' : ''}
+        </div>
       </div>
       <div class="age-badge" style="background:${age.bg};color:${age.color}">${days} Tage</div>
-      <button class="btn btn-secondary btn-sm" onclick="openOutreach(${v.id}, '${esc(v.job_title)}', '${esc(v.company_name)}', ${days})">Kontaktieren →</button>
+      <button class="btn btn-secondary btn-sm" onclick="openOutreach(${v.id},'${esc(v.job_title)}','${esc(v.company_name)}',${days})">Kontaktieren</button>
     </div>`;
   }).join('');
 }
 
-// ── Vacancies Tab ─────────────────────────────────────────────────────────────
+// ── Vakanzen Tab ──────────────────────────────────────────────────────────────
 async function loadVacancies() {
   const level   = document.getElementById('vac-filter-level').value;
   const days    = document.getElementById('vac-filter-days').value;
   const country = document.getElementById('vac-filter-country').value;
-
-  const params = new URLSearchParams({ action: 'get-vacancies', min_days: days, limit: 300 });
+  const params  = new URLSearchParams({ action:'get-vacancies', min_days: days });
   if (level)   params.set('level', level);
   if (country) params.set('country', country);
-
+  const list = document.getElementById('vac-list');
+  list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:30px">Lade...</div>';
   try {
     const r = await fetch(`${API}?${params}`);
     const d = await r.json();
     const vacs = d.vacancies || [];
-    document.getElementById('vac-count-label').textContent = `${vacs.length} Position${vacs.length !== 1 ? 'en' : ''}`;
-
-    const sorted = [...vacs].sort((a,b) => new Date(a.first_seen_at) - new Date(b.first_seen_at));
-    const list = document.getElementById('vac-list');
-
-    if (!sorted.length) {
-      list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:40px">Keine Vakanzen mit diesen Filtern.</div>';
-      return;
-    }
-
-    list.innerHTML = sorted.map(v => {
-      const days = daysSince(v.first_seen_at);
-      const age  = ageStyle(days);
-      const levelClass = v.job_level === 'C-Level' ? 'c-level' : v.job_level === 'Geschäftsführung' ? 'gf' : '';
-      const outreachBadge = v.outreach_sent ? '<span style="font-size:10px;color:var(--green);margin-left:6px">✓ Outreach</span>' : '';
-      return `<div class="vacancy-row ${levelClass}">
+    document.getElementById('vac-count-label').textContent = vacs.length + ' Vakanzen';
+    if (!vacs.length) { list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:30px">Keine Vakanzen.</div>'; return; }
+    list.innerHTML = vacs.map(v => {
+      const days2 = daysSince(v.first_seen_at);
+      const age   = ageStyle(days2);
+      const hr    = findHR(v.company_name);
+      const lvlClass = v.job_level === 'C-Level' ? 'c-level' : '';
+      return `<div class="vacancy-row ${lvlClass}">
         <div style="color:var(--gold);font-size:16px;min-width:16px">${levelIcon(v.job_level)}</div>
         <div class="vacancy-info">
-          <div class="vacancy-title">${v.job_title}${outreachBadge}</div>
-          <div class="vacancy-meta">
-            ${v.company_name} · ${v.job_level || '—'} · ${v.career_targets?.country || ''}
-            ${v.career_targets?.industry ? ' · ' + v.career_targets.industry : ''}
+          <div class="vacancy-title">${v.job_title}</div>
+          <div class="vacancy-meta">${v.company_name} &middot; ${v.job_level || '—'}
+            ${hr ? '<br><span style=\'font-size:10px;color:#3730a3\'>HR: ' + hr.hr_name + (hr.email ? ' &middot; ' + hr.email : '') + '</span>' : ''}
           </div>
-          <div style="font-size:10px;color:#aaa;margin-top:2px">Erstmals gesehen: ${fmtDate(v.first_seen_at)}</div>
         </div>
-        <div class="age-badge" style="background:${age.bg};color:${age.color}">${days} Tage offen</div>
-        <div style="display:flex;gap:6px">
-          ${v.job_url ? `<a href="${v.job_url}" target="_blank" class="btn btn-secondary btn-sm">Anzeige ↗</a>` : ''}
-          <button class="btn btn-primary btn-sm" onclick="openOutreach(${v.id}, '${esc(v.job_title)}', '${esc(v.company_name)}', ${days})">Mail →</button>
-        </div>
+        <div class="age-badge" style="background:${age.bg};color:${age.color}">${days2} Tage</div>
+        <button class="btn btn-secondary btn-sm" onclick="openOutreach(${v.id},'${esc(v.job_title)}','${esc(v.company_name)}',${days2})">Kontaktieren</button>
       </div>`;
     }).join('');
-  } catch(e) {
-    document.getElementById('vac-list').innerHTML = '<div style="color:red;padding:20px">Fehler beim Laden.</div>';
-  }
+  } catch(e) { list.innerHTML = '<div style="color:var(--red);text-align:center;padding:30px">Fehler: ' + e.message + '</div>'; }
 }
 
-// ── Targets Tab ───────────────────────────────────────────────────────────────
-async function loadTargets() {
-  const country = document.getElementById('t-filter-country').value;
-  const prio    = document.getElementById('t-filter-prio').value;
+// ── Unternehmen Tab ───────────────────────────────────────────────────────────
+function renderTargets() {
+  const search = (document.getElementById('t-search')?.value || '').toLowerCase();
+  const sektor = document.getElementById('t-filter-sektor')?.value || '';
+  const scan   = document.getElementById('t-filter-scan')?.value || '';
+  const prio   = document.getElementById('t-filter-prio')?.value || '';
 
-  const params = new URLSearchParams({ action: 'get-targets' });
-  if (country) params.set('country', country);
-  if (prio)    params.set('priority', prio);
+  let list = HR_MASTERLISTE;
+  if (search) list = list.filter(c => c.name.toLowerCase().includes(search) || c.sektor.toLowerCase().includes(search));
+  if (sektor) list = list.filter(c => c.sektor === sektor);
+  if (scan === 'workday') list = list.filter(c => c.scan_method === 'workday');
+  else if (scan === 'browserless') list = list.filter(c => c.scan_method === 'browserless');
+  if (prio) list = list.filter(c => String(c.prio) === prio);
 
-  try {
-    const r = await fetch(`${API}?${params}`);
-    const d = await r.json();
-    const targets = d.targets || [];
-    document.getElementById('targets-count-label').textContent = `${targets.length} Unternehmen`;
+  document.getElementById('targets-count-label').textContent = list.length + ' von ' + HR_MASTERLISTE.length + ' Unternehmen';
 
-    const tbody = document.getElementById('targets-tbody');
-    if (!targets.length) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Keine Unternehmen. Lade eine Liste hoch.</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = targets.map(t => `<tr>
-      <td><strong>${t.company_name}</strong><br><span style="font-size:10px;color:#aaa">${t.career_url}</span></td>
-      <td>${t.country || '—'}</td>
-      <td>${t.industry || '—'}</td>
-      <td><span style="background:${t.priority===1?'#fef2f2':'#f8f7f4'};padding:2px 8px;border-radius:10px;font-size:11px">P${t.priority||2}</span></td>
-      <td>${t.source || '—'}</td>
-      <td>${t.last_scanned_at ? fmtDate(t.last_scanned_at) : '<span style="color:#aaa">Nie</span>'}</td>
-      <td><span class="dot ${t.active ? 'dot-green' : 'dot-grey'}"></span></td>
-      <td><button class="btn btn-secondary btn-sm" onclick="scanOne(${t.id}, '${esc(t.company_name)}')">Scannen</button></td>
-    </tr>`).join('');
-  } catch(e) {
-    document.getElementById('targets-tbody').innerHTML = '<tr><td colspan="8" style="color:red;padding:20px">Fehler.</td></tr>';
+  const tbody = document.getElementById('targets-tbody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Keine Treffer.</td></tr>';
+    return;
   }
+  tbody.innerHTML = list.map(c => {
+    const scanBadge = c.scan_method === 'workday'
+      ? '<span style="background:#d1fae5;color:#065f46;padding:2px 7px;border-radius:4px;font-size:10px">Workday</span>'
+      : c.scan_method === 'browserless'
+      ? '<span style="background:#dbeafe;color:#1e40af;padding:2px 7px;border-radius:4px;font-size:10px">Browserless</span>'
+      : '<span style="background:#f3f4f6;color:#9ca3af;padding:2px 7px;border-radius:4px;font-size:10px">Keine URL</span>';
+    const emailColor = c.email_status && c.email_status.includes('Generiert') ? 'color:var(--orange)' : 'color:var(--green)';
+    const emailHtml = c.email
+      ? `<span style="${emailColor};font-size:11px">${c.email}</span>`
+      : '<span style="color:#ccc;font-size:11px">—</span>';
+    return `<tr>
+      <td><strong>${c.name}</strong><br><span style="font-size:10px;color:var(--muted)">${c.sub_sektor}</span></td>
+      <td style="font-size:11px">${c.sektor}</td>
+      <td style="font-size:11px">${c.stadt}</td>
+      <td style="font-size:11px">${c.hr_name !== 'n/a' ? c.hr_name : '<span style=\'color:#ccc\'>n/a</span>'}<br><span style="font-size:10px;color:var(--muted)">${c.hr_titel || ''}</span></td>
+      <td>${emailHtml}</td>
+      <td>${scanBadge}</td>
+      <td style="text-align:center">${c.prio}</td>
+    </tr>`;
+  }).join('');
 }
 
-// ── Single scan ───────────────────────────────────────────────────────────────
-async function scanOne(targetId, name) {
-  showToast(`Scanne ${name}...`);
-  try {
-    const r = await fetch(`${API}?action=scan-one&target_id=${targetId}`);
-    const d = await r.json();
-    showToast(`✓ ${name}: ${d.new_vacancies || 0} neue Vakanzen`);
-    loadStats();
-    loadVacanciesForDash();
-    if (document.getElementById('tab-targets').style.display !== 'none') loadTargets();
-  } catch(e) {
-    showToast('Fehler beim Scan.', true);
-  }
+// ── HR Kontakt Lookup ─────────────────────────────────────────────────────────
+function findHR(companyName) {
+  if (!companyName) return null;
+  const lower = companyName.toLowerCase();
+  return HR_MASTERLISTE.find(c =>
+    c.name.toLowerCase() === lower ||
+    lower.includes(c.name.toLowerCase().substring(0,8))
+  ) || null;
 }
 
-// ── Scan all ──────────────────────────────────────────────────────────────────
-async function scanAll(priority) {
+// ── Scan ──────────────────────────────────────────────────────────────────────
+async function scanAll(prioOnly) {
   const btn = document.getElementById('btn-scan-all');
   btn.disabled = true;
   document.getElementById('scan-progress-wrap').style.display = 'block';
-  document.getElementById('scan-progress-bar').style.width = '2%';
+  document.getElementById('scan-progress-bar').style.width = '0%';
 
-  let totalScanned = 0, totalNew = 0, totalErrors = 0;
+  try {
+    const url = prioOnly
+      ? `${API}?action=scan&prio=1`
+      : `${API}?action=scan`;
+    const statusEl = document.getElementById('scan-status');
+    statusEl.textContent = 'Scan laeuft...';
 
-  // Alle Targets mit URL laden
-  const r = await fetch(`${API}?action=get-targets&active=true`);
-  const d = await r.json();
-  const targets = (d.targets || []).filter(t => t.career_url && t.career_url.trim() !== '');
+    const r = await fetch(url, { method: 'POST' });
+    const d = await r.json();
 
-  for (let i = 0; i < targets.length; i++) {
-    const t = targets[i];
-    document.getElementById('scan-status').textContent = `${i+1}/${targets.length}: ${t.company_name}...`;
-    const pct = Math.round(((i+1) / targets.length) * 93);
-    document.getElementById('scan-progress-bar').style.width = pct + '%';
-
-    try {
-      const r2 = await fetch(`${API}?action=scan-one&target_id=${t.id}`);
-      const d2 = await r2.json();
-      totalScanned++;
-      totalNew     += d2.new_vacancies    || 0;
-      totalErrors  += d2.status === 'error' ? 1 : 0;
-    } catch(e) {
-      totalErrors++;
-    }
-    await sleep(500);
+    document.getElementById('scan-progress-bar').style.width = '100%';
+    statusEl.textContent = `Scan abgeschlossen: ${d.scanned || 0} gescannt, ${d.found || 0} Vakanzen gefunden`;
+    await loadStats();
+    await loadVacanciesForDash();
+    showToast('Scan abgeschlossen');
+  } catch(e) {
+    document.getElementById('scan-status').textContent = 'Fehler: ' + e.message;
   }
-
-  document.getElementById('scan-progress-bar').style.width = '100%';
-  document.getElementById('scan-status').textContent =
-    `✓ ${totalScanned} Unternehmen gescannt · ${totalNew} neue Vakanzen · ${totalErrors} Fehler`;
-
   btn.disabled = false;
-  loadStats();
-  loadVacanciesForDash();
-  setTimeout(() => { document.getElementById('scan-progress-wrap').style.display = 'none'; }, 4000);
 }
-
- 
 
 // ── AI Insight ────────────────────────────────────────────────────────────────
 async function getAiInsight() {
   const el = document.getElementById('ai-insight-text');
   el.className = 'ai-box-placeholder';
-  el.textContent = 'Analysiere...';
-
-  // Top-Vakanzen zusammenstellen
-  const top = allVacancies
-    .sort((a,b) => new Date(a.first_seen_at) - new Date(b.first_seen_at))
-    .slice(0, 12)
-    .map(v => `${v.company_name}: "${v.job_title}" (${v.job_level}) — seit ${daysSince(v.first_seen_at)} Tagen`);
-
-  if (!top.length) { el.textContent = 'Keine Vakanzen für Analyse vorhanden. Starte erst einen Scan.'; return; }
-
+  el.textContent = 'KI analysiert...';
+  if (!allVacancies.length) { el.textContent = 'Keine Vakanzen gefunden. Starte zuerst einen Scan.'; return; }
+  const longOpen = allVacancies.filter(v => daysSince(v.first_seen_at) > dashFilterDays);
+  if (!longOpen.length) { el.textContent = 'Keine Vakanzen ueber ' + dashFilterDays + ' Tage.'; return; }
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        model: 'claude-sonnet-4-20250514', max_tokens: 1000,
         messages: [{ role: 'user', content:
-          `Du bist Executive Search Berater bei Signium Austria (DACH/CEE, 30+ Jahre, Sami Hamid).\n\nOffene Leitungsvakanzen:\n${top.join('\n')}\n\n1. Welche 2–3 Positionen haben das höchste Mandate-Potenzial? Warum?\n2. Was signalisiert die lange Vakanzzeit?\n3. Konkrete Gesprächseinstieg für die beste Opportunity.\n\nMax. 180 Wörter, Deutsch, prägnant.`
+          'Du bist erfahrener Executive Search Berater bei Signium Austria. Analysiere diese offenen Fuehrungsvakanzen (>'+dashFilterDays+' Tage):
+
+' +
+          longOpen.map(v => '- ' + v.company_name + ': "' + v.job_title + '" (' + v.job_level + ') seit ' + daysSince(v.first_seen_at) + ' Tagen').join('
+') +
+          '
+
+Welche 2-3 haben das hoechste Mandate-Potenzial fuer Signium? Kurze Begruendung + konkreter Gespraechseinstieg. Auf Deutsch, max. 200 Woerter.'
         }]
       })
     });
@@ -611,93 +596,254 @@ async function getAiInsight() {
     const text = d.content?.find(b => b.type === 'text')?.text || 'Keine Antwort.';
     el.className = 'ai-box-text';
     el.textContent = text;
-  } catch(e) {
-    el.textContent = 'KI-Analyse nicht verfügbar.';
+  } catch(e) { el.textContent = 'Fehler: ' + e.message; }
+}
+
+// ── Outreach Modal ────────────────────────────────────────────────────────────
+function openOutreach(id, title, company, days) {
+  currentVacancyId = id;
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-meta').textContent = company + ' · ' + days + ' Tage offen';
+  document.getElementById('modal-mail').value = '';
+
+  // HR-Kontakt anzeigen
+  const hr = findHR(company);
+  const hrDiv = document.getElementById('modal-hr');
+  if (hr && hr.hr_name && hr.hr_name !== 'n/a') {
+    const emailStatus = hr.email_status && hr.email_status.includes('Generiert') ? ' (generiert — bitte verifizieren)' : '';
+    document.getElementById('modal-hr-content').innerHTML =
+      '<strong>' + hr.hr_name + '</strong> &mdash; ' + hr.hr_titel +
+      (hr.email ? '<br>✉ <a href="mailto:' + hr.email + '" style="color:#1B2A4A">' + hr.email + '</a><span style="color:var(--orange);font-size:10px">' + emailStatus + '</span>' : '');
+    hrDiv.style.display = 'block';
+  } else {
+    hrDiv.style.display = 'none';
   }
+
+  document.getElementById('outreach-modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('outreach-modal').classList.remove('open'); }
+
+async function generateMail() {
+  const title   = document.getElementById('modal-title').textContent;
+  const meta    = document.getElementById('modal-meta').textContent;
+  const hr      = findHR(meta.split(' · ')[0]);
+  const hrInfo  = hr && hr.hr_name !== 'n/a' ? 'Ansprechpartner: ' + hr.hr_name + ' (' + hr.hr_titel + ')' : '';
+  document.getElementById('modal-loading').style.display = 'block';
+  document.getElementById('modal-mail').value = '';
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514', max_tokens: 800,
+        messages: [{ role: 'user', content:
+          'Du bist Sami Hamid, Managing Partner bei Signium Austria (Stein & Partner GmbH, Wien). ' +
+          'Schreibe eine kurze, direkte Kontaktaufnahme (max. 100 Woerter) fuer: "' + title + '" bei ' + meta + '. ' +
+          (hrInfo ? hrInfo + '. ' : '') +
+          'Positioniere Signium als DACH/CEE Executive Search Spezialist. Kein Floskelkram. Auf Deutsch.'
+        }]
+      })
+    });
+    const d = await r.json();
+    document.getElementById('modal-mail').value = d.content?.find(b => b.type === 'text')?.text || '';
+  } catch(e) { document.getElementById('modal-mail').value = 'Fehler: ' + e.message; }
+  document.getElementById('modal-loading').style.display = 'none';
+}
+
+function copyMail() {
+  navigator.clipboard.writeText(document.getElementById('modal-mail').value);
+  showToast('Mail kopiert');
+}
+
+async function markOutreachDone() {
+  if (!currentVacancyId) return;
+  try {
+    await fetch(`${API}?action=mark-outreach`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vacancy_id: currentVacancyId })
+    });
+    showToast('Outreach markiert');
+    closeModal();
+    loadStats();
+  } catch(e) {}
+}
+
+// ── Browserless Test ──────────────────────────────────────────────────────────
+const BL_TEST_SITES = [
+  { name: 'Erste Group',   url: 'https://www.erstegroup.com/de/karriere/stellenangebote' },
+  { name: 'OMV Karriere',  url: 'https://careers.omv.com/de/jobs' },
+  { name: 'RBI Jobs',      url: 'https://www.rbinternational.com/de/karriere/offene-stellen.html' },
+  { name: 'voestalpine',   url: 'https://jobs.voestalpine.com/index.php?ac=search_result&language=2' },
+  { name: 'Strabag',       url: 'https://www.strabag.com/karriere/stellenangebote' },
+  { name: 'BAWAG Group',   url: 'https://jobs.bawaggroup.com' },
+  { name: 'A1 Telekom',    url: 'https://karriere.a1.group' },
+  { name: 'Porr AG',       url: 'https://www.porr-group.com/karriere/offene-stellen' },
+  { name: 'Wienerberger',  url: 'https://www.wienerberger.com/karriere' },
+  { name: 'OeBB Karriere', url: 'https://jobs.oebb.at' },
+];
+const BL_KEYWORDS = ['Geschaeftsfuehrer','Director','Head of','Manager','Leiter','CFO','CEO','COO','CHRO','Vice President'];
+let blLog;
+
+function blLog2(msg) {
+  if (!blLog) blLog = document.getElementById('bl-log');
+  blLog.innerHTML += new Date().toLocaleTimeString('de') + ' ' + msg + '\n';
+  blLog.scrollTop = blLog.scrollHeight;
+}
+
+function updateBlRow(name, status, detail, ms) {
+  const row = document.getElementById('blrow_' + name.replace(/\W/g,'_'));
+  if (!row) return;
+  const st = row.querySelector('.bl-status');
+  const dt = row.querySelector('.bl-detail');
+  const ms2 = row.querySelector('.bl-ms');
+  st.className = 'bl-status ' + status;
+  st.textContent = status === 'ok' || status === 'jobs' ? '✓' : status === 'error' ? '✗' : status === 'loading' ? '…' : '·';
+  dt.innerHTML = detail;
+  if (ms) ms2.textContent = ms + 'ms';
+}
+
+async function runBrowserlessTest() {
+  const key = document.getElementById('bl-key').value.trim();
+  if (!key) { alert('Bitte API Key eintragen'); return; }
+  document.getElementById('bl-btn').disabled = true;
+  document.getElementById('bl-btn').textContent = 'Laeuft...';
+  document.getElementById('bl-results').style.display = 'block';
+  blLog = document.getElementById('bl-log');
+  blLog.innerHTML = '';
+
+  const siteList = document.getElementById('bl-site-list');
+  siteList.innerHTML = BL_TEST_SITES.map(s =>
+    `<div class="bl-row" id="blrow_${s.name.replace(/\W/g,'_')}">
+      <div class="bl-status pending">·</div>
+      <div class="bl-name">${s.name}</div>
+      <div class="bl-detail" style="color:#aaa;font-size:11px">${s.url}</div>
+      <div class="bl-ms"></div>
+    </div>`).join('');
+
+  let readable = 0, withJobs = 0, errors = 0;
+  document.getElementById('bl-total').textContent = '0';
+  document.getElementById('bl-readable').textContent = '0';
+  document.getElementById('bl-jobs').textContent = '0';
+  document.getElementById('bl-errors').textContent = '0';
+
+  for (let i = 0; i < BL_TEST_SITES.length; i++) {
+    const site = BL_TEST_SITES[i];
+    updateBlRow(site.name, 'loading', 'Lade Seite...', null);
+    blLog2('Teste: ' + site.name);
+    const start = Date.now();
+    try {
+      const resp = await fetch(
+        'https://production-sfo.browserless.io/content?token=' + key,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url: site.url,
+            waitFor: 3000,
+            gotoOptions: { waitUntil: 'networkidle2', timeout: 25000 },
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+          })
+        }
+      );
+      const ms = Date.now() - start;
+      if (!resp.ok) {
+        const err = await resp.text();
+        updateBlRow(site.name, 'error', 'HTTP ' + resp.status + ': ' + err.substring(0,80), ms);
+        blLog2('✗ ' + site.name + ': HTTP ' + resp.status);
+        errors++;
+      } else {
+        const html = await resp.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const text = doc.body?.innerText || doc.body?.textContent || '';
+        const kws = BL_KEYWORDS.filter(k => text.includes(k));
+        const ok = text.length > 500;
+        if (ok) readable++;
+        if (kws.length) withJobs++;
+        const snippet = text.replace(/\s+/g,' ').trim().substring(0,200);
+        const statusCls = kws.length ? 'jobs' : ok ? 'ok' : 'error';
+        updateBlRow(site.name, statusCls,
+          (ok ? '✓ ' + text.length + ' Zeichen' : '✗ Leer') +
+          (kws.length ? ' · <strong style="color:#0c63e4">Jobs: ' + kws.join(', ') + '</strong>' : '') +
+          (snippet ? '<div class="bl-snippet">' + snippet + '...</div>' : ''), ms);
+        blLog2((kws.length ? '★ ' : ok ? '✓ ' : '✗ ') + site.name + ': ' + text.length + ' Zeichen');
+      }
+    } catch(e) {
+      const ms = Date.now() - start;
+      updateBlRow(site.name, 'error', e.message.substring(0,100), ms);
+      blLog2('✗ ' + site.name + ': ' + e.message.substring(0,60));
+      errors++;
+    }
+    document.getElementById('bl-total').textContent = i + 1;
+    document.getElementById('bl-readable').textContent = readable;
+    document.getElementById('bl-jobs').textContent = withJobs;
+    document.getElementById('bl-errors').textContent = errors;
+    await new Promise(r => setTimeout(r, 800));
+  }
+
+  blLog2('');
+  blLog2('=== ERGEBNIS ===');
+  blLog2('Lesbar: ' + readable + '/' + BL_TEST_SITES.length);
+  blLog2('Jobs gefunden: ' + withJobs);
+  blLog2(readable >= 7 ? '✓ BROWSERLESS FUNKTIONIERT!' : readable >= 4 ? '~ Teilweise erfolgreich' : '✗ Probleme — CORS oder Key pruefen');
+  document.getElementById('bl-btn').disabled = false;
+  document.getElementById('bl-btn').textContent = 'Nochmals testen';
 }
 
 // ── Upload ────────────────────────────────────────────────────────────────────
-function handleDrop(e) {
-  e.preventDefault();
-  const file = e.dataTransfer.files[0];
-  if (file) parseExcel(file);
-}
-function handleFileSelect(e) {
-  const file = e.target.files[0];
-  if (file) parseExcel(file);
-}
+function handleDrop(e) { e.preventDefault(); handleFile(e.dataTransfer.files[0]); }
+function handleFileSelect(e) { handleFile(e.target.files[0]); }
 
-function parseExcel(file) {
+function handleFile(file) {
+  if (!file) return;
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = e => {
     const wb = XLSX.read(e.target.result, { type: 'binary' });
-    const sheet = wb.Sheets['Unternehmen'] || wb.Sheets[wb.SheetNames[0]];
-    const rows  = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-
-    // Header-Zeile finden (Zeile 2 in unserer Vorlage = Index 1)
-  const dataRows = rows.slice(2).filter(r => r[0]); // Name required
-    
-
-    parsedCompanies = dataRows.map((r, i) => ({
-      company_name: String(r[0] || '').trim(),
-      career_url:   String(r[1] || '').trim(),
-      country:      String(r[2] || 'AT').trim(),
-      industry:     String(r[3] || '').trim(),
-      revenue_mio:  r[4] || null,
-      employees:    r[5] || null,
-      priority:     r[6] || 2,
-      source:       String(r[7] || '').trim(),
-      notes:        String(r[8] || '').trim(),
-      active:       String(r[10] || 'J').trim(),
-      internal_id:  String(r[11] || '').trim() || null
-    })).filter(c => c.company_name);
-
-    // Preview
-    document.getElementById('upload-preview-title').textContent = `${parsedCompanies.length} Unternehmen erkannt in "${file.name}"`;
-    document.getElementById('upload-count-label').textContent = `${parsedCompanies.length} Datensätze werden importiert`;
-    document.getElementById('upload-preview-tbody').innerHTML = parsedCompanies.slice(0, 20).map(c =>
-      `<tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:5px 10px">${c.company_name}</td>
-        <td style="padding:5px 10px;font-size:10px;color:var(--muted)">${c.career_url.substring(0,45)}${c.career_url.length>45?'…':''}</td>
-        <td style="padding:5px 10px;text-align:center">${c.country}</td>
-        <td style="padding:5px 10px;text-align:center">${c.priority}</td>
-        <td style="padding:5px 10px">${c.source}</td>
-      </tr>`
-    ).join('') + (parsedCompanies.length > 20 ? `<tr><td colspan="5" style="padding:8px 10px;text-align:center;color:var(--muted);font-style:italic">... und ${parsedCompanies.length-20} weitere</td></tr>` : '');
-
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }).slice(1).filter(r => r[0]);
+    parsedCompanies = rows.map(r => ({
+      name: r[0] || '', url: r[1] || '', country: r[2] || 'AT', prio: r[3] || 2
+    }));
+    document.getElementById('upload-preview-title').textContent = parsedCompanies.length + ' Unternehmen erkannt';
+    document.getElementById('upload-preview-tbody').innerHTML = parsedCompanies.slice(0,20).map(c =>
+      `<tr style="border-bottom:1px solid #eee">
+        <td style="padding:5px 10px;font-size:12px">${c.name}</td>
+        <td style="padding:5px 10px;font-size:11px;color:var(--muted)">${c.url}</td>
+        <td style="padding:5px 10px;font-size:11px;text-align:center">${c.country}</td>
+        <td style="padding:5px 10px;font-size:11px;text-align:center">${c.prio}</td>
+      </tr>`).join('');
+    document.getElementById('upload-count-label').textContent = parsedCompanies.length + ' Zeilen';
     document.getElementById('upload-preview').style.display = 'block';
-    document.getElementById('upload-result').style.display = 'none';
   };
   reader.readAsBinaryString(file);
 }
 
 async function confirmUpload() {
   if (!parsedCompanies.length) return;
-  const btn = document.getElementById('btn-confirm-upload');
-  btn.disabled = true;
-  btn.textContent = 'Importiere...';
-
+  const btn = document.getElementById('btn-confirm-upload') || document.querySelector('[onclick="confirmUpload()"]');
+  if (btn) btn.disabled = true;
+  const res = document.getElementById('upload-result');
+  res.style.display = 'block';
+  res.style.color = 'var(--muted)';
+  res.textContent = 'Importiere ' + parsedCompanies.length + ' Unternehmen...';
   try {
-    const r = await fetch(`${API}?action=upload-targets`, {
+    const r = await fetch(`${API}?action=bulk-import`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ companies: parsedCompanies })
     });
     const d = await r.json();
-    const result = document.getElementById('upload-result');
-    result.style.display = 'block';
-    result.style.color   = d.success ? 'var(--green)' : 'var(--red)';
-    result.textContent   = d.message || d.error;
-    if (d.success) {
-      document.getElementById('upload-preview').style.display = 'none';
-      loadStats();
-    }
+    res.style.color = 'var(--green)';
+    res.textContent = '✓ ' + (d.imported || parsedCompanies.length) + ' Unternehmen importiert';
+    document.getElementById('upload-preview').style.display = 'none';
+    loadStats();
+    showToast('Import erfolgreich');
   } catch(e) {
-    document.getElementById('upload-result').style.display = 'block';
-    document.getElementById('upload-result').textContent = 'Upload fehlgeschlagen.';
+    res.style.color = 'var(--red)';
+    res.textContent = 'Fehler: ' + e.message;
   }
-  btn.disabled = false;
-  btn.textContent = '✓ In PAUL importieren';
+  if (btn) btn.disabled = false;
 }
 
 function cancelUpload() {
@@ -705,110 +851,53 @@ function cancelUpload() {
   parsedCompanies = [];
 }
 
-// ── Manual add ────────────────────────────────────────────────────────────────
 async function addManual() {
-  const name    = document.getElementById('m-name').value.trim();
-  const url     = document.getElementById('m-url').value.trim();
+  const name = document.getElementById('m-name').value.trim();
+  const url  = document.getElementById('m-url').value.trim();
   const country = document.getElementById('m-country').value;
-  const prio    = document.getElementById('m-prio').value;
-  if (!name || !url) { showToast('Name und URL sind Pflichtfelder.', true); return; }
-
+  const prio = document.getElementById('m-prio').value;
+  if (!name || !url) { showToast('Name und URL benoetigt'); return; }
   try {
-    const r = await fetch(`${API}?action=upload-targets`, {
+    await fetch(`${API}?action=add-target`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ companies: [{ company_name: name, career_url: url, country, priority: prio, source: 'Manuell', active: 'J' }] })
+      body: JSON.stringify({ name, url, country, prio: parseInt(prio) })
     });
-    const d = await r.json();
-    if (d.success) {
-      showToast(`✓ ${name} hinzugefügt`);
-      ['m-name','m-url'].forEach(id => document.getElementById(id).value = '');
-      loadStats();
-    } else {
-      showToast(d.error || 'Fehler', true);
-    }
-  } catch(e) { showToast('Fehler.', true); }
-}
-
-// ── Outreach Modal ────────────────────────────────────────────────────────────
-function openOutreach(id, title, company, days) {
-  currentVacancyId = id;
-  document.getElementById('modal-title').textContent = title;
-  document.getElementById('modal-meta').textContent  = `${company} · ${days} Tage offen`;
-  document.getElementById('modal-mail').value = '';
-  document.getElementById('outreach-modal').classList.add('open');
-}
-
-function closeModal() {
-  document.getElementById('outreach-modal').classList.remove('open');
-  currentVacancyId = null;
-}
-
-async function generateMail() {
-  if (!currentVacancyId) return;
-  document.getElementById('modal-loading').style.display = 'block';
-  document.getElementById('modal-mail').value = '';
-
-  try {
-    const r = await fetch(`${API}?action=generate-mail`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ vacancy_id: currentVacancyId })
-    });
-    const d = await r.json();
-    document.getElementById('modal-mail').value = d.mail || '';
-  } catch(e) {
-    document.getElementById('modal-mail').value = 'Fehler beim Generieren.';
-  }
-  document.getElementById('modal-loading').style.display = 'none';
-}
-
-async function markOutreachDone() {
-  if (!currentVacancyId) return;
-  await fetch(`${API}?action=mark-outreach`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ vacancy_id: currentVacancyId })
-  });
-  showToast('✓ Outreach als gesendet markiert');
-  closeModal();
-  loadStats();
-  loadVacanciesForDash();
-}
-
-function copyMail() {
-  const text = document.getElementById('modal-mail').value;
-  navigator.clipboard.writeText(text).then(() => showToast('In Zwischenablage kopiert'));
+    document.getElementById('m-name').value = '';
+    document.getElementById('m-url').value = '';
+    showToast(name + ' hinzugefuegt');
+    loadStats();
+  } catch(e) { showToast('Fehler: ' + e.message); }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function daysSince(dateStr) {
+  if (!dateStr) return 0;
   return Math.floor((Date.now() - new Date(dateStr)) / 86400000);
 }
 
 function ageStyle(days) {
-  if (days > 90) return { color: '#dc2626', bg: '#fef2f2' };
-  if (days > 60) return { color: '#ea580c', bg: '#fff7ed' };
-  if (days > 30) return { color: '#ca8a04', bg: '#fefce8' };
-  return { color: '#16a34a', bg: '#f0fdf4' };
+  if (days > 180) return { color:'#dc2626', bg:'#fef2f2' };
+  if (days > 90)  return { color:'#ea580c', bg:'#fff7ed' };
+  if (days > 30)  return { color:'#ca8a04', bg:'#fefce8' };
+  return { color:'#16a34a', bg:'#f0fdf4' };
 }
 
 function levelIcon(level) {
-  return level === 'C-Level' ? '⬡' : level === 'Geschäftsführung' ? '◆' : '●';
+  if (!level) return '·';
+  if (level.includes('C-Level')) return '⬡';
+  if (level.includes('Geschaeft')) return '◆';
+  if (level.includes('Bereich')) return '●';
+  return '○';
 }
 
-function fmtDate(d) {
-  return new Date(d).toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
-}
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-function esc(s) { return String(s||'').replace(/'/g, "\\'"); }
+function esc(s) { return String(s || '').replace(/'/g, "\\'"); }
 
-function showToast(msg, isError) {
+function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.style.background = isError ? '#dc2626' : 'var(--navy)';
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  setTimeout(() => t.classList.remove('show'), 2500);
 }
 </script>
 </body>
