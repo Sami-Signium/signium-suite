@@ -260,15 +260,45 @@ async function fetchCareerPage(url) {
 
 // ── KI-Analyse: Stellentitel filtern ─────────────────────────────────────────
 async function analyzeWithClaude(content, companyName, baseUrl, isWorkday = false) {
-  let prompt;
+  const maxContentLength = isWorkday ? 6000 : 5000;
+  const trimmedContent = content.length > maxContentLength
+    ? content.substring(0, maxContentLength) + '\n[...gekuerzt...]'
+    : content;
 
-  if (isWorkday) {
-    // Workday: saubere Liste von Titeln → effizienter Prompt
-    prompt = `${LEADERSHIP_PROMPT}\n\nUnternehmen: ${companyName}\nBasis-URL: ${baseUrl}\n\nStellenangebote (JSON):\n${content}`;
-  } else {
-    // HTML Fallback
-    prompt = `${LEADERSHIP_PROMPT}\n\nUnternehmen: ${companyName}\nBasis-URL: ${baseUrl}\n\nKarriereseiteninhalt:\n${content}`;
+  const userPrompt = isWorkday
+    ? `Unternehmen: ${companyName}\nBasis-URL: ${baseUrl}\n\nStellenangebote:\n${trimmedContent}`
+    : `Unternehmen: ${companyName}\nBasis-URL: ${baseUrl}\n\nKarriereseiteninhalt:\n${trimmedContent}`;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODEL,
+      max_tokens: 2000,
+      system: LEADERSHIP_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userPrompt }]
+    })
+  });
+
+  if (!response.ok) throw new Error(`Claude API: ${response.status}`);
+  const data = await response.json();
+  const text = (data.content?.[0]?.text || '').trim();
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = text.match(/\[[\s\S]*\]/);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch { }
+    }
+    console.warn(`[scan-careers] JSON parse failed for ${companyName}:`, text.substring(0, 200));
+    return [];
   }
+}
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
