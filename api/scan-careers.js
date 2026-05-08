@@ -200,6 +200,7 @@ async function fetchWorkdayJobs(tenant, site, wd = '3') {
 async function fetchCareerPage(url) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
+  let text = '';
   try {
     const response = await fetch(url, {
       signal: controller.signal,
@@ -212,7 +213,7 @@ async function fetchCareerPage(url) {
     clearTimeout(timeout);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const html = await response.text();
-    return html
+    text = html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
       .replace(/<[^>]+>/g, ' ')
@@ -221,8 +222,40 @@ async function fetchCareerPage(url) {
       .substring(0, 8000);
   } catch (err) {
     clearTimeout(timeout);
-    throw new Error(`Seite nicht erreichbar: ${err.message}`);
+    text = '';
   }
+  if (text.length < 500 && process.env.BROWSERLESS_KEY) {
+    try {
+      const blRes = await fetch(
+        'https://production-sfo.browserless.io/content?token=' + process.env.BROWSERLESS_KEY,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url: url,
+            waitFor: 3000,
+            gotoOptions: { waitUntil: 'networkidle2', timeout: 20000 }
+          })
+        }
+      );
+      if (blRes.ok) {
+        const blHtml = await blRes.text();
+        text = blHtml
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .substring(0, 8000);
+      }
+    } catch (blErr) {
+      console.warn('Browserless fallback failed:', blErr.message);
+    }
+  }
+  if (!text || text.length < 100) {
+    throw new Error('Seite nicht lesbar');
+  }
+  return text;
 }
 
 // ── KI-Analyse: Stellentitel filtern ─────────────────────────────────────────
