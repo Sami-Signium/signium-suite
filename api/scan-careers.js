@@ -8,7 +8,6 @@ const ANTHROPIC_API_KEY    = process.env.ANTHROPIC_API_KEY;
 const CLAUDE_MODEL         = 'claude-haiku-4-5-20251001';
 
 // ── Bekannte Workday-Tenants oesterreichischer/CEE Unternehmen ─────────────────
-// Format: { company_name_pattern: { tenant, site } }
 const WORKDAY_TENANTS = {
   'agrana':         { tenant: 'agrana',     site: 'Careers' },
   'kapsch':         { tenant: 'kapsch',     site: 'onestepahead_kapsch' },
@@ -89,8 +88,8 @@ async function sbUpdate(table, filter, body) {
   return r.json();
 }
 
-// ── Positionsfilter Prompt ────────────────────────────────────────────────────
-const LEADERSHIP_SYSTEM_PROMPT = `Du bist ein Executive Search Spezialist. Analysiere die Liste von Stellentiteln und extrahiere NUR Leitungspositionen mit einem geschaetzten Jahresgehalt ueber EUR 125.000.
+// ── Positionsfilter als System Prompt ────────────────────────────────────────
+const LEADERSHIP_PROMPT = `Du bist ein Executive Search Spezialist. Analysiere die Liste von Stellentiteln und extrahiere NUR Leitungspositionen mit einem geschaetzten Jahresgehalt ueber EUR 125.000.
 
 EINSCHLIESSEN:
 - C-Level: CEO, CFO, COO, CTO, CHRO, CMO, CDO, CRO, CPO, CIO, CSO
@@ -143,7 +142,6 @@ export default async function handler(req, res) {
 function detectWorkdayTenant(companyName, careerUrl) {
   const name = companyName.toLowerCase();
 
-  // Direkt aus URL erkennen wenn myworkdayjobs.com
   if (careerUrl && careerUrl.includes('myworkdayjobs.com')) {
     const match = careerUrl.match(/https?:\/\/([^.]+)\.wd\d+\.myworkdayjobs\.com\/([^/?]+)/);
     if (match) {
@@ -151,7 +149,6 @@ function detectWorkdayTenant(companyName, careerUrl) {
     }
   }
 
-  // Aus bekannter Liste
   for (const [key, val] of Object.entries(WORKDAY_TENANTS)) {
     if (name.includes(key)) {
       return { ...val, wd: '3' };
@@ -200,7 +197,6 @@ async function fetchWorkdayJobs(tenant, site, wd = '3') {
 async function fetchCareerPage(url) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
-  let text = '';
   try {
     const response = await fetch(url, {
       signal: controller.signal,
@@ -213,49 +209,17 @@ async function fetchCareerPage(url) {
     clearTimeout(timeout);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const html = await response.text();
-    text = html
+    return html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s+/g, ' ')
       .trim()
-      .substring(0, 8000);
+      .substring(0, 5000);
   } catch (err) {
     clearTimeout(timeout);
-    text = '';
+    throw new Error(`Seite nicht erreichbar: ${err.message}`);
   }
-  if (text.length < 500 && process.env.BROWSERLESS_KEY) {
-    try {
-      const blRes = await fetch(
-        'https://production-sfo.browserless.io/content?token=' + process.env.BROWSERLESS_KEY,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            url: url,
-            waitFor: 3000,
-            gotoOptions: { waitUntil: 'networkidle2', timeout: 20000 }
-          })
-        }
-      );
-      if (blRes.ok) {
-        const blHtml = await blRes.text();
-        text = blHtml
-          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-          .replace(/<[^>]+>/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
-          .substring(0, 8000);
-      }
-    } catch (blErr) {
-      console.warn('Browserless fallback failed:', blErr.message);
-    }
-  }
-  if (!text || text.length < 100) {
-    throw new Error('Seite nicht lesbar');
-  }
-  return text;
 }
 
 // ── KI-Analyse: Stellentitel filtern ─────────────────────────────────────────
@@ -279,7 +243,7 @@ async function analyzeWithClaude(content, companyName, baseUrl, isWorkday = fals
     body: JSON.stringify({
       model: CLAUDE_MODEL,
       max_tokens: 2000,
-      system: LEADERSHIP_SYSTEM_PROMPT,
+      system: LEADERSHIP_PROMPT,
       messages: [{ role: 'user', content: userPrompt }]
     })
   });
@@ -300,30 +264,6 @@ async function analyzeWithClaude(content, companyName, baseUrl, isWorkday = fals
   }
 }
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model: CLAUDE_MODEL,
-      max_tokens: 1000,
-      messages: [{ role: 'user', content: prompt }]
-    })
-  });
-
-  if (!response.ok) throw new Error(`Claude API: ${response.status}`);
-  const data = await response.json();
-  const text = data.content?.[0]?.text || '[]';
-  try {
-    return JSON.parse(text.replace(/```json|```/g, '').trim());
-  } catch {
-    return [];
-  }
-}
-
 // ── Core scan: Eine Firma scannen ─────────────────────────────────────────────
 async function scanTarget(target) {
   const startTime = Date.now();
@@ -340,7 +280,6 @@ async function scanTarget(target) {
     let jobs = [];
     let scanMethod = 'html';
 
-    // Schritt 1: Workday erkennen und API nutzen
     const workday = detectWorkdayTenant(target.company_name, target.career_url);
 
     if (workday) {
@@ -349,14 +288,12 @@ async function scanTarget(target) {
         scanMethod = 'workday';
 
         if (postings.length > 0) {
-          // Nur Titel + URL fuer KI-Analyse aufbereiten
           const titleList = postings.slice(0, 100).map(p =>
             `${p.title} | ${p.locationsText || ''} | ${p.externalPath ? 'https://' + workday.tenant + '.wd' + workday.wd + '.myworkdayjobs.com' + p.externalPath : ''}`
           ).join('\n');
 
           jobs = await analyzeWithClaude(titleList, target.company_name, target.career_url, true);
 
-          // Job URLs aus Workday-Daten ergaenzen
           jobs = jobs.map(job => {
             const match = postings.find(p => p.title === job.title || p.title?.includes(job.title?.split(' ')[0]));
             if (match?.externalPath) {
@@ -371,7 +308,6 @@ async function scanTarget(target) {
       }
     }
 
-    // Schritt 2: HTML Fallback wenn kein Workday oder Workday fehlgeschlagen
     if (scanMethod !== 'workday' && target.career_url) {
       try {
         const pageText = await fetchCareerPage(target.career_url);
@@ -400,12 +336,10 @@ async function scanTarget(target) {
       return { ...log, jobs: [], scan_method: scanMethod };
     }
 
-    // Schritt 3: Bestehende Vakanzen laden
     const existing = await sbSelect('career_vacancies', `target_id=eq.${target.id}&is_active=eq.true`);
     const existingTitles = new Set(existing.map(e => e.job_title.toLowerCase().trim()));
     const foundTitles    = new Set(jobs.map(j => j.title.toLowerCase().trim()));
 
-    // Schritt 4: Neue einfuegen
     let newCount = 0;
     for (const job of jobs) {
       if (!existingTitles.has(job.title.toLowerCase().trim())) {
@@ -431,7 +365,6 @@ async function scanTarget(target) {
       }
     }
 
-    // Schritt 5: Verschwundene als besetzt markieren
     let filledCount = 0;
     for (const ex of existing) {
       if (!foundTitles.has(ex.job_title.toLowerCase().trim())) {
@@ -557,7 +490,6 @@ async function getTargets(req, res) {
 
   const targets = await sbSelect('career_targets', params);
 
-  // Workday-Status fuer jedes Target anzeigen
   const enriched = targets.map(t => ({
     ...t,
     has_workday: !!detectWorkdayTenant(t.company_name, t.career_url)
@@ -608,7 +540,6 @@ async function generateOutreachMail(req, res) {
 
   const targets = await sbSelect('career_targets', `id=eq.${vac.target_id}`);
   const target  = targets[0] || {};
-  const days    = daysSince(vac.first_seen_at);
 
   const prompt = `Du bist Sami Hamid, Managing Partner bei Signium Austria (Stein & Partner GmbH, Wien).
 
