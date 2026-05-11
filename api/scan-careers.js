@@ -421,7 +421,7 @@ async function writeLog(entry, startTime) {
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, waitFor: 3000, gotoOptions: { waitUntil: 'networkidle2', timeout: 20000 } })
+        body: JSON.stringify({ url, gotoOptions: { waitUntil: 'networkidle2', timeout: 20000 } })
       }
     );
     const html = await r.text();
