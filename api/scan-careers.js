@@ -107,6 +107,7 @@ export default async function handler(req, res) {
     if (action === 'mark-outreach')  return await markOutreach(req, res);
     if (action === 'generate-mail')  return await generateOutreachMail(req, res);
     if (action === 'update-workday') return await updateWorkdayTenant(req, res);
+    if (action === 'test-browserless') return await testBrowserless(req, res);
     if (action === 'test-browserless') return await testBrowserless(req, res);     return res.status(400).json({ error: 'Unbekannte action' });
   } catch (err) {
     console.error('[scan-careers]', err);
