@@ -434,7 +434,7 @@ async function writeLog(entry, startTime) {
     return res.json({
       browserless_status: r.status,
       text_length: text.length,
-      preview: text.substring(0, 500)
+      preview: text.substring(500, 2000)
     });
   } catch(e) {
     return res.json({ error: e.message });
