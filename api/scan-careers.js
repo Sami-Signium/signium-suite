@@ -411,4 +411,31 @@ function daysSince(dateStr) { return Math.floor((Date.now() - new Date(dateStr).
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 async function writeLog(entry, startTime) {
   try { await sbInsert('career_scan_log', { ...entry, duration_ms: Date.now() - startTime }); } catch(e) { console.error('Log write failed:', e.message); }
+}async function testBrowserless(req, res) {
+  const url = req.query.url || 'https://www.erstegroup.com/de/karriere/stellenangebote';
+  if (!BROWSERLESS_KEY) return res.json({ error: 'BROWSERLESS_KEY fehlt' });
+  try {
+    const r = await fetch(
+      'https://production-sfo.browserless.io/content?token=' + BROWSERLESS_KEY,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, waitFor: 3000, gotoOptions: { waitUntil: 'networkidle2', timeout: 20000 } })
+      }
+    );
+    const html = await r.text();
+    const text = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return res.json({
+      browserless_status: r.status,
+      text_length: text.length,
+      preview: text.substring(0, 500)
+    });
+  } catch(e) {
+    return res.json({ error: e.message });
+  }
 }
