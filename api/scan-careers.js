@@ -6,7 +6,7 @@ const SUPABASE_URL         = 'https://ftdxhswcnghlmcagrsox.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_KEY;
 const ANTHROPIC_API_KEY    = process.env.ANTHROPIC_API_KEY;
 const CLAUDE_MODEL         = 'claude-haiku-4-5-20251001';
-
+const BROWSERLESS_KEY      = process.env.BROWSERLESS_KEY;
 const WORKDAY_TENANTS = {
   'agrana':         { tenant: 'agrana',     site: 'Careers' },
   'kapsch':         { tenant: 'kapsch',     site: 'onestepahead_kapsch' },
