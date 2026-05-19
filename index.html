@@ -3,437 +3,648 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Signium Suite</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>symfoniQ — Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --navy: #081D4D;
-    --navy-mid: #0d2a6b;
-    --orange: #FF6A42;
-    --teal: #6BCBC2;
-    --blue: #24629B;
-    --off: #F4F5F8;
-    --gray: #7A8090;
-    --light: #E8EBF2;
-  }
+:root {
+  --bg: #F7F4EF;
+  --card: #FFFFFF;
+  --black: #1A1A1A;
+  --gray: #6B6560;
+  --lgray: #B8B0A8;
+  --red: #C0392B;
+  --border: rgba(26,26,26,0.09);
+  --border-strong: rgba(26,26,26,0.18);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(--black); min-height: 100vh; }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── HEADER ── */
+.header { background: var(--bg); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+.header-main { display: grid; grid-template-columns: auto 1px 1fr auto; align-items: center; padding: 0 52px; height: 80px; }
+.logo { padding-right: 40px; }
+.logo-wordmark { font-size: 30px; font-weight: 200; letter-spacing: 0.1em; color: var(--black); line-height: 1; }
+.logo-wordmark .q { color: var(--red); font-weight: 500; }
+.logo-tagline { font-size: 7.5px; font-weight: 500; letter-spacing: 0.28em; text-transform: uppercase; color: var(--lgray); margin-top: 5px; }
+.header-rule { background: var(--border); height: 44px; width: 1px; }
+.kpis { display: flex; padding: 0 40px; }
+.kpi { padding: 0 36px 0 0; margin-right: 36px; border-right: 1px solid var(--border); }
+.kpi:last-child { border-right: none; margin-right: 0; }
+.kpi-label { font-size: 7.5px; font-weight: 600; letter-spacing: 0.26em; text-transform: uppercase; color: var(--lgray); margin-bottom: 5px; }
+.kpi-num { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 30px; font-weight: 300; line-height: 1; color: var(--black); }
+.kpi-num.accent { color: var(--red); }
+.kpi-note { font-size: 9px; font-weight: 300; color: var(--lgray); margin-top: 3px; }
+.header-right { padding-left: 40px; }
+.lang-toggle { display: flex; border: 1px solid var(--border-strong); }
+.lang-btn { padding: 7px 16px; font-family: 'Montserrat', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; border: none; background: transparent; color: var(--lgray); cursor: pointer; transition: all 0.2s; }
+.lang-btn.active { background: var(--red); color: #fff; }
+.lang-btn:hover:not(.active) { color: var(--black); }
 
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--navy);
-    min-height: 100vh;
-    color: white;
-    overflow-x: hidden;
-  }
+/* ── HERO ── */
+.hero { background: var(--bg); padding: 60px 52px 40px; display: flex; align-items: flex-end; justify-content: space-between; border-bottom: 1px solid var(--border); }
+.hero-eyebrow { font-size: 9px; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; color: var(--red); display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.hero-eyebrow::before { content:''; width: 24px; height: 1px; background: var(--red); }
+.hero-h1 { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 46px; font-weight: 300; line-height: 1.05; color: var(--black); }
+.hero-date { font-size: 10px; font-weight: 300; color: var(--lgray); letter-spacing: 0.06em; text-align: right; line-height: 1.9; }
 
-  /* Background texture */
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background:
-      radial-gradient(ellipse at 15% 50%, rgba(36,98,155,0.25) 0%, transparent 55%),
-      radial-gradient(ellipse at 85% 20%, rgba(107,203,194,0.10) 0%, transparent 50%),
-      radial-gradient(ellipse at 60% 90%, rgba(255,106,66,0.07) 0%, transparent 45%);
-    pointer-events: none;
-    z-index: 0;
-  }
+/* ── NAV TABS ── */
+.nav-band { background: var(--bg); border-bottom: 1px solid var(--border); padding: 0 52px; display: flex; }
+.nav-tab { padding: 14px 22px; font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--lgray); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.18s; user-select: none; white-space: nowrap; }
+.nav-tab:hover { color: var(--black); }
+.nav-tab.active { color: var(--red); border-bottom-color: var(--red); }
+.nav-tab .iq { color: var(--red); }
 
-  /* AUTH */
-  #auth {
-    position: fixed; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    z-index: 100;
-    background: var(--navy);
-    background-image: radial-gradient(ellipse at 20% 50%, rgba(36,98,155,0.3) 0%, transparent 60%);
-  }
-  .auth-card {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    padding: 48px 44px;
-    width: 360px;
-    text-align: center;
-    backdrop-filter: blur(20px);
-  }
-  .auth-logo {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 13px;
-    font-weight: 400;
-    color: rgba(255,255,255,0.4);
-    text-transform: uppercase;
-    letter-spacing: 6px;
-    margin-bottom: 8px;
-  }
-  .auth-suite {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 36px;
-    font-weight: 300;
-    color: white;
-    margin-bottom: 36px;
-    letter-spacing: -0.5px;
-  }
-  .auth-suite span { color: var(--orange); }
-  .auth-input {
-    width: 100%;
-    padding: 13px 16px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 8px;
-    color: white;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    text-align: center;
-    letter-spacing: 3px;
-    outline: none;
-    transition: border-color .2s;
-    margin-bottom: 12px;
-  }
-  .auth-input:focus { border-color: var(--orange); }
-  .auth-input::placeholder { color: rgba(255,255,255,0.2); letter-spacing: 1px; }
-  .auth-btn {
-    width: 100%;
-    padding: 13px;
-    background: var(--orange);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    letter-spacing: 0.5px;
-    transition: background .2s;
-  }
-  .auth-btn:hover { background: #ff8a68; }
-  .auth-error { color: var(--orange); font-size: 12px; margin-top: 8px; opacity: 0; transition: opacity .2s; }
-  .auth-error.show { opacity: 1; }
+/* ── VIEWS ── */
+.view { display: none; }
+.view.active { display: block; }
 
-  /* MAIN APP */
-  #app { display: none; position: relative; z-index: 1; min-height: 100vh; }
+/* ── MODULE CARDS (Dashboard) ── */
+.modules-wrap { padding: 40px 52px; }
+.modules-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.module-card { background: var(--card); border: 2px solid rgba(26,26,26,0.20); box-shadow: 0 2px 8px rgba(26,26,26,0.06), inset 0 0 0 8px var(--card), inset 0 0 0 10px rgba(26,26,26,0.12); padding: 36px; cursor: pointer; display: flex; flex-direction: column; min-height: 260px; position: relative; transition: all 0.28s cubic-bezier(0.25,0.46,0.45,0.94); overflow: hidden; }
+.module-card::after { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--red); transform:scaleX(0); transform-origin:left; transition:transform 0.3s; }
+.module-card:hover { border-color: rgba(26,26,26,0.30); box-shadow: 0 12px 40px rgba(26,26,26,0.10), inset 0 0 0 8px var(--card), inset 0 0 0 10px rgba(26,26,26,0.15); transform: translateY(-4px); }
+.module-card:hover::after { transform: scaleX(1); }
+.module-card.inactive { opacity: 0.45; cursor: default; }
+.module-card.inactive:hover { transform:none; box-shadow: 0 2px 8px rgba(26,26,26,0.06), inset 0 0 0 8px var(--card), inset 0 0 0 10px rgba(26,26,26,0.12); border-color: rgba(26,26,26,0.20); }
+.module-card.inactive:hover::after { transform:scaleX(0); }
+.card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
+.card-badge { font-size:8.5px; font-weight:700; letter-spacing:0.28em; text-transform:uppercase; color:var(--red); background:rgba(192,57,43,0.08); padding:5px 10px; }
+.card-icon { width:44px; height:44px; border:1px solid var(--border-strong); display:flex; align-items:center; justify-content:center; font-size:20px; color:var(--lgray); transition:all 0.28s; }
+.module-card:hover .card-icon { border-color:var(--red); color:var(--red); }
+.card-title { font-family:'Cormorant Garamond',Georgia,serif; font-size:30px; font-weight:300; color:var(--black); line-height:1.1; margin-bottom:14px; }
+.card-desc { font-size:11.5px; font-weight:300; color:var(--gray); line-height:1.8; flex:1; }
+.card-footer { margin-top:24px; padding-top:16px; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.card-status { display:flex; align-items:center; gap:8px; font-size:9px; font-weight:500; letter-spacing:0.16em; text-transform:uppercase; color:var(--lgray); }
+.dot { width:7px; height:7px; border-radius:50%; background:#4caf7d; }
+.dot.dim { background:transparent; border:1.5px solid var(--lgray); }
+.card-cta { font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:var(--lgray); display:flex; align-items:center; gap:8px; transition:all 0.2s; }
+.module-card:hover .card-cta { color:var(--red); gap:12px; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.module-card { animation: fadeUp 0.5s ease both; }
+.module-card:nth-child(1){animation-delay:0.05s} .module-card:nth-child(2){animation-delay:0.12s}
+.module-card:nth-child(3){animation-delay:0.19s} .module-card:nth-child(4){animation-delay:0.26s}
 
-  /* HEADER */
-  .header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 24px 48px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-  }
-  .header-left { display: flex; align-items: center; gap: 16px; }
-  .header-wordmark {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 11px;
-    font-weight: 400;
-    color: rgba(255,255,255,0.35);
-    text-transform: uppercase;
-    letter-spacing: 5px;
-  }
-  .header-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.1); }
-  .header-suite {
-    font-size: 12px;
-    font-weight: 500;
-    color: rgba(255,255,255,0.4);
-    letter-spacing: 1px;
-  }
-  .header-right {
-    font-size: 11px;
-    color: rgba(255,255,255,0.2);
-    letter-spacing: 0.5px;
-  }
+/* ── iQ-SCAN ── */
+.scan-wrap { padding: 40px 52px; }
+.scan-section { background: var(--card); border: 2px solid rgba(26,26,26,0.20); box-shadow: 0 2px 8px rgba(26,26,26,0.06), inset 0 0 0 8px var(--card), inset 0 0 0 10px rgba(26,26,26,0.12); margin-bottom: 24px; overflow: hidden; }
+.scan-section-header { padding: 24px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.scan-section-left {}
+.scan-section-tag { font-size: 8.5px; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase; color: var(--red); background: rgba(192,57,43,0.08); padding: 4px 10px; display: inline-block; margin-bottom: 6px; }
+.scan-section-title { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 26px; font-weight: 300; color: var(--black); }
+.scan-section-sub { font-size: 10px; font-weight: 300; color: var(--lgray); margin-top: 3px; }
+.scan-section-body { padding: 28px 32px; }
 
-  /* HERO */
-  .hero {
-    padding: 64px 48px 48px;
-    max-width: 680px;
-  }
-  .hero-label {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--orange);
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    margin-bottom: 16px;
-  }
-  .hero-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 52px;
-    font-weight: 300;
-    line-height: 1.1;
-    letter-spacing: -1px;
-    margin-bottom: 20px;
-  }
-  .hero-sub {
-    font-size: 15px;
-    font-weight: 300;
-    color: rgba(255,255,255,0.45);
-    line-height: 1.7;
-    max-width: 520px;
-  }
+/* Upload area */
+.upload-area { border: 1.5px dashed var(--border-strong); padding: 32px; text-align: center; background: var(--bg); cursor: pointer; transition: all 0.2s; margin-bottom: 20px; }
+.upload-area:hover { border-color: var(--red); background: rgba(192,57,43,0.03); }
+.upload-area.has-file { border-style: solid; border-color: #4caf7d; background: rgba(76,175,61,0.03); }
+.upload-icon { font-size: 28px; color: var(--lgray); margin-bottom: 10px; }
+.upload-main { font-size: 12px; font-weight: 400; color: var(--black); margin-bottom: 4px; }
+.upload-sub { font-size: 10px; font-weight: 300; color: var(--lgray); }
+.upload-filename { font-size: 11px; font-weight: 500; color: #4caf7d; margin-top: 8px; }
+input[type=file] { display: none; }
 
-  /* TOOLS GRID */
-  .tools-section { padding: 0 48px 64px; }
-  .tools-label {
-    font-size: 9px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.2);
-    text-transform: uppercase;
-    letter-spacing: 4px;
-    margin-bottom: 24px;
-  }
-  .tools-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-  }
+.upload-actions { display: flex; gap: 12px; align-items: center; }
+.btn { padding: 10px 24px; font-family: 'Montserrat', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; border: none; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: var(--red); color: #fff; }
+.btn-primary:hover { background: #a93226; }
+.btn-primary:disabled { opacity: 0.4; cursor: default; }
+.btn-secondary { background: transparent; color: var(--gray); border: 1px solid var(--border-strong); }
+.btn-secondary:hover { color: var(--black); border-color: var(--black); }
+.btn-template { background: transparent; color: var(--red); border: 1px solid rgba(192,57,43,0.3); font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 16px; cursor: pointer; transition: all 0.2s; font-family: 'Montserrat', sans-serif; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn-template:hover { background: rgba(192,57,43,0.06); border-color: var(--red); }
 
-  /* TOOL CARD */
-  .tool-card {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 12px;
-    padding: 28px 28px 24px;
-    text-decoration: none;
-    color: white;
-    transition: all .25s;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    display: block;
-  }
-  .tool-card:hover {
-    background: rgba(255,255,255,0.06);
-    border-color: rgba(255,255,255,0.15);
-    transform: translateY(-2px);
-  }
-  .tool-card.live { cursor: pointer; }
-  .tool-card.dev { cursor: default; opacity: 0.6; }
-  .tool-card.planned { cursor: default; opacity: 0.4; }
+/* Results */
+.scan-results { margin-top: 24px; display: none; }
+.scan-results.visible { display: block; }
+.results-header { font-size: 9px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: var(--lgray); margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.result-item { display: flex; align-items: flex-start; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.result-item:last-child { border-bottom: none; }
+.result-type { font-size: 8px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); background: rgba(192,57,43,0.08); padding: 3px 8px; flex-shrink: 0; margin-top: 2px; }
+.result-body { flex: 1; }
+.result-title { font-size: 12px; font-weight: 400; color: var(--black); margin-bottom: 3px; }
+.result-meta { font-size: 10px; font-weight: 300; color: var(--lgray); }
 
-  /* Accent line top */
-  .tool-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    transition: opacity .25s;
-  }
-  .tool-card.live:hover::before { opacity: 1; }
+/* Status bar */
+.status-bar { padding: 12px 16px; background: var(--bg); border: 1px solid var(--border); font-size: 10px; font-weight: 300; color: var(--gray); margin-top: 16px; display: none; }
+.status-bar.visible { display: block; }
+.status-bar.running { color: var(--red); }
+.status-bar.done { color: #4caf7d; }
 
-  .card-paul::before { background: var(--orange); }
-  .card-pulse::before { background: var(--teal); }
-  .card-docs::before { background: var(--blue); }
-  .card-angebot::before { background: #9B7BC4; }
-  .card-scout::before { background: #C4A23A; }
-  .card-lpr::before { background: var(--teal); }
+/* Placeholder views */
+.view-placeholder-wrap { padding: 40px 52px; }
+.view-placeholder { background: var(--card); border: 2px solid rgba(26,26,26,0.20); padding: 100px 60px; text-align: center; box-shadow: 0 2px 8px rgba(26,26,26,0.06), inset 0 0 0 8px var(--card), inset 0 0 0 10px rgba(26,26,26,0.12); }
+.vp-title { font-family:'Cormorant Garamond',Georgia,serif; font-size:36px; font-weight:300; color:var(--black); margin-bottom:12px; }
+.vp-sub { font-size:11px; font-weight:300; color:var(--lgray); line-height:2; }
 
-  /* Glyph */
-  .card-glyph {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 64px;
-    font-weight: 700;
-    line-height: 1;
-    opacity: 0.04;
-    position: absolute;
-    bottom: -8px; right: 12px;
-    pointer-events: none;
-    transition: opacity .25s;
-  }
-  .tool-card:hover .card-glyph { opacity: 0.07; }
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.media-item {
+  cursor: pointer;
+}
+.media-item input[type=checkbox] {
+  display: none;
+}
+.media-card {
+  border: 1.5px solid var(--border-strong);
+  padding: 12px 16px;
+  transition: all 0.18s;
+  background: var(--bg);
+}
+.media-item input:checked + .media-card {
+  border-color: var(--red);
+  background: rgba(192,57,43,0.05);
+}
+.media-card:hover {
+  border-color: var(--red);
+}
+.media-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--black);
+  letter-spacing: 0.03em;
+}
+.media-region {
+  font-size: 9px;
+  font-weight: 300;
+  color: var(--lgray);
+  margin-top: 3px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.media-item input:checked + .media-card .media-name { color: var(--red); }
 
-  .card-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 9px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-bottom: 18px;
-    padding: 4px 10px;
-    border-radius: 20px;
-  }
-  .status-live { background: rgba(107,203,194,0.12); color: var(--teal); }
-  .status-dev { background: rgba(255,106,66,0.12); color: var(--orange); }
-  .status-planned { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.3); }
-  .status-dot {
-    width: 5px; height: 5px;
-    border-radius: 50%;
-  }
-  .status-live .status-dot { background: var(--teal); }
-  .status-dev .status-dot { background: var(--orange); animation: pulse 1.5s infinite; }
-  .status-planned .status-dot { background: rgba(255,255,255,0.2); }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-  .card-code {
-    font-size: 9px;
-    color: rgba(255,255,255,0.2);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-bottom: 6px;
-  }
-  .card-name {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 32px;
-    font-weight: 700;
-    line-height: 1;
-    margin-bottom: 12px;
-    letter-spacing: -0.5px;
-  }
-  .card-desc {
-    font-size: 12px;
-    font-weight: 300;
-    color: rgba(255,255,255,0.45);
-    line-height: 1.6;
-  }
-  .card-arrow {
-    position: absolute;
-    bottom: 22px; right: 24px;
-    font-size: 16px;
-    color: rgba(255,255,255,0.15);
-    transition: all .2s;
-  }
-  .tool-card.live:hover .card-arrow {
-    color: rgba(255,255,255,0.5);
-    transform: translateX(3px);
-  }
-
-  /* FOOTER */
-  .suite-footer {
-    padding: 20px 48px;
-    border-top: 1px solid rgba(255,255,255,0.05);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .footer-copy { font-size: 11px; color: rgba(255,255,255,0.15); }
-  .footer-version { font-size: 10px; color: rgba(255,255,255,0.1); letter-spacing: 1px; }
-
-  @media (max-width: 900px) {
-    .tools-grid { grid-template-columns: 1fr 1fr; }
-    .header, .hero, .tools-section { padding-left: 24px; padding-right: 24px; }
-  }
-  @media (max-width: 600px) {
-    .tools-grid { grid-template-columns: 1fr; }
-    .hero-title { font-size: 38px; }
-  }
+.page-footer { padding: 24px 52px; border-top: 1px solid var(--border); font-size: 9px; color: var(--lgray); letter-spacing: 0.08em; }
 </style>
 </head>
 <body>
 
-<!-- AUTH -->
-<div id="auth">
-  <div class="auth-card">
-    <div class="auth-logo">Signium</div>
-    <div class="auth-suite">Suite<span>.</span></div>
-    <input type="password" class="auth-input" id="pw" placeholder="Passwort" onkeydown="if(event.key==='Enter')login()">
-    <button class="auth-btn" onclick="login()">Zugang</button>
-    <div class="auth-error" id="err">Falsches Passwort</div>
+<!-- HEADER -->
+<div class="header">
+  <div class="header-main">
+    <div class="logo">
+      <div class="logo-wordmark">symfoni<span class="q">Q</span></div>
+      <div class="logo-tagline" data-de="AI Suite for Executive Search" data-en="AI Suite for Executive Search">AI Suite for Executive Search</div>
+    </div>
+    <div class="header-rule"></div>
+    <div class="kpis">
+      <div class="kpi">
+        <div class="kpi-label" data-de="Neue Trigger-Events" data-en="New Trigger Events">Neue Trigger-Events</div>
+        <div class="kpi-num accent" id="kpi-triggers">—</div>
+        <div class="kpi-note" data-de="diese Woche" data-en="this week">diese Woche</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label" data-de="Erkannte offene Stellen" data-en="Open Positions">Erkannte offene Stellen</div>
+        <div class="kpi-num" id="kpi-jobs">—</div>
+        <div class="kpi-note" data-de="Vakanzen-Scanner" data-en="Vacancy scanner">Vakanzen-Scanner</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label" data-de="Gescannte Firmen" data-en="Scanned Companies">Gescannte Firmen</div>
+        <div class="kpi-num" id="kpi-companies">—</div>
+        <div class="kpi-note" data-de="automatisch überwacht" data-en="automatically monitored">automatisch überwacht</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="lang-toggle">
+        <button class="lang-btn active" onclick="setLang('de')">DE</button>
+        <button class="lang-btn" onclick="setLang('en')">EN</button>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- APP -->
-<div id="app">
-  <header class="header">
-    <div class="header-left">
-      <div class="header-wordmark">Signium</div>
-      <div class="header-divider"></div>
-      <div class="header-suite">Intelligence Suite</div>
-    </div>
-    <div class="header-right">Signium Austria · Stein &amp; Partner GmbH</div>
-  </header>
-
-  <div class="hero">
-    <div class="hero-label">Alle Tools · Ein Ort</div>
-    <div class="hero-title">Signium<br>Suite.</div>
-    <div class="hero-sub">KI-gestützte Tools für Executive Search, Sales Intelligence, PR und Dokumentengenerierung — integriert in einer Plattform.</div>
+<!-- HERO -->
+<div class="hero">
+  <div>
+    <div class="hero-eyebrow" id="hero-greeting">Guten Tag</div>
+    <div class="hero-h1" data-de="Ihre Executive Search<br>Tool Box" data-en="Your Executive Search<br>Tool Box">Ihre Executive Search<br>Tool Box</div>
   </div>
+  <div class="hero-date" id="hero-date"></div>
+</div>
 
-  <div class="tools-section">
-    <div class="tools-label">Tools &amp; Module</div>
-    <div class="tools-grid">
+<!-- NAV -->
+<div class="nav-band">
+  <div class="nav-tab active" onclick="show('dashboard')" data-de="Übersicht" data-en="Overview">Übersicht</div>
+  <div class="nav-tab" onclick="show('qscan')"><span class="iq">iQ</span>-SCAN</div>
+  <div class="nav-tab" onclick="show('qscout')"><span class="iq">iQ</span>-SCOUT</div>
+  <div class="nav-tab" onclick="show('qpulse')"><span class="iq">iQ</span>-PULSE</div>
+  <div class="nav-tab" onclick="show('qdocs')"><span class="iq">iQ</span>-DOCS</div>
+</div>
 
-      <!-- PAUL -->
-      <a href="/paul.html" class="tool-card live card-paul">
-        <div class="card-status status-live"><span class="status-dot"></span>Live</div>
-        <div class="card-code">01 · Sales Intelligence</div>
-        <div class="card-name">PAUL</div>
-        <div class="card-desc">Management-Wechsel, M&amp;A-Signale und Wachstumsereignisse — einsatzbereite Pitch-Mails auf Knopfdruck.</div>
-        <div class="card-arrow">→</div>
-        <div class="card-glyph">P</div>
-      </a>
-
-      <!-- PULSE -->
-      <a href="/pulse.html" class="tool-card live card-pulse">
-        <div class="card-status status-live"><span class="status-dot"></span>Live</div>
-        <div class="card-code">02 · PR & Communication</div>
-        <div class="card-name">PULSE</div>
-        <div class="card-desc">LinkedIn-Kampagnen, Whitepapers, Newsletter und Presseaussendungen — KI-recherchiert und sofort einsatzbereit.</div>
-        <div class="card-arrow">→</div>
-        <div class="card-glyph">U</div>
-      </a>
-
-      <!-- DOCS — Kandidatenbericht -->
-      <a href="https://docs-signium.vercel.app" target="_blank" class="tool-card live card-docs">
-        <div class="card-status status-live"><span class="status-dot"></span>Live</div>
-        <div class="card-code">03 · Document Generation</div>
-        <div class="card-name">REPORT</div>
-        <div class="card-desc">Strukturierte Signium Kandidatenberichte aus CV und Interview-Notizen — automatisch generiert.</div>
-        <div class="card-arrow">→</div>
-        <div class="card-glyph">R</div>
-      </a>
-
-      <!-- ANGEBOT -->
-      <a href="/angebot.html" class="tool-card live card-angebot">
-        <div class="card-status status-live"><span class="status-dot"></span>Live</div>
-        <div class="card-code">04 · Document Generation</div>
-        <div class="card-name">BID</div>
-        <div class="card-desc">Professionelle Angebote und Pitch-Dokumente für Executive Search Mandate — in Minuten statt Stunden.</div>
-        <div class="card-arrow">→</div>
-        <div class="card-glyph">B</div>
-      </a>
-
-      <!-- SCOUT -->
-      <div class="tool-card dev card-scout">
-        <div class="card-status status-dev"><span class="status-dot"></span>In Entwicklung</div>
-        <div class="card-code">05 · Candidate Screening</div>
-        <div class="card-name">SCOUT</div>
-        <div class="card-desc">LinkedIn-Kandidaten-Screening mit KI. Profil-Analyse, Eignung gegen Anforderungsprofil, strukturierter Report.</div>
-        <div class="card-glyph">S</div>
+<!-- ══ DASHBOARD ══ -->
+<div class="view active" id="view-dashboard">
+  <div class="modules-wrap">
+    <div class="modules-grid">
+      <div class="module-card" onclick="show('qscan')">
+        <div class="card-top"><div class="card-badge">iQ-SCAN</div><div class="card-icon">◉</div></div>
+        <div class="card-title">Market Intelligence</div>
+        <div class="card-desc" data-de="Automatisches Monitoring von Management-Wechseln und Vakanzen im DACH/CEE-Raum. Echtzeit-Trigger für gezieltes Outreach an die richtigen Entscheider." data-en="Automated monitoring of management changes and vacancies in the DACH/CEE region. Real-time triggers for targeted outreach to the right decision-makers.">Automatisches Monitoring von Management-Wechseln und Vakanzen im DACH/CEE-Raum. Echtzeit-Trigger für gezieltes Outreach an die richtigen Entscheider.</div>
+        <div class="card-footer"><div class="card-status"><div class="dot"></div><span data-de="Aktiv" data-en="Active">Aktiv</span></div><div class="card-cta"><span data-de="Öffnen" data-en="Open">Öffnen</span> →</div></div>
       </div>
-
-      <!-- LPR -->
-      <a href="https://signium-radar.netlify.app" target="_blank" class="tool-card live card-lpr">
-        <div class="card-status status-live"><span class="status-dot"></span>Live</div>
-        <div class="card-code">06 · Leadership Assessment</div>
-        <div class="card-name">LPR</div>
-        <div class="card-desc">Leadership Performance Radar — strukturiertes 360°-Assessment für neu ernannte CEOs und Führungskräfte.</div>
-        <div class="card-arrow">→</div>
-        <div class="card-glyph">L</div>
-      </a>
-
+      <div class="module-card inactive">
+        <div class="card-top"><div class="card-badge">iQ-SCOUT</div><div class="card-icon">◎</div></div>
+        <div class="card-title">Candidate Intelligence</div>
+        <div class="card-desc" data-de="KI-gestützte Kandidatenanalyse, LinkedIn-Screening und automatische Kandidatenprofile für Executive Mandates." data-en="AI-powered candidate analysis, LinkedIn screening and automated candidate profiles for executive mandates.">KI-gestützte Kandidatenanalyse, LinkedIn-Screening und automatische Kandidatenprofile für Executive Mandates.</div>
+        <div class="card-footer"><div class="card-status"><div class="dot dim"></div><span data-de="In Entwicklung" data-en="In Development">In Entwicklung</span></div></div>
+      </div>
+      <div class="module-card inactive">
+        <div class="card-top"><div class="card-badge">iQ-PULSE</div><div class="card-icon">◌</div></div>
+        <div class="card-title">Content Intelligence</div>
+        <div class="card-desc" data-de="Wöchentlicher Scan von Thought-Leadership-Quellen für kategorisierte Content-Bibliothek und Kampagnen-Vorschläge." data-en="Weekly scan of thought-leadership sources for a categorised content library and campaign suggestions.">Wöchentlicher Scan von Thought-Leadership-Quellen für kategorisierte Content-Bibliothek und Kampagnen-Vorschläge.</div>
+        <div class="card-footer"><div class="card-status"><div class="dot dim"></div><span data-de="In Entwicklung" data-en="In Development">In Entwicklung</span></div></div>
+      </div>
+      <div class="module-card" onclick="show('qdocs')">
+        <div class="card-top"><div class="card-badge">iQ-DOCS</div><div class="card-icon">▭</div></div>
+        <div class="card-title">Document Intelligence</div>
+        <div class="card-desc" data-de="KI-generierte Kandidatenreports, Angebote und Präsentationen im CI-Format — direkt aus der Plattform erstellt und heruntergeladen." data-en="AI-generated candidate reports, proposals and presentations in CI format — created and downloaded directly from the platform.">KI-generierte Kandidatenreports, Angebote und Präsentationen im CI-Format — direkt aus der Plattform erstellt und heruntergeladen.</div>
+        <div class="card-footer"><div class="card-status"><div class="dot"></div><span data-de="Aktiv" data-en="Active">Aktiv</span></div><div class="card-cta"><span data-de="Öffnen" data-en="Open">Öffnen</span> →</div></div>
+      </div>
     </div>
   </div>
+  <div class="page-footer">© 2026 symfoniQ — AI Suite for Executive Search</div>
+</div>
 
-  <footer class="suite-footer">
-    <div class="footer-copy">© 2026 Signium Austria — Stein &amp; Partner GmbH</div>
-    <div class="footer-version">Suite v2.0</div>
-  </footer>
+<!-- ══ iQ-SCAN ══ -->
+<div class="view" id="view-qscan">
+  <div class="scan-wrap">
+
+    <!-- SEKTION 1: TRIGGER EVENTS -->
+    <div class="scan-section">
+      <div class="scan-section-header">
+        <div class="scan-section-left">
+          <div class="scan-section-tag" data-de="Sektion 1" data-en="Section 1">Sektion 1</div>
+          <div class="scan-section-title" data-de="Trigger Events" data-en="Trigger Events">Trigger Events</div>
+          <div class="scan-section-sub" data-de="Automatisches Monitoring von Management-Wechseln aus ausgewählten Medien" data-en="Automated monitoring of management changes from selected media">Automatisches Monitoring von Management-Wechseln aus ausgewählten Medien</div>
+        </div>
+      </div>
+      <div class="scan-section-body">
+        <p style="font-size:11px;font-weight:300;color:var(--gray);margin-bottom:20px;" data-de="Wählen Sie die Medien aus, die gescannt werden sollen. Das System erkennt automatisch Management-Wechsel, Restrukturierungen und andere relevante Ereignisse." data-en="Select the media sources to scan. The system automatically detects management changes, restructurings and other relevant events.">Wählen Sie die Medien aus, die gescannt werden sollen. Das System erkennt automatisch Management-Wechsel, Restrukturierungen und andere relevante Ereignisse.</p>
+
+        <div class="media-grid">
+          <label class="media-item">
+            <input type="checkbox" value="apa-ots" checked>
+            <div class="media-card">
+              <div class="media-name">APA-OTS</div>
+              <div class="media-region">Österreich</div>
+            </div>
+          </label>
+          <label class="media-item">
+            <input type="checkbox" value="leadersnet" checked>
+            <div class="media-card">
+              <div class="media-name">Leadersnet</div>
+              <div class="media-region">Österreich</div>
+            </div>
+          </label>
+          <label class="media-item">
+            <input type="checkbox" value="top-leader" checked>
+            <div class="media-card">
+              <div class="media-name">Top Leader</div>
+              <div class="media-region">Österreich</div>
+            </div>
+          </label>
+          <label class="media-item">
+            <input type="checkbox" value="horizont-at">
+            <div class="media-card">
+              <div class="media-name">Horizont AT</div>
+              <div class="media-region">Österreich</div>
+            </div>
+          </label>
+          <label class="media-item">
+            <input type="checkbox" value="derstandard">
+            <div class="media-card">
+              <div class="media-name">Der Standard</div>
+              <div class="media-region">Österreich</div>
+            </div>
+          </label>
+          <label class="media-item">
+            <input type="checkbox" value="wirtschaftsblatt">
+            <div class="media-card">
+              <div class="media-name">Wirtschaftsblatt</div>
+              <div class="media-region">Österreich</div>
+            </div>
+          </label>
+          <label class="media-item">
+            <input type="checkbox" value="handelsblatt">
+            <div class="media-card">
+              <div class="media-name">Handelsblatt</div>
+              <div class="media-region">Deutschland</div>
+            </div>
+          </label>
+          <label class="media-item">
+            <input type="checkbox" value="wirtschaftswoche">
+            <div class="media-card">
+              <div class="media-name">WirtschaftsWoche</div>
+              <div class="media-region">Deutschland</div>
+            </div>
+          </label>
+          <label class="media-item">
+            <input type="checkbox" value="newsapi-de">
+            <div class="media-card">
+              <div class="media-name">NewsAPI DE/AT</div>
+              <div class="media-region">DACH</div>
+            </div>
+          </label>
+        </div>
+
+        <div class="upload-actions" style="margin-top:24px;">
+          <button class="btn btn-primary" onclick="startScan('trigger')" data-de="Scan starten" data-en="Start scan">Scan starten</button>
+          <button class="btn btn-secondary" onclick="selectAllMedia(true)" data-de="Alle auswählen" data-en="Select all">Alle auswählen</button>
+          <button class="btn btn-secondary" onclick="selectAllMedia(false)" data-de="Alle abwählen" data-en="Deselect all">Alle abwählen</button>
+        </div>
+
+        <div class="status-bar" id="status-trigger"></div>
+
+        <div class="scan-results" id="results-trigger">
+          <div class="results-header" data-de="Erkannte Trigger-Events" data-en="Detected trigger events">Erkannte Trigger-Events</div>
+          <div id="results-trigger-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEKTION 2: VAKANZEN -->
+    <div class="scan-section">
+      <div class="scan-section-header">
+        <div class="scan-section-left">
+          <div class="scan-section-tag" data-de="Sektion 2" data-en="Section 2">Sektion 2</div>
+          <div class="scan-section-title" data-de="Vakanzen-Scanner" data-en="Vacancy Scanner">Vakanzen-Scanner</div>
+          <div class="scan-section-sub" data-de="Automatisches Monitoring von Karriereseiten auf Führungspositionen" data-en="Automated monitoring of career pages for leadership positions">Automatisches Monitoring von Karriereseiten auf Führungspositionen</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <a class="btn-template" onclick="downloadTemplate('vacancy')" href="#">
+            ↓ <span data-de="Vorlage herunterladen" data-en="Download template">Vorlage herunterladen</span>
+          </a>
+          <a class="btn-template" onclick="loadSigniumList()" href="#" style="background:rgba(192,57,43,0.06);border-color:var(--red);">
+            ↓ <span data-de="Signium-Liste laden (110 Firmen)" data-en="Load Signium list (110 companies)">Signium-Liste laden (110 Firmen)</span>
+          </a>
+        </div>
+      </div>
+      <div class="scan-section-body">
+        <p style="font-size:11px;font-weight:300;color:var(--gray);margin-bottom:16px;" data-de="Laden Sie Ihre Zielfirmen-Liste als CSV hoch oder laden Sie die Signium-Liste mit 110 vordefinierten Firmen und Karriereseiten-URLs." data-en="Upload your target company list as CSV or load the Signium list with 110 pre-defined companies and career page URLs.">Laden Sie Ihre Zielfirmen-Liste als CSV hoch oder laden Sie die Signium-Liste mit 110 vordefinierten Firmen und Karriereseiten-URLs.</p>
+
+        <div class="upload-area" id="upload-vacancy-area" onclick="document.getElementById('upload-vacancy').click()">
+          <div class="upload-icon">🏢</div>
+          <div class="upload-main" data-de="CSV-Datei hochladen" data-en="Upload CSV file">CSV-Datei hochladen</div>
+          <div class="upload-sub" data-de="Klicken zum Auswählen" data-en="Click to select">Klicken zum Auswählen</div>
+          <div class="upload-filename" id="vacancy-filename"></div>
+        </div>
+        <input type="file" id="upload-vacancy" accept=".csv" onchange="handleUpload(this)">
+
+        <div class="upload-actions">
+          <button class="btn btn-primary" id="btn-scan-vacancy" onclick="startScan('vacancy')" disabled data-de="Scan starten" data-en="Start scan">Scan starten</button>
+          <button class="btn btn-secondary" onclick="clearVacancy()" data-de="Zurücksetzen" data-en="Reset">Zurücksetzen</button>
+        </div>
+
+        <div class="status-bar" id="status-vacancy"></div>
+
+        <div class="scan-results" id="results-vacancy">
+          <div class="results-header" data-de="Erkannte offene Stellen" data-en="Detected open positions">Erkannte offene Stellen</div>
+          <div id="results-vacancy-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="page-footer">© 2026 symfoniQ — AI Suite for Executive Search</div>
+</div>
+
+<!-- ══ iQ-SCOUT ══ -->
+<div class="view" id="view-qscout">
+  <div class="view-placeholder-wrap">
+    <div class="view-placeholder">
+      <div class="vp-title"><span style="color:var(--red)">iQ</span>-SCOUT</div>
+      <div class="vp-sub" data-de="Candidate Intelligence — In Planung." data-en="Candidate Intelligence — In planning.">Candidate Intelligence — In Planung.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ iQ-PULSE ══ -->
+<div class="view" id="view-qpulse">
+  <div class="view-placeholder-wrap">
+    <div class="view-placeholder">
+      <div class="vp-title"><span style="color:var(--red)">iQ</span>-PULSE</div>
+      <div class="vp-sub" data-de="Content Intelligence — In Planung." data-en="Content Intelligence — In planning.">Content Intelligence — In Planung.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ iQ-DOCS ══ -->
+<div class="view" id="view-qdocs">
+  <div class="view-placeholder-wrap">
+    <div class="view-placeholder">
+      <div class="vp-title"><span style="color:var(--red)">iQ</span>-DOCS</div>
+      <div class="vp-sub" data-de="Document Intelligence — wird eingebettet." data-en="Document Intelligence — coming soon.">Document Intelligence — wird eingebettet.</div>
+    </div>
+  </div>
 </div>
 
 <script>
-function login() {
-  const pw = document.getElementById('pw').value;
-  const err = document.getElementById('err');
-  if (pw === 'Signium2026') {
-    document.getElementById('auth').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
+var currentLang = 'de';
+var now = new Date();
+var days = { de:['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'], en:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] };
+var months = { de:['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'], en:['January','February','March','April','May','June','July','August','September','October','November','December'] };
+
+function updateDate() {
+  var el = document.getElementById('hero-date');
+  if (el) el.innerHTML = days[currentLang][now.getDay()] + '<br>' + now.getDate() + '. ' + months[currentLang][now.getMonth()] + ' ' + now.getFullYear();
+}
+function updateGreeting() {
+  var h = now.getHours();
+  var g = { de: h<12?'Guten Morgen':h<18?'Guten Tag':'Guten Abend', en: h<12?'Good Morning':h<18?'Good Afternoon':'Good Evening' };
+  document.getElementById('hero-greeting').textContent = g[currentLang];
+}
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(function(b) { b.classList.toggle('active', b.textContent.trim().toLowerCase()===lang); });
+  document.querySelectorAll('[data-'+lang+']').forEach(function(el) { el.innerHTML = el.getAttribute('data-'+lang); });
+  updateDate(); updateGreeting();
+}
+function show(id) {
+  document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
+  document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.getElementById('view-'+id).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(function(t) {
+    if ((t.getAttribute('onclick')||'').indexOf("'"+id+"'")!==-1) t.classList.add('active');
+  });
+  window.scrollTo(0,0);
+}
+
+// CSV Templates
+function downloadTemplate(type) {
+  var csv, filename;
+  if (type === 'trigger') {
+    csv = 'Firmenname,Land\nOMV,AT\nVerbund,AT\nLenzing,AT\nRBI,AT\n';
+    filename = 'symfoniQ_Trigger_Vorlage.csv';
   } else {
-    err.classList.add('show');
-    setTimeout(() => err.classList.remove('show'), 2000);
+    csv = 'Firmenname,Karriereseiten-URL\nOMV,https://www.omv.com/de/karriere\nVerbund,https://www.verbund.com/karriere\n';
+    filename = 'symfoniQ_Vakanzen_Vorlage.csv';
+  }
+  var blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  return false;
+}
+
+// Upload handling
+var uploadedData = { trigger: null, vacancy: null };
+
+function handleUpload(type, input) {
+  var file = input.files[0];
+  if (!file) return;
+  var area = document.getElementById('upload-'+type+'-area');
+  var fname = document.getElementById(type+'-filename');
+  fname.textContent = file.name;
+  area.classList.add('has-file');
+  document.getElementById('btn-scan-'+type).disabled = false;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var lines = e.target.result.split('\n').filter(function(l){ return l.trim() && !l.startsWith('Firmenname'); });
+    uploadedData[type] = lines.map(function(l){ var p=l.split(','); return {name:(p[0]||'').trim(), extra:(p[1]||'').trim()}; });
+    document.getElementById('kpi-companies').textContent = uploadedData[type].length;
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function clearSection(type) {
+  uploadedData[type] = null;
+  document.getElementById('upload-'+type).value = '';
+  document.getElementById(type+'-filename').textContent = '';
+  document.getElementById('upload-'+type+'-area').classList.remove('has-file');
+  document.getElementById('btn-scan-'+type).disabled = true;
+  document.getElementById('status-'+type).className = 'status-bar';
+  document.getElementById('status-'+type).textContent = '';
+  document.getElementById('results-'+type).classList.remove('visible');
+}
+
+function startScan(type) {
+  var status = document.getElementById('status-'+type);
+  var results = document.getElementById('results-'+type);
+  var list = document.getElementById('results-'+type+'-list');
+  var data = uploadedData[type];
+  var btn = document.getElementById('btn-scan-'+type);
+
+  if (type === 'vacancy' && (!data || !data.length)) return;
+
+  // For trigger, check at least one media selected
+  if (type === 'trigger') {
+    var checkedBoxes = document.querySelectorAll('.media-item input:checked');
+    if (!checkedBoxes.length) {
+      status.className = 'status-bar visible running';
+      status.textContent = currentLang==='de' ? '✗ Bitte mindestens ein Medium auswählen.' : '✗ Please select at least one media source.';
+      return;
+    }
+  }
+
+  if (btn) btn.disabled = true;
+  status.className = 'status-bar visible running';
+  status.textContent = currentLang==='de' ? '⟳ Scan läuft — bitte warten …' : '⟳ Scan running — please wait …';
+  results.classList.remove('visible');
+  list.innerHTML = '';
+
+  if (type === 'trigger') {
+    // Real API call with selected sources
+    var sources = [];
+    document.querySelectorAll('.media-item input:checked').forEach(function(cb) {
+      sources.push(cb.value);
+    });
+
+    fetch('/api/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sources: sources })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var items = [];
+      try { items = JSON.parse(d.text || '[]'); } catch(e) {}
+
+      status.className = 'status-bar visible done';
+      status.textContent = currentLang==='de'
+        ? '✓ Scan abgeschlossen — ' + items.length + ' Ereignisse erkannt'
+        : '✓ Scan complete — ' + items.length + ' events detected';
+
+      if (!items.length) {
+        list.innerHTML = '<div style="padding:20px 0;font-size:11px;color:var(--lgray);">'+(currentLang==='de'?'Keine relevanten Ereignisse gefunden.':'No relevant events found.')+'</div>';
+      } else {
+        items.forEach(function(item) {
+          var div = document.createElement('div');
+          div.className = 'result-item';
+          var link = item.source_url ? '<a href="'+item.source_url+'" target="_blank" style="font-size:9px;color:var(--red);text-decoration:none;margin-left:8px;">→ Quelle</a>' : '';
+          div.innerHTML = '<div class="result-type">'+item.trigger_type+'</div>'
+            +'<div class="result-body">'
+            +'<div class="result-title">'+item.company+link+'</div>'
+            +'<div class="result-meta">'+item.description+(item.source_name?' · '+item.source_name:'')+'</div>'
+            +'</div>';
+          list.appendChild(div);
+        });
+      }
+
+      results.classList.add('visible');
+      document.getElementById('kpi-triggers').textContent = items.length;
+      if (btn) btn.disabled = false;
+    })
+    .catch(function(err) {
+      status.className = 'status-bar visible running';
+      status.textContent = '✗ Fehler: ' + err.message;
+      if (btn) btn.disabled = false;
+    });
+
+  } else {
+    // Vacancy scan placeholder
+    setTimeout(function() {
+      status.className = 'status-bar visible done';
+      status.textContent = currentLang==='de'
+        ? '✓ Scan abgeschlossen — ' + (data ? data.length : 0) + ' Firmen gescannt'
+        : '✓ Scan complete — ' + (data ? data.length : 0) + ' companies scanned';
+      list.innerHTML = '<div style="padding:20px 0;font-size:11px;color:var(--lgray);">'+(currentLang==='de'?'Vakanzen-Scanner wird eingebettet.':'Vacancy scanner coming soon.')+'</div>';
+      results.classList.add('visible');
+      if (btn) btn.disabled = false;
+    }, 1000);
   }
 }
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter') login();
-});
+
+updateDate();
+updateGreeting();
+
+function loadSigniumList(type) {
+  var status = document.getElementById('status-'+type);
+  status.className = 'status-bar visible running';
+  status.textContent = currentLang==='de' ? '⟳ Signium-Liste wird geladen …' : '⟳ Loading Signium list …';
+
+  fetch('/api/get-companies')
+    .then(function(r) { return r.text(); })
+    .then(function(csv) {
+      // Parse CSV and load into upload area
+      var lines = csv.split('\n').filter(function(l){ return l.trim() && !l.includes('Firmenname'); });
+      var data = lines.map(function(l){
+        var p = l.replace(/"/g,'').split(',');
+        return { name: (p[0]||'').trim(), extra: type==='trigger' ? (p[1]||'').trim() : (p[2]||'').trim() };
+      }).filter(function(d){ return d.name; });
+
+      uploadedData[type] = data;
+      document.getElementById('kpi-companies').textContent = data.length;
+      document.getElementById(type+'-filename').textContent = 'Signium-Liste (' + data.length + ' Firmen)';
+      document.getElementById('upload-'+type+'-area').classList.add('has-file');
+      document.getElementById('btn-scan-'+type).disabled = false;
+
+      status.className = 'status-bar visible done';
+      status.textContent = currentLang==='de'
+        ? '✓ ' + data.length + ' Firmen geladen — Scan starten'
+        : '✓ ' + data.length + ' companies loaded — start scan';
+    })
+    .catch(function() {
+      status.className = 'status-bar visible running';
+      status.textContent = currentLang==='de' ? '✗ Fehler beim Laden der Liste' : '✗ Error loading list';
+    });
+  return false;
+}
 </script>
 </body>
 </html>
